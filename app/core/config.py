@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -12,7 +13,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 10080
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    # NoDecode skips pydantic-settings' JSON decoding so split_origins below
+    # parses a comma-separated string straight from the .env value.
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     sandbox_timeout: int = 5
 
     @field_validator("cors_origins", mode="before")

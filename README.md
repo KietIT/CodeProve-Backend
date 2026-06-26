@@ -20,6 +20,12 @@ cp .env.example .env
 # Edit .env and fill in JWT_SECRET and OPENAI_API_KEY
 ```
 
+### Configuration notes
+
+- `CORS_ORIGINS` is a comma-separated list of allowed origins, e.g.
+  `CORS_ORIGINS=http://localhost:3000,http://localhost:5173`
+  (plain strings, not JSON).
+
 ## Running
 
 ```bash
