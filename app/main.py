@@ -19,6 +19,9 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    from app.features.auth.router import router as auth_router
+    app.include_router(auth_router)
+
     return app
 
 

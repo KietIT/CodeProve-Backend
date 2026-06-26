@@ -1,0 +1,24 @@
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.security import hash_password, verify_password
+from app.models import User
+from app.schemas.auth import LoginIn, SignupIn
+
+
+async def create_user(db: AsyncSession, data: SignupIn) -> User:
+    existing = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
+    if existing is not None:
+        raise ValueError("email_taken")
+    user = User(full_name=data.full_name, email=data.email, password_hash=hash_password(data.password))
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def authenticate(db: AsyncSession, data: LoginIn) -> User | None:
+    user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
+    if user is None or not verify_password(data.password, user.password_hash):
+        return None
+    return user

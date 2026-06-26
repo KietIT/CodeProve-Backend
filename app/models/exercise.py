@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Float, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,7 +23,7 @@ class Exercise(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     starter_code: Mapped[str] = mapped_column(Text, default="")
     hint: Mapped[str] = mapped_column(Text, default="")
-    domain_keywords: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    domain_keywords: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON, "sqlite"), default=list)
     reference_solution: Mapped[str | None] = mapped_column(Text, nullable=True)
     buggy_location: Mapped[str | None] = mapped_column(Text, nullable=True)
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)

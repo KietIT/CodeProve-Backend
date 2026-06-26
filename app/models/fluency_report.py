@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, Float, ForeignKey, func
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,5 +21,5 @@ class FluencyReport(Base):
     debugging_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     explanation_score: Mapped[float] = mapped_column(Float)
     overall_score: Mapped[float] = mapped_column(Float)
-    feedback: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    feedback: Mapped[dict[str, Any]] = mapped_column(JSONB().with_variant(JSON, "sqlite"), default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
