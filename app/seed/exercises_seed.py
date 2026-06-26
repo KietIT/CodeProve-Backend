@@ -506,11 +506,11 @@ EXERCISES: list[dict] = [
         ),
         "hint": "Why is += not atomic across threads? A lock or atomic primitive closes the gap.",
         "domain_keywords": ["concurrency", "race condition", "atomic", "threading", "lock", "global state"],
-        # The sandbox execs the starter which defines counter=0 and increment().
-        # Single-threaded test only — multi-threaded non-determinism excluded by design.
+        # Cases run in order against a shared ns; each resets `counter` first so it
+        # is order-independent and deterministic. Both genuinely call increment().
         "tests": [
             {
-                "input_data": "(increment(), counter)[1]",
+                "input_data": "(globals().__setitem__('counter', 0), increment(), counter)[-1]",
                 "expected_output": "1",
                 "description": "test_single_increment",
                 "is_hidden": False,
@@ -518,9 +518,9 @@ EXERCISES: list[dict] = [
                 "weight": 1.0,
             },
             {
-                "input_data": "(increment(), increment(), counter)[2]",
-                "expected_output": "3",
-                "description": "test_two_more_increments",
+                "input_data": "(globals().__setitem__('counter', 0), [increment() for _ in range(2)], counter)[-1]",
+                "expected_output": "2",
+                "description": "test_two_increments",
                 "is_hidden": False,
                 "order_index": 2,
                 "weight": 1.0,
@@ -651,10 +651,11 @@ EXERCISES: list[dict] = [
         ),
         "hint": "Why pin the algorithm explicitly? What attack does accepting 'alg: none' open up?",
         "domain_keywords": ["api security", "JWT", "signature", "expiry", "HS256", "algorithm confusion", "claims"],
-        # A malformed/bad token always returns None. Tests are meaningful even with a mock library.
+        # Both cases call verify_token via real PyJWT (PyJWT==2.9.0 in requirements).
+        # A correct verifier rejects a malformed token AND a wrong-secret signature.
         "tests": [
             {
-                "input_data": "verify_token('not.a.token', 'secret')",
+                "input_data": "verify_token('not.a.valid.token', 'secret')",
                 "expected_output": "None",
                 "description": "test_malformed_token_returns_none",
                 "is_hidden": False,
@@ -662,9 +663,9 @@ EXERCISES: list[dict] = [
                 "weight": 1.0,
             },
             {
-                "input_data": "verify_token('bad.token.here', 'mysecret')",
+                "input_data": "verify_token(__import__('jwt').encode({'sub': '1'}, 'wrong', algorithm='HS256'), 'right')",
                 "expected_output": "None",
-                "description": "test_bad_token_returns_none",
+                "description": "test_wrong_secret_returns_none",
                 "is_hidden": False,
                 "order_index": 2,
                 "weight": 1.0,
@@ -917,40 +918,34 @@ EXERCISES: list[dict] = [
         ),
         "hint": "What does 'raise ... from e' preserve that a bare re-raise throws away?",
         "domain_keywords": ["debugging", "exception chaining", "stack trace", "RuntimeError", "raise from", "context"],
-        # load() raises RuntimeError on missing file. Verify the error type and message.
+        # Both cases genuinely call load() on a temp file written in the same expression
+        # (the sandbox ns has no __file__, so we create a guaranteed-present file inline).
+        # A correct load returns the file's contents; a broken one (returns None / swallows
+        # the read) fails these. The exercise's real goal — exception chaining — is checked
+        # by hidden tests on the error path that single eval expressions cannot assert.
         "tests": [
             {
                 "input_data": (
-                    "(lambda: "
-                    "  (lambda e: type(e).__name__)("
-                    "    next(iter([e for e in [None] if (globals().update({'_ex': None}) or True)]), None)"
-                    "  ) if False else"
-                    "  (lambda: [type(e).__name__ for _, e, _ in "
-                    "    [__import__('sys').exc_info()] "
-                    "    if (lambda: load('_no_such_file_') or True)() is None"
-                    "  ] or 'RuntimeError')()"
-                    ")()"
+                    "isinstance(load("
+                    "(lambda p: (open(p, 'w').write('hello'), p)[-1])("
+                    "__import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_a.txt')"
+                    ")), str)"
                 ),
-                # Simpler: use try/except inside a lambda
-                "input_data": (
-                    "(lambda: "
-                    "  (__import__('builtins').__dict__['__build_class__'] and "
-                    "   (lambda: "
-                    "     (lambda e: type(e).__name__)(None) if True else None"
-                    "   )()"
-                    "  ) if False else 'RuntimeError'"
-                    ")()"
-                ),
-                "expected_output": "'RuntimeError'",
-                "description": "test_raises_runtime_error",
+                "expected_output": "True",
+                "description": "test_load_returns_string",
                 "is_hidden": False,
                 "order_index": 1,
                 "weight": 1.0,
             },
             {
-                "input_data": "'load failed'",
-                "expected_output": "'load failed'",
-                "description": "test_error_message_text",
+                "input_data": (
+                    "load("
+                    "(lambda p: (open(p, 'w').write('abc'), p)[-1])("
+                    "__import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_b.txt')"
+                    ")) == 'abc'"
+                ),
+                "expected_output": "True",
+                "description": "test_load_returns_file_contents",
                 "is_hidden": False,
                 "order_index": 2,
                 "weight": 1.0,
@@ -1130,21 +1125,30 @@ EXERCISES: list[dict] = [
         ),
         "hint": "A present token is not a valid token. What must you verify before calling the handler?",
         "domain_keywords": ["api security", "middleware", "authentication", "authorization", "token validation", "logic bug"],
-        # require_auth calls deny() which isn't defined, and needs request object.
-        # Test conceptual properties the fixed middleware must satisfy.
+        # Both cases call require_auth with an inline mock request + handler.
+        # A correct solution accepts a valid token (handler runs) and rejects a forged
+        # one (handler must NOT run) — the buggy "present != valid" starter fails test 2.
         "tests": [
             {
-                "input_data": "True if 'present != valid' in 'bug: present != valid' else False",
-                "expected_output": "True",
-                "description": "test_bug_is_present_not_valid",
+                "input_data": (
+                    "require_auth("
+                    "type('Req', (), {'headers': {'Authorization': 'valid-token'}})(),"
+                    "lambda req: 'OK')"
+                ),
+                "expected_output": "'OK'",
+                "description": "test_valid_token_runs_handler",
                 "is_hidden": False,
                 "order_index": 1,
                 "weight": 1.0,
             },
             {
-                "input_data": "bool(None)",
-                "expected_output": "False",
-                "description": "test_missing_token_is_falsy",
+                "input_data": (
+                    "require_auth("
+                    "type('Req', (), {'headers': {'Authorization': 'forged'}})(),"
+                    "lambda req: 'HANDLER_RAN') != 'HANDLER_RAN'"
+                ),
+                "expected_output": "True",
+                "description": "test_forged_token_rejected",
                 "is_hidden": False,
                 "order_index": 2,
                 "weight": 1.0,
