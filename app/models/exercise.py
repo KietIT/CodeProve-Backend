@@ -23,7 +23,7 @@ class Exercise(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     starter_code: Mapped[str] = mapped_column(Text, default="")
     hint: Mapped[str] = mapped_column(Text, default="")
-    domain_keywords: Mapped[list] = mapped_column(JSONB, default=list)
+    domain_keywords: Mapped[list[str]] = mapped_column(JSONB, default=list)
     reference_solution: Mapped[str | None] = mapped_column(Text, nullable=True)
     buggy_location: Mapped[str | None] = mapped_column(Text, nullable=True)
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)

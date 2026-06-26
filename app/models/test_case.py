@@ -5,6 +5,9 @@ from app.core.db import Base
 
 
 class TestCase(Base):
+    # Tell pytest this is a domain model, not a test class (name starts with "Test").
+    __test__ = False
+
     __tablename__ = "test_cases"
 
     id: Mapped[int] = mapped_column(primary_key=True)
