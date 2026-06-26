@@ -1,0 +1,13 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: codeprove
+      POSTGRES_PASSWORD: codeprove
+      POSTGRES_DB: codeprove
+    ports:
+      - "5432:5432"
+    volumes:
+      - codeprove_pgdata:/var/lib/postgresql/data
+volumes:
+  codeprove_pgdata:
