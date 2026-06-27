@@ -4,10 +4,16 @@ services:
     container_name: codeprove_backend
     env_file:
       - .env
+    environment:
+      # Override .env: inside the compose network the DB is reachable via the
+      # "db" service hostname, not localhost.
+      - DATABASE_URL=postgresql+asyncpg://codeprove:codeprove@db:5432/codeprove
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: always
 
   db:
@@ -17,8 +23,36 @@ services:
       POSTGRES_USER: codeprove
       POSTGRES_PASSWORD: codeprove
       POSTGRES_DB: codeprove
+    ports:
+      # Publish to host so tools run from .venv (alembic, seed scripts) can
+      # reach the DB via localhost:5432. The backend container still uses "db".
+      - "5432:5432"
     volumes:
       - codeprove_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codeprove -d codeprove"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # Cloudflare Tunnel: exposes the backend to the internet over HTTPS without
+  # opening any inbound port or owning a domain. The tunnel dials OUT to
+  # Cloudflare, so EC2 Security Group needs no rule for 8000.
+  #
+  # Default = QUICK tunnel: prints a free https://<random>.trycloudflare.com URL
+  # in `docker compose logs tunnel`. The URL is ephemeral (changes if the tunnel
+  # restarts) — fine for demo/testing.
+  #
+  # For a STABLE URL: create a Named Tunnel in the Cloudflare Zero Trust
+  # dashboard, put TUNNEL_TOKEN in .env, and swap the command for:
+  #   command: tunnel --no-autoupdate run
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: codeprove_tunnel
+    command: tunnel --no-autoupdate --url http://backend:8000
+    depends_on:
+      - backend
     restart: always
 
 volumes:
