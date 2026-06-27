@@ -96,6 +96,8 @@ async def explain_back(
     user: User = Depends(get_current_user),
 ) -> ReportOut:
     attempt = await service.require_attempt(db, attempt_id, user)
+    if attempt.status == "scored":
+        raise HTTPException(status_code=409, detail="Attempt already scored")
     payload = await scoring_service.score_with_explanations(
         db, attempt, [a.model_dump() for a in data.answers]
     )
@@ -123,13 +125,17 @@ async def report(
         "debugging": rep.debugging_score,
     }
     axes_pct = {a: (v * 5 if v is not None else None) for a, v in axes.items()}
-    timeline = rep.feedback.get("timeline", []) if isinstance(rep.feedback, dict) else []
+    stored = rep.feedback if isinstance(rep.feedback, dict) else {}
+    timeline = stored.get("timeline", [])
+    # Return feedback without the embedded timeline so the shape matches the
+    # explain-back response (timeline is exposed only at the top level).
+    feedback = {k: v for k, v in stored.items() if k != "timeline"}
     return ReportOut(
         overall=rep.overall_score,
         tier=scoring_service.tier_for(rep.overall_score),
         axes=axes,
         axes_pct=axes_pct,
-        feedback=rep.feedback,
+        feedback=feedback,
         integrity_status=attempt.integrity_status or "green",
         timeline=timeline,
     )

@@ -68,3 +68,20 @@ async def test_submit_then_explain_back_produces_report(client, db_session, auth
 
     rep = await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)
     assert rep.json()["overall"] == body["overall"]
+
+    # feedback shape is consistent between explain-back and report: timeline lives only
+    # at the top level, never embedded inside feedback.
+    assert "timeline" not in body["feedback"]
+    assert "timeline" not in rep.json()["feedback"]
+    assert len(rep.json()["timeline"]) == 3
+    assert rep.json()["timeline"] == body["timeline"]
+
+
+async def test_explain_back_twice_returns_409(client, db_session, auth_headers):
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
+    answers = {"answers": [{"question": "q", "answer": "a"}]}
+    first = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json=answers)
+    assert first.status_code == 200
+    second = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json=answers)
+    assert second.status_code == 409
