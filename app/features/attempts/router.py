@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.features.attempts import service
+from app.features.attempts import scoring_service, service
 from app.features.sandbox.runner import run_tests as sandbox_run
-from app.models import CodeSnapshot, Exercise, TestCase, User
+from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
 from app.schemas.attempt import AttemptOut, AttemptState, CreateAttemptIn, RunIn, RunResult, SnapshotIn
 from app.schemas.event import EventsIn
+from app.schemas.report import ExplainBackIn, ReportOut
 
 router = APIRouter(prefix="/api/attempts", tags=["attempts"])
 
@@ -71,3 +72,64 @@ async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
             "passed": all_passed, "testCount": result["total"], "coverage": result["coverage"]})
     await db.commit()
     return RunResult(**result)
+
+
+@router.post("/{attempt_id}/submit")
+async def submit(
+    attempt_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    await service.add_event(db, attempt_id, "SUBMIT", {})
+    attempt.status = "submitted"
+    questions = await scoring_service.generate_questions(db, attempt)
+    await db.commit()
+    return {"questions": questions}
+
+
+@router.post("/{attempt_id}/explain-back", response_model=ReportOut)
+async def explain_back(
+    attempt_id: int,
+    data: ExplainBackIn,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ReportOut:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    payload = await scoring_service.score_with_explanations(
+        db, attempt, [a.model_dump() for a in data.answers]
+    )
+    return ReportOut(**payload)
+
+
+@router.get("/{attempt_id}/report", response_model=ReportOut)
+async def report(
+    attempt_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ReportOut:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    rep = (
+        await db.execute(select(FluencyReport).where(FluencyReport.attempt_id == attempt_id))
+    ).scalar_one_or_none()
+    if rep is None:
+        raise HTTPException(status_code=404, detail="No report yet")
+    axes = {
+        "understanding": rep.understanding_score,
+        "hypothesis": rep.hypothesis_score,
+        "prompting": rep.prompt_score,
+        "verification": rep.verification_score,
+        "testing": rep.testing_score,
+        "debugging": rep.debugging_score,
+    }
+    axes_pct = {a: (v * 5 if v is not None else None) for a, v in axes.items()}
+    timeline = rep.feedback.get("timeline", []) if isinstance(rep.feedback, dict) else []
+    return ReportOut(
+        overall=rep.overall_score,
+        tier=scoring_service.tier_for(rep.overall_score),
+        axes=axes,
+        axes_pct=axes_pct,
+        feedback=rep.feedback,
+        integrity_status=attempt.integrity_status or "green",
+        timeline=timeline,
+    )
