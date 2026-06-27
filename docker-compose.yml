@@ -1,13 +1,25 @@
 services:
+  backend:
+    build: .
+    container_name: codeprove_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    restart: always
+
   db:
     image: postgres:16
+    container_name: codeprove_db
     environment:
       POSTGRES_USER: codeprove
       POSTGRES_PASSWORD: codeprove
       POSTGRES_DB: codeprove
-    ports:
-      - "5432:5432"
     volumes:
       - codeprove_pgdata:/var/lib/postgresql/data
+    restart: always
+
 volumes:
   codeprove_pgdata:
