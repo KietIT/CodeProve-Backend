@@ -23,7 +23,7 @@ async def require_attempt(db: AsyncSession, attempt_id: int, user: User) -> Atte
 async def add_event(db: AsyncSession, attempt_id: int, type_: str,
                     payload: dict | None = None, ts: int | None = None,
                     flags: list[str] | None = None) -> Event:
-    event = Event(attempt_id=attempt_id, type=type_, ts=ts or now_ms(),
+    event = Event(attempt_id=attempt_id, type=type_, ts=ts if ts is not None else now_ms(),
                   payload=payload or {}, integrity_flags=flags or [])
     db.add(event)
     return event

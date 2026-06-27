@@ -30,3 +30,21 @@ async def test_create_attempt_and_events(client, db_session, auth_headers):
     state = await client.get(f"/api/attempts/{aid}", headers=auth_headers)
     assert state.json()["latest_code"] == "print(1)"
     assert state.json()["status"] == "in_progress"
+
+
+async def test_attempt_ownership_and_missing(client, db_session, auth_headers):
+    await _seed_exercise(db_session)
+    aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=auth_headers)).json()["attempt_id"]
+
+    # A different user must not access someone else's attempt -> 403.
+    other = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Other User", "email": "other@test.io", "password": "password123"},
+    )
+    other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
+    forbidden = await client.get(f"/api/attempts/{aid}", headers=other_headers)
+    assert forbidden.status_code == 403
+
+    # A non-existent attempt -> 404.
+    missing = await client.get("/api/attempts/999999", headers=auth_headers)
+    assert missing.status_code == 404
