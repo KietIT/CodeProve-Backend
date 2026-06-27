@@ -28,6 +28,9 @@ def create_app() -> FastAPI:
     from app.features.attempts.router import router as attempts_router
     app.include_router(attempts_router)
 
+    from app.features.mentor.router import router as mentor_router
+    app.include_router(mentor_router)
+
     return app
 
 
