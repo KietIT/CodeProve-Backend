@@ -31,6 +31,9 @@ def create_app() -> FastAPI:
     from app.features.mentor.router import router as mentor_router
     app.include_router(mentor_router)
 
+    from app.features.dashboard.router import router as dashboard_router
+    app.include_router(dashboard_router)
+
     return app
 
 
