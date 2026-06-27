@@ -36,15 +36,40 @@ async def _already_injected(db: AsyncSession, attempt_id: int) -> bool:
     return any(r.payload.get("injectedError") for r in rows)
 
 
-async def mentor_reply(db: AsyncSession, attempt: Attempt, message: str) -> dict:
+def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
+    """Compose the per-attempt context block injected into Ciel's system prompt
+    so it can answer questions about *this* exercise instead of asking which one."""
+    parts = [
+        "CURRENT EXERCISE CONTEXT — the student is working on the exercise below.",
+        "When they say \"this exercise\" / \"bài này\" / \"bài tập này\", they mean THIS one;",
+        "explain it directly using the details here, but still NEVER write the full solution.",
+        f"- Title: {ex.title}",
+        f"- Difficulty / Level: {ex.difficulty} / {ex.level}",
+        f"- Language: {ex.language}",
+    ]
+    if ex.summary:
+        parts.append(f"- Summary: {ex.summary}")
+    if ex.description:
+        parts.append(f"- Description: {ex.description}")
+    if ex.learning_objective:
+        parts.append(f"- Learning objective: {ex.learning_objective}")
+    if student_code and student_code.strip():
+        parts.append(f"\nStudent's current code:\n```{ex.language}\n{student_code.strip()}\n```")
+    return "\n".join(parts)
+
+
+async def mentor_reply(
+    db: AsyncSession, attempt: Attempt, message: str, code: str | None = None
+) -> dict:
     ex = (
         await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))
     ).scalar_one()
     keywords = match_keywords(message, list(ex.domain_keywords or []))
     inject = bool(ex.verification_trap) and not await _already_injected(db, attempt.id)
 
+    context = build_exercise_context(ex, code)
     client = get_mentor_client()
-    result = await client.chat(message, history=[], inject_error=inject)
+    result = await client.chat(message, history=[], inject_error=inject, context=context)
 
     flags = ["PRIMING"] if looks_like_priming(message) else []
     await attempts_service.add_event(

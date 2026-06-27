@@ -16,6 +16,40 @@ async def test_signup_then_me(client):
     assert me.json()["full_name"] == "Jane Doe"
 
 
+async def test_update_me_changes_full_name(client):
+    r = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Old Name", "email": "patch@test.io", "password": "password123"},
+    )
+    token = r.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    patched = await client.patch("/api/auth/me", json={"full_name": "New Name"}, headers=headers)
+    assert patched.status_code == 200
+    assert patched.json()["full_name"] == "New Name"
+
+    # Persisted: a fresh GET returns the updated name.
+    me = await client.get("/api/auth/me", headers=headers)
+    assert me.json()["full_name"] == "New Name"
+
+
+async def test_update_me_requires_auth(client):
+    r = await client.patch("/api/auth/me", json={"full_name": "X"})
+    assert r.status_code == 401
+
+
+async def test_update_me_rejects_short_name(client):
+    r = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Valid Name", "email": "short@test.io", "password": "password123"},
+    )
+    token = r.json()["access_token"]
+    bad = await client.patch(
+        "/api/auth/me", json={"full_name": "A"}, headers={"Authorization": f"Bearer {token}"}
+    )
+    assert bad.status_code == 422
+
+
 async def test_login_wrong_password(client):
     await client.post("/api/auth/signup", json={"full_name": "Bob", "email": "bob@test.io", "password": "password123"})
     r = await client.post("/api/auth/login", json={"email": "bob@test.io", "password": "nope"})

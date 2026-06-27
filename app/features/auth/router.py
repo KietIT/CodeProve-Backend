@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.core.security import create_access_token
 from app.features.auth import service
 from app.models import User
-from app.schemas.auth import AuthOut, LoginIn, SignupIn, UserOut
+from app.schemas.auth import AuthOut, LoginIn, SignupIn, UpdateMeIn, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -31,3 +31,13 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)) -> AuthOut:
 @router.get("/me", response_model=UserOut)
 async def me(user: User = Depends(get_current_user)) -> UserOut:
     return UserOut.model_validate(user, from_attributes=True)
+
+
+@router.patch("/me", response_model=UserOut)
+async def update_me(
+    data: UpdateMeIn,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserOut:
+    updated = await service.update_user(db, user, data)
+    return UserOut.model_validate(updated, from_attributes=True)

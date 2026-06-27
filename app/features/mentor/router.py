@@ -19,7 +19,7 @@ async def mentor(
     user: User = Depends(get_current_user),
 ) -> MentorOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
-    out = await service.mentor_reply(db, attempt, data.message)
+    out = await service.mentor_reply(db, attempt, data.message, data.code)
     return MentorOut(**out)
 
 

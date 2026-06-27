@@ -9,7 +9,8 @@ pytestmark = pytest.mark.asyncio
 class FakeClient:
     _model = "fake"
 
-    async def chat(self, user_message, history, inject_error):
+    async def chat(self, user_message, history, inject_error, context=""):
+        self.last_context = context
         return {
             "text": "Consider edge cases. ```py\nfor i in range(n):\n    pass\n```",
             "prompt_tokens": 12,
@@ -106,3 +107,31 @@ async def test_hypothesis_records_event(client, db_session, auth_headers):
     events = await _events(db_session, aid)
     hyp = next(e for e in events if e.type == "HYPOTHESIS")
     assert hyp.payload == {"proposedBy": "user", "correct": True}
+
+
+async def test_exercise_context_includes_problem_and_code():
+    from app.features.mentor.service import build_exercise_context
+    from app.models import Exercise
+
+    ex = Exercise(
+        code="CP-009",
+        title="Two-Sum Variations",
+        difficulty="Easy",
+        category="Algorithms",
+        level="fresher",
+        language="python",
+        acceptance=1,
+        summary="Find two numbers that add up to target",
+        description="Return their indices",
+        learning_objective="hash maps",
+        starter_code="x",
+        hint="h",
+        domain_keywords=[],
+        verification_trap=False,
+    )
+    ctx = build_exercise_context(ex, "def solve():\n    pass")
+    # Ciel must receive the actual problem so it can explain "this exercise".
+    assert "Two-Sum Variations" in ctx
+    assert "Find two numbers that add up to target" in ctx
+    assert "Return their indices" in ctx
+    assert "def solve()" in ctx
