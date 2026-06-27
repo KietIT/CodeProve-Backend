@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.features.attempts import service
-from app.models import CodeSnapshot, Exercise, User
-from app.schemas.attempt import AttemptOut, AttemptState, CreateAttemptIn, SnapshotIn
+from app.features.sandbox.runner import run_tests as sandbox_run
+from app.models import CodeSnapshot, Exercise, TestCase, User
+from app.schemas.attempt import AttemptOut, AttemptState, CreateAttemptIn, RunIn, RunResult, SnapshotIn
 from app.schemas.event import EventsIn
 
 router = APIRouter(prefix="/api/attempts", tags=["attempts"])
@@ -45,3 +47,27 @@ async def add_snapshot(attempt_id: int, data: SnapshotIn, db: AsyncSession = Dep
     db.add(CodeSnapshot(attempt_id=attempt_id, version=data.version, source_code=data.source_code))
     await db.commit()
     return {"ok": True}
+
+
+@router.post("/{attempt_id}/run", response_model=RunResult)
+async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
+              user: User = Depends(get_current_user)) -> RunResult:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    cases = (await db.execute(
+        select(TestCase).where(TestCase.exercise_id == attempt.exercise_id).order_by(TestCase.order_index)
+    )).scalars().all()
+    case_dicts = [{"input_data": c.input_data, "expected_output": c.expected_output,
+                   "description": c.description, "weight": c.weight} for c in cases]
+    result = await sandbox_run(data.source_code, case_dicts, get_settings().sandbox_timeout)
+
+    # snapshot + telemetry
+    next_version = 1 + len((await db.execute(
+        select(CodeSnapshot).where(CodeSnapshot.attempt_id == attempt_id))).scalars().all())
+    db.add(CodeSnapshot(attempt_id=attempt_id, version=next_version, source_code=data.source_code))
+    all_passed = result["total"] > 0 and result["passed"] == result["total"]
+    await service.add_event(db, attempt_id, "RUN", {"passed": all_passed})
+    if data.run_tests:
+        await service.add_event(db, attempt_id, "TEST_RUN", {
+            "passed": all_passed, "testCount": result["total"], "coverage": result["coverage"]})
+    await db.commit()
+    return RunResult(**result)

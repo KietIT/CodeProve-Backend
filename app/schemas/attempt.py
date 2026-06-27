@@ -23,3 +23,23 @@ class AttemptState(BaseModel):
 class SnapshotIn(BaseModel):
     version: int
     source_code: str
+
+
+class RunIn(BaseModel):
+    source_code: str
+    run_tests: bool = True
+
+
+class RunCase(BaseModel):
+    name: str
+    passed: bool
+    stdout: str = ""
+    error: str | None = None
+
+
+class RunResult(BaseModel):
+    passed: int
+    total: int
+    coverage: float
+    cases: list[RunCase]
+    runtime_error: str | None = None
