@@ -10,6 +10,8 @@ def clamp(lo: float, hi: float, x: float) -> float:
 
 
 def _understanding(f: AxisFeatures) -> float:
+    # NOTE (MVP limitation): problem_read_ratio defaults to 1.0 because the frontend does not
+    # yet instrument problem read-time, so U1 (rushed-start) only fires once that signal is sent.
     u1 = -3 if (f.first_prompt_delay_ms is not None and f.first_prompt_delay_ms < 20000
                 and f.problem_read_ratio < 0.6) else 0
     u2 = max(-8, -2 * f.u2_hits)

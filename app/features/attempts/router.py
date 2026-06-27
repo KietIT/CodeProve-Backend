@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +85,7 @@ async def submit(
     attempt = await service.require_attempt(db, attempt_id, user)
     await service.add_event(db, attempt_id, "SUBMIT", {})
     attempt.status = "submitted"
+    attempt.submitted_at = datetime.now(timezone.utc)
     questions = await scoring_service.generate_questions(db, attempt)
     await db.commit()
     return {"questions": questions}
