@@ -30,4 +30,7 @@ async def test_timeout_is_handled():
     cases = [{"input_data": "loop()", "expected_output": "None", "description": "t1", "weight": 1.0}]
     res = await run_tests(src, cases, timeout=1)
     assert res["passed"] == 0
+    assert res["total"] == 1
+    assert res["coverage"] == 0.0
+    assert len(res["cases"]) == 1
     assert res["runtime_error"] is not None

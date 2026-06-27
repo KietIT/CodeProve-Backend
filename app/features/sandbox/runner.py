@@ -40,11 +40,11 @@ async def run_tests(source_code: str, test_cases: list[dict], timeout: int) -> d
     with tempfile.TemporaryDirectory() as tmp:
         script = Path(tmp) / "runner.py"
         script.write_text(harness, encoding="utf-8")
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, "-I", str(script),
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        )
         try:
-            proc = await asyncio.create_subprocess_exec(
-                sys.executable, "-I", str(script),
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-            )
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except asyncio.TimeoutError:
             try:
@@ -53,6 +53,12 @@ async def run_tests(source_code: str, test_cases: list[dict], timeout: int) -> d
             except (ProcessLookupError, asyncio.TimeoutError):
                 pass
             return _result([], f"Timeout after {timeout}s", test_cases)
+        finally:
+            # Release the subprocess pipe transports so a killed process does not
+            # leak file descriptors (avoids the ProactorEventLoop ResourceWarning).
+            transport = getattr(proc, "_transport", None)
+            if transport is not None:
+                transport.close()
         if proc.returncode != 0 and not stdout:
             return _result([], (stderr.decode()[:500] or "Process error"), test_cases)
         try:
