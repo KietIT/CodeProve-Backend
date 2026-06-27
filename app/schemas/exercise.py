@@ -8,6 +8,7 @@ RUBRIC: list[list[str]] = [
 
 class ExerciseSummary(BaseModel):
     id: int
+    num: int  # 1-based position within its level (for display)
     code: str
     title: str
     difficulty: str

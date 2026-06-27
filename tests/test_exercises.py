@@ -25,5 +25,9 @@ async def test_list_and_detail(client, db_session, auth_headers):
     assert detail.status_code == 200
     body = detail.json()
     assert body["code"] == "CP-001"
+    assert body["num"] == 1
     assert body["rubric"][0] == ["Understanding", "25%"]
     assert "test_basic" in body["tests"]
+
+    fresher = next(g for g in groups if g["level"] == "fresher")
+    assert fresher["exercises"][0]["num"] == 1

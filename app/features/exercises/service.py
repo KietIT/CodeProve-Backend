@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Exercise, TestCase
@@ -16,16 +16,24 @@ async def list_grouped(db: AsyncSession, level: str | None) -> list[dict]:
     if level:
         q = q.where(Exercise.level == level)
     rows = (await db.execute(q)).scalars().all()
-    groups: dict[str, list[dict]] = {}
+    groups: dict[str, list[Exercise]] = {}
     for ex in rows:
-        groups.setdefault(ex.level, []).append({
-            "id": ex.id, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
-            "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level,
-        })
-    return [
-        {"level": lv, "name": _LEVEL_NAMES.get(lv, lv.title()), "exercises": groups[lv]}
-        for lv in _LEVEL_ORDER if lv in groups
-    ]
+        groups.setdefault(ex.level, []).append(ex)
+    result = []
+    for lv in _LEVEL_ORDER:
+        if lv not in groups:
+            continue
+        # Rows are ordered by code, so the 1-based position is the display number.
+        exercises = [
+            {
+                "id": ex.id, "num": i, "code": ex.code, "title": ex.title,
+                "difficulty": ex.difficulty, "acceptance": ex.acceptance,
+                "topics": _topics(ex), "level": ex.level,
+            }
+            for i, ex in enumerate(groups[lv], start=1)
+        ]
+        result.append({"level": lv, "name": _LEVEL_NAMES.get(lv, lv.title()), "exercises": exercises})
+    return result
 
 
 async def get_detail(db: AsyncSession, code: str) -> dict | None:
@@ -35,8 +43,13 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
     tests = (await db.execute(
         select(TestCase).where(TestCase.exercise_id == ex.id).order_by(TestCase.order_index)
     )).scalars().all()
+    # Display number = 1-based position within the level (codes sort numerically here).
+    num = (await db.execute(
+        select(func.count()).select_from(Exercise)
+        .where(Exercise.level == ex.level, Exercise.code <= ex.code)
+    )).scalar_one()
     return {
-        "id": ex.id, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
+        "id": ex.id, "num": num, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
         "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level,
         "summary": ex.summary, "language": ex.language, "starter": ex.starter_code,
         "hint": ex.hint, "tests": [t.description for t in tests],
