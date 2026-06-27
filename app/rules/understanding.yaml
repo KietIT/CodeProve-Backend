@@ -1,0 +1,15 @@
+- id: U1-rushed-start
+  axis: understanding
+  severity: high
+  thresholds: { firstPromptDelaySec: 20, problemReadRatio: 0.6 }
+  effect: { penalty: -3 }
+- id: U2-explain-again
+  axis: understanding
+  severity: medium
+  thresholds: {}
+  effect: { perHit: -2, cap: -8 }
+- id: U3-explain-back
+  axis: understanding
+  severity: high
+  thresholds: {}
+  effect: { weightExplain: 0.6, weightPre: 0.4 }

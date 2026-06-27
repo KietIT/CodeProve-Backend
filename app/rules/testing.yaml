@@ -1,0 +1,12 @@
+- id: T1-has-tests
+  axis: testing
+  thresholds: {}
+  effect: { perHit: 4, cap: 20 }
+- id: T2-coverage
+  axis: testing
+  thresholds: { minCoverage: 0.7 }
+  effect: { bonus: 4 }
+- id: T0-none
+  axis: testing
+  thresholds: {}
+  effect: { zeroIfNoTests: true }

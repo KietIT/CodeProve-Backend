@@ -1,0 +1,12 @@
+- id: D1-fix-success
+  axis: debugging
+  thresholds: {}
+  effect: { perHit: 6, cap: 20 }
+- id: D2-ai-dependent
+  axis: debugging
+  thresholds: {}
+  effect: { perHit: -4 }
+- id: D-base
+  axis: debugging
+  thresholds: {}
+  effect: { base: 8 }

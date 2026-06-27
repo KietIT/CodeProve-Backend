@@ -1,0 +1,20 @@
+- id: V1-trap-caught
+  axis: verification
+  thresholds: {}
+  effect: { bonus: 8 }
+- id: V1b-trap-missed
+  axis: verification
+  thresholds: {}
+  effect: { penalty: -8 }
+- id: V2-speed-accept
+  axis: verification
+  thresholds: { minLoc: 20, withinSec: 15 }
+  effect: { perHit: -4 }
+- id: V3-paste-blind
+  axis: verification
+  thresholds: { minTotalLoc: 50 }
+  effect: { penalty: -5 }
+- id: V-base
+  axis: verification
+  thresholds: {}
+  effect: { base: 12 }

@@ -1,0 +1,20 @@
+- id: P1-lazy-prompt
+  axis: prompting
+  severity: medium
+  thresholds: { minChars: 30, maxRatio: 0.3 }
+  effect: { perHit: -2, capScoreIfRatio: 12 }
+- id: P2-repeated
+  axis: prompting
+  severity: medium
+  thresholds: { minCluster: 3, similarity: 0.85 }
+  effect: { perCluster: -3 }
+- id: P3-keyword-fit
+  axis: prompting
+  severity: low
+  thresholds: { minKeywords: 2 }
+  effect: { perHit: 2, cap: 8 }
+- id: P4-no-constraint
+  axis: prompting
+  severity: low
+  thresholds: {}
+  effect: { perHit: -1 }

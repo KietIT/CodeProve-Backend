@@ -1,0 +1,16 @@
+- id: H1-user-correct
+  axis: hypothesis
+  thresholds: {}
+  effect: { perHit: 4, cap: 20 }
+- id: H2-ai-rescue
+  axis: hypothesis
+  thresholds: {}
+  effect: { perHit: -4 }
+- id: H3-no-plan
+  axis: hypothesis
+  thresholds: {}
+  effect: { capScore: 10 }
+- id: H-base
+  axis: hypothesis
+  thresholds: {}
+  effect: { base: 8 }
