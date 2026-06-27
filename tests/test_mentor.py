@@ -53,6 +53,14 @@ async def _seed_attempt(client, db_session, auth_headers, trap=True):
     return r.json()["attempt_id"]
 
 
+async def _events(db_session, attempt_id):
+    from sqlalchemy import select
+
+    from app.models import Event
+
+    return (await db_session.execute(select(Event).where(Event.attempt_id == attempt_id))).scalars().all()
+
+
 async def test_mentor_injects_error_once(client, db_session, auth_headers):
     aid = await _seed_attempt(client, db_session, auth_headers, trap=True)
     r1 = await client.post(
@@ -68,6 +76,23 @@ async def test_mentor_injects_error_once(client, db_session, auth_headers):
     )
     assert r2.json()["injected_error"] is False  # only once per attempt
 
+    # PROMPT must record matched domain keywords and AI_REPLY must flag the injection.
+    events = await _events(db_session, aid)
+    prompt_ev = next(e for e in events if e.type == "PROMPT")
+    assert set(prompt_ev.payload["keywordsMatched"]) >= {"hash map", "target"}
+    ai_ev = next(e for e in events if e.type == "AI_REPLY")
+    assert ai_ev.payload["injectedError"] is True
+
+
+async def test_no_trap_no_injection(client, db_session, auth_headers):
+    aid = await _seed_attempt(client, db_session, auth_headers, trap=False)
+    r = await client.post(
+        f"/api/attempts/{aid}/mentor",
+        json={"message": "any hint about a hash map?"},
+        headers=auth_headers,
+    )
+    assert r.json()["injected_error"] is False
+
 
 async def test_hypothesis_records_event(client, db_session, auth_headers):
     aid = await _seed_attempt(client, db_session, auth_headers)
@@ -77,3 +102,7 @@ async def test_hypothesis_records_event(client, db_session, auth_headers):
         headers=auth_headers,
     )
     assert r.json()["correct"] is True
+
+    events = await _events(db_session, aid)
+    hyp = next(e for e in events if e.type == "HYPOTHESIS")
+    assert hyp.payload == {"proposedBy": "user", "correct": True}
