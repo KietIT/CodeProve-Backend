@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
 from app.models import User
-from app.schemas.auth import LoginIn, SignupIn
+from app.schemas.auth import LoginIn, SignupIn, UpdateMeIn
 
 
 async def create_user(db: AsyncSession, data: SignupIn) -> User:
@@ -12,6 +12,13 @@ async def create_user(db: AsyncSession, data: SignupIn) -> User:
         raise ValueError("email_taken")
     user = User(full_name=data.full_name, email=data.email, password_hash=hash_password(data.password))
     db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def update_user(db: AsyncSession, user: User, data: UpdateMeIn) -> User:
+    user.full_name = data.full_name
     await db.commit()
     await db.refresh(user)
     return user

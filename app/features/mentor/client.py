@@ -15,8 +15,16 @@ class MentorClient:
         self._client = AsyncOpenAI(api_key=settings.openai_api_key)
         self._model = settings.openai_model
 
-    async def chat(self, user_message: str, history: list[dict], inject_error: bool) -> dict:
+    async def chat(
+        self,
+        user_message: str,
+        history: list[dict],
+        inject_error: bool,
+        context: str = "",
+    ) -> dict:
         system = MENTOR_SYSTEM + (MENTOR_INJECT_SUFFIX if inject_error else "")
+        if context:
+            system = f"{system}\n\n{context}"
         messages = [{"role": "system", "content": system}, *history, {"role": "user", "content": user_message}]
         resp = await self._client.chat.completions.create(
             model=self._model, messages=messages, temperature=0.4, max_tokens=400
