@@ -39,6 +39,9 @@ class AxisFeatures:
 
 def compute_features(events: list[dict], explain_score: float | None) -> AxisFeatures:
     f = AxisFeatures(explain_score=explain_score or 0.0)
+    # Work on a timestamp-ordered copy so every "first"/transition derivation is
+    # order-robust regardless of append order (pure: the input list is not mutated).
+    events = sorted(events, key=lambda e: e["ts"])
     open_ts = next((e["ts"] for e in events if e["type"] == "OPEN"), None)
     first_prompt = next((e for e in events if e["type"] == "PROMPT"), None)
     first_code = next((e for e in events if e["type"] == "CODE_EDIT"), None)
@@ -97,11 +100,10 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
         f.has_v1 = edited_after
         f.has_v1b = not edited_after
     # V2 speed-accept: an AI reply with >=20 loc followed by the next event within 15s.
-    ordered = sorted(events, key=lambda e: e["ts"])
-    for i, e in enumerate(ordered):
+    for i, e in enumerate(events):
         if e["type"] == "AI_REPLY":
             loc = sum(c.get("loc", 0) for c in e["payload"].get("aiCode", []))
-            if loc >= 20 and i + 1 < len(ordered) and (ordered[i + 1]["ts"] - e["ts"]) < 15000:
+            if loc >= 20 and i + 1 < len(events) and (events[i + 1]["ts"] - e["ts"]) < 15000:
                 f.v2_count += 1
     total_ai_loc = sum(sum(c.get("loc", 0) for c in e["payload"].get("aiCode", [])) for e in replies)
     if total_ai_loc >= 50:
@@ -126,6 +128,8 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
             f.d1_count += 1
         prev_failed = not passed
     f.d1_count = min(f.d1_count, 3)
+    # D2 (ai-dependent) is intentionally left 0 for the MVP: cleanly distinguishing an
+    # AI-driven fix from a user fix needs richer telemetry than is collected today.
 
     # Integrity raw signals
     f.paste_flags = sum(1 for e in events if "BURST_PASTE" in e.get("integrity_flags", []))

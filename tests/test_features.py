@@ -25,3 +25,77 @@ def test_prompting_and_verification_features():
     assert f.prompt_count == 1
     assert f.has_v1 is True            # injected error then edited before submit
     assert f.first_prompt_delay_ms == 30000
+
+
+def test_hypothesis_and_debugging_features():
+    events = [
+        _ev("OPEN", 0),
+        _ev("HYPOTHESIS", 100, {"proposedBy": "user", "correct": True}),
+        _ev("HYPOTHESIS", 150, {"proposedBy": "ai"}),
+        _ev("CODE_EDIT", 200, {"charsAdded": 10}),
+        _ev("RUN", 300, {"passed": False}),
+        _ev("CODE_EDIT", 350, {"charsAdded": 5}),
+        _ev("RUN", 400, {"passed": True}),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.h1_count == 1
+    assert f.h2_count == 1
+    assert f.has_hypothesis_before_code is True   # hypothesis at 100 precedes first code at 200
+    assert f.d1_count == 1                        # one fail -> pass cycle
+
+
+def test_testing_features():
+    events = [
+        _ev("OPEN", 0),
+        _ev("TEST_RUN", 100, {"passed": False, "testCount": 4, "coverage": 0.5}),
+        _ev("TEST_RUN", 200, {"passed": True, "testCount": 4, "coverage": 0.85}),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.has_test_run is True
+    assert f.t1_count == 4
+    assert f.best_coverage == 0.85
+
+
+def test_paste_blind_and_integrity():
+    events = [
+        _ev("OPEN", 0),
+        _ev("PROMPT", 100, {"messageLength": 50}),
+        _ev("AI_REPLY", 200, {"aiCode": [{"loc": 60}]}),   # >=50 loc, no edit after -> paste-blind
+        _ev("PASTE", 300, {"length": 200}, ["BURST_PASTE"]),
+        _ev("FOCUS_LOST", 400),
+        _ev("SUBMIT", 500),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.has_v3 is True
+    assert f.paste_flags == 1
+    assert f.focus_lost == 1
+    assert f.integrity_flag_total == 2
+
+
+def test_prompting_clusters_and_keywords():
+    dup = {"messageLength": 50, "keywordsMatched": ["a", "b"], "messageText": "fix my loop please"}
+    events = [
+        _ev("OPEN", 0),
+        _ev("PROMPT", 1, dict(dup)),
+        _ev("PROMPT", 2, dict(dup)),
+        _ev("PROMPT", 3, dict(dup)),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.p2_clusters == 1          # three near-duplicate prompts -> one cluster
+    assert f.p3_hits == 3              # two keywords each (capped at 4)
+    assert f.p4_hits == 3              # none mention a constraint/format hint
+    assert f.p1_hits == 0             # length 50 is not lazy
+
+
+def test_features_are_timestamp_ordered_not_list_ordered():
+    # Events deliberately out of list order; derivations must use ts order.
+    events = [
+        _ev("RUN", 400, {"passed": True}),
+        _ev("OPEN", 0),
+        _ev("RUN", 300, {"passed": False}),
+        _ev("PROMPT", 200, {"messageLength": 5}),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.first_prompt_delay_ms == 200    # 200 - 0
+    assert f.d1_count == 1                   # fail(300) -> pass(400) once ts-ordered
+    assert f.p1_hits == 1
