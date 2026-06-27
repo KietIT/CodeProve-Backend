@@ -29,3 +29,9 @@ async def test_dashboard_empty_then_populated(client, db_session, auth_headers):
     assert round(body["kpis"]["avg_score"], 1) == 84.0
     assert len(body["radar"]) == 6
     assert body["recent"][0]["title"] == "Two-Sum"
+    assert body["recent"][0]["ok"] is True            # 84 >= 50
+    assert body["trend"] == [84.0]
+    # radar value = axis score * 5; understanding 17 -> 85
+    radar = {r["name"]: r["value"] for r in body["radar"]}
+    assert radar["Understanding"] == 85.0
+    assert radar["Testing"] == 60.0                    # nullable axis present (12 * 5)
