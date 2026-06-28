@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 10080
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    frontend_url: str = "http://localhost:3000"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
     # NoDecode skips pydantic-settings' JSON decoding so split_origins below
     # parses a comma-separated string straight from the .env value.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]

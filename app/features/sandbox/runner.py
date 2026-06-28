@@ -3,6 +3,7 @@ process with a timeout. MVP-grade isolation (not container-level). Interface is
 stable so a Docker backend can replace it later."""
 import asyncio
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -40,32 +41,27 @@ async def run_tests(source_code: str, test_cases: list[dict], timeout: int) -> d
     with tempfile.TemporaryDirectory() as tmp:
         script = Path(tmp) / "runner.py"
         script.write_text(harness, encoding="utf-8")
-        proc = await asyncio.create_subprocess_exec(
-            sys.executable, "-I", str(script),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        )
         try:
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
-            try:
-                proc.kill()
-                await asyncio.wait_for(proc.wait(), timeout=2)
-            except (ProcessLookupError, asyncio.TimeoutError):
-                pass
+            proc = await asyncio.to_thread(_run_script, script, timeout)
+        except subprocess.TimeoutExpired:
             return _result([], f"Timeout after {timeout}s", test_cases)
-        finally:
-            # Release the subprocess pipe transports so a killed process does not
-            # leak file descriptors (avoids the ProactorEventLoop ResourceWarning).
-            transport = getattr(proc, "_transport", None)
-            if transport is not None:
-                transport.close()
-        if proc.returncode != 0 and not stdout:
-            return _result([], (stderr.decode()[:500] or "Process error"), test_cases)
+        if proc.returncode != 0 and not proc.stdout:
+            return _result([], (proc.stderr.decode()[:500] or "Process error"), test_cases)
         try:
-            data = json.loads(stdout.decode().strip().splitlines()[-1])
+            data = json.loads(proc.stdout.decode().strip().splitlines()[-1])
         except (ValueError, IndexError):
             return _result([], "Invalid runner output", test_cases)
         return _result(data["results"], data["runtime_error"], test_cases)
+
+
+def _run_script(script: Path, timeout: int) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        [sys.executable, "-I", str(script)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+    )
 
 
 def _result(cases: list[dict], runtime_error: str | None, test_cases: list[dict]) -> dict:

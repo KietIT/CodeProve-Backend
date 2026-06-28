@@ -34,6 +34,12 @@ class AxisFeatures:
     d2_count: int = 0
     paste_flags: int = 0
     focus_lost: int = 0
+    tab_hidden: int = 0
+    window_blur: int = 0
+    fullscreen_exits: int = 0
+    copy_count: int = 0
+    cut_count: int = 0
+    paste_count: int = 0
     integrity_flag_total: int = field(default=0)
 
 
@@ -131,8 +137,25 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     # D2 (ai-dependent) is intentionally left 0 for the MVP: cleanly distinguishing an
     # AI-driven fix from a user fix needs richer telemetry than is collected today.
 
-    # Integrity raw signals
-    f.paste_flags = sum(1 for e in events if "BURST_PASTE" in e.get("integrity_flags", []))
+    # Integrity raw signals. FOCUS_LOST is kept for legacy sessions; new sessions
+    # emit specific tab/window/fullscreen events.
+    f.paste_flags = sum(
+        1
+        for e in events
+        if e["type"] == "BURST_PASTE" or "BURST_PASTE" in e.get("integrity_flags", [])
+    )
     f.focus_lost = sum(1 for e in events if e["type"] == "FOCUS_LOST")
-    f.integrity_flag_total = f.paste_flags + f.focus_lost
+    f.tab_hidden = sum(1 for e in events if e["type"] == "TAB_HIDDEN")
+    f.window_blur = sum(1 for e in events if e["type"] == "WINDOW_BLUR")
+    f.fullscreen_exits = sum(1 for e in events if e["type"] == "FULLSCREEN_EXIT")
+    f.copy_count = sum(1 for e in events if e["type"] == "COPY")
+    f.cut_count = sum(1 for e in events if e["type"] == "CUT")
+    f.paste_count = sum(1 for e in events if e["type"] == "PASTE")
+    f.integrity_flag_total = (
+        f.paste_flags
+        + f.focus_lost
+        + f.tab_hidden
+        + f.window_blur
+        + f.fullscreen_exits
+    )
     return f
