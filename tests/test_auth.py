@@ -16,6 +16,30 @@ async def test_signup_then_me(client):
     assert me.json()["full_name"] == "Jane Doe"
 
 
+async def test_signup_accepts_local_email_domain(client):
+    r = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Local User", "email": "test001@codeprove.local", "password": "password123"},
+    )
+    assert r.status_code == 200
+    assert r.json()["user"]["email"] == "test001@codeprove.local"
+
+
+async def test_auth_normalizes_email(client):
+    r = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Case User", "email": "  CaseUser@CodeProve.Local  ", "password": "password123"},
+    )
+    assert r.status_code == 200
+    assert r.json()["user"]["email"] == "caseuser@codeprove.local"
+
+    login = await client.post(
+        "/api/auth/login",
+        json={"email": "CASEUSER@CODEPROVE.LOCAL", "password": "password123"},
+    )
+    assert login.status_code == 200
+
+
 async def test_update_me_changes_full_name(client):
     r = await client.post(
         "/api/auth/signup",

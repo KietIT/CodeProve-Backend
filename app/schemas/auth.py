@@ -1,15 +1,32 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def normalize_email(v: str) -> str:
+    email = v.strip().lower()
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise ValueError("Enter a valid email address")
+    return email
 
 
 class SignupIn(BaseModel):
     full_name: str = Field(min_length=2)
-    email: EmailStr
+    email: str
     password: str = Field(min_length=8)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return normalize_email(v)
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    email: str
     password: str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return normalize_email(v)
 
 
 class UpdateMeIn(BaseModel):
