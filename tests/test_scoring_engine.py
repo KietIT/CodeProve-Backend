@@ -25,26 +25,37 @@ def test_strong_attempt_scores_high():
         _ev("SUBMIT", 70000, {}),
     ]
     res = score_attempt(events, explain_score=18.0)
-    assert res["axes"]["hypothesis"] >= 12      # base 8 + 4 (H1)
-    assert res["axes"]["verification"] >= 18    # base 12 + 8 (V1 caught)
+    assert res["axes"]["hypothesis"] >= 12      # 6 (logged) + 6 (H1 correct) + 6 (before code)
+    assert res["axes"]["verification"] >= 18    # 10 (V1 caught) + 4 (tested) + 4 (coverage)
     assert res["axes"]["testing"] > 0
-    assert res["axes"]["debugging"] >= 14       # base 8 + 6 (one fix cycle)
+    assert res["axes"]["debugging"] >= 14       # 6 + 8 (one fix cycle)
     assert 0 <= res["overall"] <= 100
-    assert res["overall"] > 75   # reported ~81; tight bound catches coefficient regressions
+    assert res["overall"] > 75   # earn-from-zero rubric still rewards a genuinely strong attempt
+
+
+def test_empty_attempt_scores_zero():
+    # A candidate who does nothing - no code, no hypothesis, no prompt, no test,
+    # and an empty explanation - must score 0 on every axis and 0 overall.
+    events = [_ev("OPEN", 0, {}), _ev("SUBMIT", 1000, {})]
+    res = score_attempt(events, explain_score=0.0)
+    for axis in ("understanding", "hypothesis", "prompting", "verification", "testing", "debugging"):
+        assert res["axes"][axis] == 0.0, f"{axis} should be 0 for an empty attempt"
+    assert res["overall"] == 0.0
 
 
 def test_disabled_axes_renormalize():
+    # Only understanding is earned (via explain-back); testing/debugging disabled.
+    # Overall must renormalize over the remaining active weights.
     events = [_ev("OPEN", 0, {}), _ev("SUBMIT", 1000, {})]
-    res = score_attempt(events, explain_score=0.0, testing_enabled=False, debugging_enabled=False)
+    res = score_attempt(events, explain_score=20.0, testing_enabled=False, debugging_enabled=False)
     assert res["axes"]["testing"] is None
     assert res["axes"]["debugging"] is None
-    # Baseline axes with empty events: understanding 8, hypothesis 8, prompting 14, verification 12.
-    # Active weights .25/.22/.18/.15 renormalize over 0.80; overall = 5*Σ(w/0.8 * axis) = 50.5.
-    assert res["axes"]["understanding"] == 8.0
-    assert res["axes"]["hypothesis"] == 8.0
-    assert res["axes"]["prompting"] == 14.0
-    assert res["axes"]["verification"] == 12.0
-    assert res["overall"] == 50.5
+    assert res["axes"]["understanding"] == 18.0   # 0.9 * 20, no code-engagement bonus
+    assert res["axes"]["hypothesis"] == 0.0
+    assert res["axes"]["prompting"] == 0.0
+    assert res["axes"]["verification"] == 0.0
+    # Active weights .25/.22/.18/.15 renormalize over 0.80; only understanding is non-zero.
+    assert res["overall"] == round(5 * (0.25 / 0.80) * 18.0, 2)
 
 
 def test_overall_is_100_when_all_active_axes_maxed():
@@ -58,7 +69,7 @@ def test_overall_is_100_when_all_active_axes_maxed():
     assert overall == 100.0
 
 
-def test_no_plan_caps_hypothesis():
-    events = [_ev("OPEN", 0, {}), _ev("CODE_EDIT", 1000, {}), _ev("SUBMIT", 2000, {})]
+def test_no_hypothesis_scores_zero_hypothesis():
+    events = [_ev("OPEN", 0, {}), _ev("CODE_EDIT", 1000, {"charsAdded": 20}), _ev("SUBMIT", 2000, {})]
     res = score_attempt(events, explain_score=0.0)
-    assert res["axes"]["hypothesis"] <= 10   # H3 no-plan cap
+    assert res["axes"]["hypothesis"] == 0.0   # coded but never logged a hypothesis

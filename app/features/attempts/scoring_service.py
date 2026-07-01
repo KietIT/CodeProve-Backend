@@ -95,7 +95,14 @@ async def _events_as_dicts(db: AsyncSession, attempt_id: int) -> list[dict]:
     ]
 
 
-async def generate_questions(db: AsyncSession, attempt: Attempt) -> list[str]:
+_FALLBACK_QUESTION = {
+    "vi": "Bằng lời của bạn, hãy giải thích vì sao lời giải của bạn là đúng.",
+    "en": "Explain in your own words why your solution is correct.",
+}
+
+
+async def generate_questions(db: AsyncSession, attempt: Attempt, locale: str = "en") -> list[str]:
+    locale = "vi" if locale == "vi" else "en"
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     code = (
         await db.execute(
@@ -105,11 +112,16 @@ async def generate_questions(db: AsyncSession, attempt: Attempt) -> list[str]:
         )
     ).scalars().first()
     src = code.source_code if code else "(no code submitted)"
+    lang_directive = (
+        "\nIMPORTANT: Write the questions in Vietnamese."
+        if locale == "vi"
+        else "\nIMPORTANT: Write the questions in English."
+    )
     out = await get_mentor_client().judge(
-        EXPLAIN_QUESTION_SYSTEM,
+        EXPLAIN_QUESTION_SYSTEM + lang_directive,
         f"Problem: {ex.summary}\nStudent code:\n{src}",
     )
-    questions = out.get("questions") or ["Explain in your own words why your solution is correct."]
+    questions = out.get("questions") or [_FALLBACK_QUESTION[locale]]
     return questions[:2]
 
 
@@ -117,12 +129,19 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     client = get_mentor_client()
     scores = []
     for a in answers:
-        verdict = await client.judge(
-            EXPLAIN_SCORE_SYSTEM,
-            f"Question: {a['question']}\nAnswer: {a['answer']}",
-        )
-        s = float(verdict.get("score", 0))
-        scores.append(max(0.0, min(20.0, s)))
+        answer_text = (a.get("answer") or "").strip()
+        # Guard against non-answers ("no", "idk", one word) earning credit from a
+        # lenient judge: a trivially short reply cannot demonstrate understanding.
+        if len(answer_text) < 15 or len(answer_text.split()) < 4:
+            s = 0.0
+        else:
+            verdict = await client.judge(
+                EXPLAIN_SCORE_SYSTEM,
+                f"Question: {a['question']}\nAnswer: {a['answer']}",
+            )
+            s = float(verdict.get("score", 0))
+        s = max(0.0, min(20.0, s))
+        scores.append(s)
         db.add(VerificationAnswer(attempt_id=attempt.id, question=a["question"], answer=a["answer"], score=s))
 
     explain_score = sum(scores) / len(scores) if scores else 0.0

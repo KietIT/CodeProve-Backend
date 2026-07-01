@@ -16,7 +16,10 @@ class AxisFeatures:
     explain_score: float = 0.0
     h1_count: int = 0
     h2_count: int = 0
+    hypothesis_count: int = 0
     has_hypothesis_before_code: bool = False
+    code_edits: int = 0
+    chars_added: int = 0
     p1_hits: int = 0
     p1_ratio: float = 0.0
     p2_clusters: int = 0
@@ -85,8 +88,15 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
         4,
     )
 
+    # Real-work signals: how much code the student actually typed. Used to gate
+    # scores so an untouched attempt cannot earn credit for "engagement".
+    code_edits = [e for e in events if e["type"] == "CODE_EDIT"]
+    f.code_edits = len(code_edits)
+    f.chars_added = sum(int(e["payload"].get("charsAdded", 0)) for e in code_edits)
+
     # Hypothesis
     hyps = [e for e in events if e["type"] == "HYPOTHESIS"]
+    f.hypothesis_count = len(hyps)
     f.h1_count = sum(1 for e in hyps if e["payload"].get("proposedBy") == "user" and e["payload"].get("correct"))
     f.h2_count = sum(1 for e in hyps if e["payload"].get("proposedBy") == "ai")
     if hyps and first_code:

@@ -79,6 +79,7 @@ async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
 @router.post("/{attempt_id}/submit")
 async def submit(
     attempt_id: int,
+    locale: str = "en",
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
@@ -86,7 +87,7 @@ async def submit(
     await service.add_event(db, attempt_id, "SUBMIT", {})
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now(timezone.utc)
-    questions = await scoring_service.generate_questions(db, attempt)
+    questions = await scoring_service.generate_questions(db, attempt, locale)
     await db.commit()
     return {"questions": questions}
 

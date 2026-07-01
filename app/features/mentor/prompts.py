@@ -18,6 +18,11 @@ EXPLAIN_QUESTION_SYSTEM = """You are assessing understanding. Given a coding pro
 student's final code, produce 1-2 short "explain-back" questions that probe whether they truly
 understand their own solution. Reply ONLY with JSON: {"questions": ["...", "..."]}."""
 
-EXPLAIN_SCORE_SYSTEM = """You score a student's explanation of their solution from 0 to 20,
-where 20 = deep, accurate understanding and 0 = no understanding / contradicts their code.
-Reply ONLY with JSON: {"score": <0-20 number>, "reason": "<one short sentence>"}."""
+EXPLAIN_SCORE_SYSTEM = """You score a student's explanation of their solution from 0 to 20.
+Be STRICT and evidence-based:
+- 0 = no explanation, a refusal, a non-answer ("no", "idk", "I don't know"), a single word/
+  phrase, restating the question, or anything that does not demonstrate real understanding.
+- 1-7 = vague or partially wrong.
+- 8-14 = correct but shallow.
+- 15-20 = accurate, specific, and shows genuine reasoning about the approach.
+When in doubt, score LOW. Reply ONLY with JSON: {"score": <0-20 number>, "reason": "<one short sentence>"}."""

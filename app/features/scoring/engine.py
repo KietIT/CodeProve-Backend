@@ -9,35 +9,60 @@ def clamp(lo: float, hi: float, x: float) -> float:
     return max(lo, min(hi, x))
 
 
+# ── Scoring philosophy (rev. 2026-07-01) ─────────────────────────────────────
+# Every axis is EARNED FROM ZERO: a candidate only scores by producing evidence
+# of that competency. An untouched attempt (no code, no hypothesis, no prompt,
+# no test, no real explanation) scores 0 on every axis and 0 overall - there is
+# no "baseline" credit for showing up. Penalties then push earned scores down.
+
+# A student is considered to have genuinely written code once they add a
+# meaningful amount of source beyond the starter scaffold.
+_REAL_CODE_MIN_CHARS = 10
+
+
+def _wrote_real_code(f: AxisFeatures) -> bool:
+    return f.chars_added >= _REAL_CODE_MIN_CHARS
+
+
 def _understanding(f: AxisFeatures) -> float:
-    # NOTE (MVP limitation): problem_read_ratio defaults to 1.0 because the frontend does not
-    # yet instrument problem read-time, so U1 (rushed-start) only fires once that signal is sent.
+    # Driven almost entirely by the explain-back score (0-20, LLM-judged). A tiny
+    # engagement bonus rewards actually writing code; shallow concept-only prompts
+    # and a rushed start reduce it. No explanation + no code => 0.
     u1 = -3 if (f.first_prompt_delay_ms is not None and f.first_prompt_delay_ms < 20000
                 and f.problem_read_ratio < 0.6) else 0
-    u2 = max(-8, -2 * f.u2_hits)
-    pre = 20 + (u1 + u2)  # u1, u2 are negative or zero
-    return clamp(0, 20, 0.6 * f.explain_score + 0.4 * pre)
+    engage = 2 if _wrote_real_code(f) else 0
+    return clamp(0, 20, 0.9 * f.explain_score + engage - 2 * f.u2_hits + u1)
 
 
 def _hypothesis(f: AxisFeatures) -> float:
-    base = 8
-    cap = 10 if not f.has_hypothesis_before_code else 20
-    return clamp(0, cap, base + 4 * f.h1_count - 4 * f.h2_count)
+    # No hypothesis logged => 0. Credit is for logging one, getting it right, and
+    # (most importantly) doing so before writing code.
+    if f.hypothesis_count == 0:
+        return 0.0
+    raw = 6 + 6 * f.h1_count + (6 if f.has_hypothesis_before_code else 0) - 4 * f.h2_count
+    return clamp(0, 20, raw)
 
 
 def _prompting(f: AxisFeatures) -> float:
+    # No prompt to Ciel => 0 (no prompting skill demonstrated). Otherwise reward
+    # constraint-aware, keyword-rich prompts; penalise lazy / duplicate ones.
+    if f.prompt_count == 0:
+        return 0.0
     cap = 12 if f.p1_ratio > 0.3 else 20
-    raw = 14 + 2 * f.p3_hits - 2 * f.p1_hits - 3 * f.p2_clusters - 1 * f.p4_hits
+    raw = 10 + 3 * f.p3_hits - 2 * f.p1_hits - 3 * f.p2_clusters - 1 * f.p4_hits
     return clamp(0, cap, raw)
 
 
 def _verification(f: AxisFeatures) -> float:
-    raw = (12
-           + (8 if f.has_v1 else 0)
-           - (8 if f.has_v1b else 0)
-           - 4 * f.v2_count
-           - (5 if f.has_v3 else 0))
-    return clamp(0, 20, raw)
+    # Earned by catching the planted bug and/or verifying with tests. Nothing
+    # verified => 0. Accepting buggy AI code or paste-blind behaviour subtracts.
+    credit = ((10 if f.has_v1 else 0)
+              + (4 if f.has_test_run else 0)
+              + (4 if f.best_coverage >= 0.7 else 0))
+    penalty = ((10 if f.has_v1b else 0)
+               + 4 * f.v2_count
+               + (6 if f.has_v3 else 0))
+    return clamp(0, 20, credit - penalty)
 
 
 def _testing(f: AxisFeatures) -> float:
@@ -47,7 +72,10 @@ def _testing(f: AxisFeatures) -> float:
 
 
 def _debugging(f: AxisFeatures) -> float:
-    return clamp(0, 20, 8 + 6 * f.d1_count - 4 * f.d2_count)
+    # No fail -> fix -> pass cycle => 0 (no debugging demonstrated).
+    if f.d1_count == 0:
+        return 0.0
+    return clamp(0, 20, 6 + 8 * f.d1_count - 4 * f.d2_count)
 
 
 def integrity_multiplier(f: AxisFeatures) -> float:
