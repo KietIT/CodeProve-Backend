@@ -31,7 +31,7 @@ EXERCISES: list[dict] = [
             "        seen[n] = i\n"
             "    return []"
         ),
-        "hint": "Before you code — what's your hypothesis for reaching O(n)? A hash map lets you check the complement in constant time.",
+        "hint": "Before you code - what's your hypothesis for reaching O(n)? A hash map lets you check the complement in constant time.",
         "domain_keywords": ["algorithms", "hash map", "complement", "indices", "target", "O(n)", "array"],
         "tests": [
             {
@@ -162,7 +162,7 @@ EXERCISES: list[dict] = [
         ),
         "hint": "Trace the loop by hand with n = 3. Which value never gets added to the total?",
         "domain_keywords": ["debugging", "off-by-one", "loop", "range", "sum", "integer"],
-        # Buggy starter uses range(1, n) — misses n itself.
+        # Buggy starter uses range(1, n) - misses n itself.
         # expected_output is the CORRECT answer; the buggy starter will FAIL these.
         "tests": [
             {
@@ -244,7 +244,7 @@ EXERCISES: list[dict] = [
             "        counts[word] = counts.get(word, 0) + 1\n"
             "    return counts"
         ),
-        "hint": "collections.Counter exists — but can you explain the dict-accumulation pattern it replaces?",
+        "hint": "collections.Counter exists - but can you explain the dict-accumulation pattern it replaces?",
         "domain_keywords": ["algorithms", "hash map", "frequency", "counter", "string", "word count"],
         "tests": [
             {
@@ -331,7 +331,7 @@ EXERCISES: list[dict] = [
         "hint": "Which key is not guaranteed to exist? Reach for .get() or an early return.",
         "domain_keywords": ["debugging", "null reference", "KeyError", "dict", "defensive coding", "guard"],
         # Buggy starter crashes on missing "profile". Expected outputs are for the fixed version.
-        # The buggy starter will crash on test 2 — that is intended.
+        # The buggy starter will crash on test 2 - that is intended.
         "tests": [
             {
                 "input_data": "display_name({'profile': {'name': 'Alice'}})",
@@ -921,7 +921,7 @@ EXERCISES: list[dict] = [
         # Both cases genuinely call load() on a temp file written in the same expression
         # (the sandbox ns has no __file__, so we create a guaranteed-present file inline).
         # A correct load returns the file's contents; a broken one (returns None / swallows
-        # the read) fails these. The exercise's real goal — exception chaining — is checked
+        # the read) fails these. The exercise's real goal - exception chaining - is checked
         # by hidden tests on the error path that single eval expressions cannot assert.
         "tests": [
             {
@@ -1083,7 +1083,7 @@ EXERCISES: list[dict] = [
         ),
         "hint": "The trick is binary-searching the partition, not merging. What invariant defines a correct cut?",
         "domain_keywords": ["algorithms", "binary search", "median", "partition", "O(log n)", "sorted arrays"],
-        # Starter has ... placeholder — expected outputs are for a correct implementation.
+        # Starter has ... placeholder - expected outputs are for a correct implementation.
         "tests": [
             {
                 "input_data": "find_median([1, 3], [2])",
@@ -1127,7 +1127,7 @@ EXERCISES: list[dict] = [
         "domain_keywords": ["api security", "middleware", "authentication", "authorization", "token validation", "logic bug"],
         # Both cases call require_auth with an inline mock request + handler.
         # A correct solution accepts a valid token (handler runs) and rejects a forged
-        # one (handler must NOT run) — the buggy "present != valid" starter fails test 2.
+        # one (handler must NOT run) - the buggy "present != valid" starter fails test 2.
         "tests": [
             {
                 "input_data": (
@@ -1358,7 +1358,7 @@ EXERCISES: list[dict] = [
             "    path = \"/uploads/\" + file.filename\n"
             "    open(path, \"wb\").write(file.read())"
         ),
-        "hint": "Path traversal, type spoofing, size limits — which risk do you close first, and why?",
+        "hint": "Path traversal, type spoofing, size limits - which risk do you close first, and why?",
         "domain_keywords": ["api security", "path traversal", "upload", "content-type", "size limit", "filename sanitization"],
         # save_upload tries to open a real filesystem path. Test the safe fix's logic using os.path.basename.
         "tests": [

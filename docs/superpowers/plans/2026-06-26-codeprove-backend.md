@@ -652,15 +652,15 @@ git commit -m "feat: add SQLAlchemy models and initial Alembic migration"
 
 **Files:**
 - Create: `app/seed/__init__.py`, `app/seed/exercises_seed.py`
-- Modify: `app/main.py` (add `python -m app.seed.exercises_seed` is standalone; no app change required) — instead add a CLI entrypoint in the seed file.
+- Modify: `app/main.py` (add `python -m app.seed.exercises_seed` is standalone; no app change required) - instead add a CLI entrypoint in the seed file.
 - Test: `tests/test_seed.py`
 
 **Interfaces:**
 - Produces: `EXERCISES: list[dict]` (each dict has keys matching `Exercise` columns minus id/created_at, plus `tests: list[dict]` for TestCase rows). `async def seed() -> int` returns number of exercises upserted (idempotent by `code`).
 
-**Source of truth:** `codeprove-web/lib/exercises.ts` — port every exercise (CP-001..CP-012 fresher, CP-101..CP-110 junior, CP-201..CP-208 senior). Map TS fields → DB: `id→code`, `title`, `difficulty`, `topics[0]→category` + keep all topics in `domain_keywords`, `summary`, `filename`→ignored (language drives filename), `language`, `acceptance`, `starter`→`starter_code`, `hint`, `level` from the owning level key. For each exercise, derive `domain_keywords` from `topics` + key nouns in the summary. Create 2 simple visible test cases per exercise from the reference behavior (input_data/expected_output as plain text the sandbox can compare).
+**Source of truth:** `codeprove-web/lib/exercises.ts` - port every exercise (CP-001..CP-012 fresher, CP-101..CP-110 junior, CP-201..CP-208 senior). Map TS fields → DB: `id→code`, `title`, `difficulty`, `topics[0]→category` + keep all topics in `domain_keywords`, `summary`, `filename`→ignored (language drives filename), `language`, `acceptance`, `starter`→`starter_code`, `hint`, `level` from the owning level key. For each exercise, derive `domain_keywords` from `topics` + key nouns in the summary. Create 2 simple visible test cases per exercise from the reference behavior (input_data/expected_output as plain text the sandbox can compare).
 
-- [ ] **Step 1: Write the seed data module (fresher level shown in full; junior/senior follow the identical shape — port each remaining exercise from lib/exercises.ts the same way)**
+- [ ] **Step 1: Write the seed data module (fresher level shown in full; junior/senior follow the identical shape - port each remaining exercise from lib/exercises.ts the same way)**
 
 `app/seed/exercises_seed.py`:
 ```python
@@ -723,7 +723,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run the seed**
 
 Run: `python -m app.seed.exercises_seed`
-Expected: `Seeded 30 exercises` (first run), `Seeded 0 exercises` (second run — idempotent).
+Expected: `Seeded 30 exercises` (first run), `Seeded 0 exercises` (second run - idempotent).
 
 - [ ] **Step 3: Write a seed verification test**
 
@@ -1055,12 +1055,12 @@ git commit -m "feat: JWT auth (signup, login, me) with password hashing"
 
 ---
 
-## Task 5: Frontend — API client, auth context, wire AuthPanel
+## Task 5: Frontend - API client, auth context, wire AuthPanel
 
 **Files:**
 - Create: `codeprove-web/lib/api.ts`, `codeprove-web/lib/auth.tsx`
 - Create: `codeprove-web/.env.local`
-- Modify: `codeprove-web/app/layout.tsx` (wrap with AuthProvider), `codeprove-web/components/sections/AuthPanel.tsx` (real submit), `codeprove-web/components/app/AppChrome.tsx` (logout + show user — only if AppTopNav exists; otherwise skip)
+- Modify: `codeprove-web/app/layout.tsx` (wrap with AuthProvider), `codeprove-web/components/sections/AuthPanel.tsx` (real submit), `codeprove-web/components/app/AppChrome.tsx` (logout + show user - only if AppTopNav exists; otherwise skip)
 - Test: manual (frontend) + backend already covered.
 
 **Interfaces:**
@@ -1161,7 +1161,7 @@ export function useAuth(): AuthCtx {
   return v;
 }
 ```
-> Fix import typo when implementing: `useCallback` not `useCallback` — actually only `createContext, useContext, useEffect, useState` are used; remove `useCallback`.
+> Fix import typo when implementing: `useCallback` not `useCallback` - actually only `createContext, useContext, useEffect, useState` are used; remove `useCallback`.
 
 - [ ] **Step 3: Wrap app with AuthProvider**
 
@@ -1396,7 +1396,7 @@ git commit -m "feat: exercises list and detail API"
 
 ---
 
-## Task 7: Frontend — fetch exercises in level picker + solve brief
+## Task 7: Frontend - fetch exercises in level picker + solve brief
 
 **Files:**
 - Modify: `codeprove-web/app/workspace/[level]/page.tsx`, `codeprove-web/lib/api.ts` (add `getExercises`, `getExerciseDetail`)
@@ -1434,7 +1434,7 @@ cd ../codeprove-web && git add lib/api.ts app/workspace components/app && git co
 
 ---
 
-## Task 8: Attempts — create/get, events ingest, snapshots
+## Task 8: Attempts - create/get, events ingest, snapshots
 
 **Files:**
 - Create: `app/schemas/attempt.py`, `app/schemas/event.py`, `app/features/attempts/__init__.py`, `app/features/attempts/service.py`, `app/features/attempts/router.py`
@@ -1869,7 +1869,7 @@ git commit -m "feat: subprocess sandbox + run-tests endpoint with telemetry"
 
 ---
 
-## Task 10: Frontend — interactive solve workspace (editor + telemetry + run)
+## Task 10: Frontend - interactive solve workspace (editor + telemetry + run)
 
 **Files:**
 - Create: `codeprove-web/lib/telemetry.ts`, `codeprove-web/components/app/SolveWorkspace.tsx`
@@ -1952,7 +1952,7 @@ cd ../codeprove-web && git add lib/api.ts lib/telemetry.ts components/app/SolveW
 **Files:**
 - Create: `app/features/mentor/__init__.py`, `app/features/mentor/prompts.py`, `app/features/mentor/client.py`, `app/features/mentor/service.py`, `app/features/mentor/router.py`, `app/schemas/mentor.py`
 - Modify: `app/main.py` (mount router)
-- Test: `tests/test_mentor.py` (mock OpenAI client — no live calls)
+- Test: `tests/test_mentor.py` (mock OpenAI client - no live calls)
 
 **Interfaces:**
 - Produces: `MentorClient.chat(messages:list[dict], inject_error:bool) -> {text:str, prompt_tokens:int, completion_tokens:int}`; `MentorClient.judge(system:str, user:str) -> dict` (parses JSON reply). A module-level `get_mentor_client()` returns a singleton; tests monkeypatch it.
@@ -2236,7 +2236,7 @@ git commit -m "feat: OpenAI AI mentor with guardrails, injected-error trap, hypo
 
 ---
 
-## Task 12: Frontend — wire chat + hypothesis
+## Task 12: Frontend - wire chat + hypothesis
 
 **Files:**
 - Modify: `codeprove-web/components/app/SolveWorkspace.tsx`, `codeprove-web/lib/api.ts`
@@ -2486,10 +2486,10 @@ git commit -m "feat: YAML rule files + rule loader for scoring engine"
 - Test: `tests/test_features.py`
 
 **Interfaces:**
-- Produces (`text_utils.py`): `similar(a:str, b:str) -> float` (0..1 via difflib); `cluster_near_duplicates(texts:list[str], threshold:float) -> int` (number of duplicate clusters with ≥minCluster members — but here returns count of clusters of size≥3).
+- Produces (`text_utils.py`): `similar(a:str, b:str) -> float` (0..1 via difflib); `cluster_near_duplicates(texts:list[str], threshold:float) -> int` (number of duplicate clusters with ≥minCluster members - but here returns count of clusters of size≥3).
 - Produces (`features.py`): `@dataclass AxisFeatures` and `compute_features(events: list[dict], explain_score: float | None) -> AxisFeatures` where each event is `{"type":str, "ts":int, "payload":dict, "integrity_flags":list}`. Fields needed by the engine (Task 15):
   - `first_prompt_delay_ms:int|None`, `problem_read_ratio:float` (from OPEN payload or default 1.0),
-  - `u2_hits:int` (AI_REPLY count flagged basic-concept — approximated: AI_REPLY whose matching PROMPT had messageLength<40 and no keywords), `explain_score:float`,
+  - `u2_hits:int` (AI_REPLY count flagged basic-concept - approximated: AI_REPLY whose matching PROMPT had messageLength<40 and no keywords), `explain_score:float`,
   - `h1_count:int`, `h2_count:int`, `has_hypothesis_before_code:bool`,
   - `p1_hits:int`, `p1_ratio:float`, `p2_clusters:int`, `p3_hits:int`, `p4_hits:int`, `prompt_count:int`,
   - `has_v1:bool`, `has_v1b:bool`, `v2_count:int`, `has_v3:bool`,
@@ -3151,7 +3151,7 @@ git commit -m "feat: submit + explain-back flow generating persisted fluency rep
 
 ---
 
-## Task 17: Frontend — wire Submit→explain-back modal + Feedback page
+## Task 17: Frontend - wire Submit→explain-back modal + Feedback page
 
 **Files:**
 - Modify: `codeprove-web/components/app/SolveWorkspace.tsx` (submit flow + modal), `codeprove-web/app/feedback/page.tsx` (fetch report), `codeprove-web/lib/api.ts`
@@ -3187,7 +3187,7 @@ export const getReport = (id: number) => apiFetch<ReportOut>(`/attempts/${id}/re
 
 - [ ] **Step 4: Convert Feedback page to fetch real data**
 
-`app/feedback/page.tsx` → client component reading `useSearchParams().get("attempt")`, `getReport(id)`. Map: score ring uses `overall`; "Performance by axis" bars use `axes_pct` (six axes; show "—" for null testing/debugging); timeline from `report.timeline`; strengths/risks from `feedback`. Add an Integrity badge (green/yellow/red) near the header. Keep all existing visual markup; only replace the hardcoded `dims`, `timeline`, `score` with fetched values. Handle loading + missing-attempt states.
+`app/feedback/page.tsx` → client component reading `useSearchParams().get("attempt")`, `getReport(id)`. Map: score ring uses `overall`; "Performance by axis" bars use `axes_pct` (six axes; show "-" for null testing/debugging); timeline from `report.timeline`; strengths/risks from `feedback`. Add an Integrity badge (green/yellow/red) near the header. Keep all existing visual markup; only replace the hardcoded `dims`, `timeline`, `score` with fetched values. Handle loading + missing-attempt states.
 
 - [ ] **Step 5: Manual verification (full loop)**
 
@@ -3360,7 +3360,7 @@ Add to `lib/api.ts`:
 export type DashboardOut = { kpis: { completed: number; streak: number; avg_score: number }; radar: { name: string; value: number }[]; trend: number[]; recent: { title: string; meta: string; status: string; score: number | null; ok: boolean }[] };
 export const getDashboard = () => apiFetch<DashboardOut>("/dashboard");
 ```
-`app/dashboard/page.tsx` → client component calling `getDashboard()`. Map: KPI cards from `kpis`; radar polygon from `radar` (convert each 0..100 value to the existing radar geometry); trend area chart from `trend`; "Recent attempts" list from `recent`; "Performance by axis" bars from `radar`. Keep all existing SVG/markup; only replace the hardcoded arrays. Handle the empty state ("No attempts yet — start a challenge").
+`app/dashboard/page.tsx` → client component calling `getDashboard()`. Map: KPI cards from `kpis`; radar polygon from `radar` (convert each 0..100 value to the existing radar geometry); trend area chart from `trend`; "Recent attempts" list from `recent`; "Performance by axis" bars from `radar`. Keep all existing SVG/markup; only replace the hardcoded arrays. Handle the empty state ("No attempts yet - start a challenge").
 
 - [ ] **Step 6: Manual verification**
 
@@ -3407,12 +3407,12 @@ Audit every interactive element. For each currently non-functional control, eith
 - SSO Google/GitHub buttons in `AuthPanel.tsx`: add `disabled` + `title="Coming soon"`.
 - "Clear" button in solve Test runner: wire to clear the results panel state.
 - "Forgot password?" link: point to a `mailto:` or disable with tooltip.
-- "Next challenge" / "Back to dashboard" on feedback: already `<Link>` — verify targets exist.
+- "Next challenge" / "Back to dashboard" on feedback: already `<Link>` - verify targets exist.
 - Navbar/footer links: verify each route renders (marketing pages already exist).
 
 - [ ] **Step 3: Write the RUNBOOK**
 
-`docs/RUNBOOK.md`: exact steps — (1) `docker compose up -d db`; (2) `pip install -r requirements.txt`; (3) `cp .env.example .env` + fill `OPENAI_API_KEY`, `JWT_SECRET`; (4) `alembic upgrade head`; (5) `python -m app.seed.exercises_seed`; (6) `uvicorn app.main:app --reload`; (7) frontend `npm install && npm run dev`; (8) open `http://localhost:3000`.
+`docs/RUNBOOK.md`: exact steps - (1) `docker compose up -d db`; (2) `pip install -r requirements.txt`; (3) `cp .env.example .env` + fill `OPENAI_API_KEY`, `JWT_SECRET`; (4) `alembic upgrade head`; (5) `python -m app.seed.exercises_seed`; (6) `uvicorn app.main:app --reload`; (7) frontend `npm install && npm run dev`; (8) open `http://localhost:3000`.
 
 - [ ] **Step 4: Full backend test suite**
 
@@ -3446,5 +3446,5 @@ cd ../codeprove-web && git add -A && git commit -m "fix: disable not-yet-impleme
 
 - **Spec coverage:** Auth (T4-5), Exercises (T6-7), Event stream/append-only (T2,T8), Sandbox/NFR-1-ish (T9), AI Mentor + guardrail + injected error + T5 (T11-12), Rule Engine YAML/NFR-2 spirit (T13), 6-axis Scoring with exact formulas + renormalization (T14-15), Submit/explain-back/U3 (T16), Feedback radar+feedback+integrity badge (T17), Dashboard week-over-week trend (T18), Anti-cheat layer-1 signals + 3-level Integrity (T8 flags, T16/T19), DoD §11.2 (T19). Testing/Debugging axes enabled with enable flags + renormalization (T15). Out-of-scope items (full DSL parser, Docker sandbox, SSO, B2B, dynamic variants) explicitly deferred per spec decisions.
 - **Type consistency:** `add_event(db, attempt_id, type_, payload, ts, flags)`, `require_attempt`, `score_attempt(...)->{"axes","overall","features"}`, `compute_features(events, explain_score)->AxisFeatures`, `get_mentor_client()` (patched in tests in both `client` and consuming modules), `ReportOut` shape consistent across submit/explain-back/report and frontend types.
-- **Placeholder note:** Task 3 seed deliberately ships full data for CP-001 and instructs porting the remaining 29 from `lib/exercises.ts` using the identical key shape — this is data entry from an in-repo source of truth, not a logic placeholder; the file must be fully expanded before running (`test_seed` enforces ≥12/≥10/≥8 per level).
+- **Placeholder note:** Task 3 seed deliberately ships full data for CP-001 and instructs porting the remaining 29 from `lib/exercises.ts` using the identical key shape - this is data entry from an in-repo source of truth, not a logic placeholder; the file must be fully expanded before running (`test_seed` enforces ≥12/≥10/≥8 per level).
 - **Known implementer cleanups flagged inline:** remove `useCallback` import in `auth.tsx`; delete the throwaway `WEIGHTS_SCALE` line in `engine.py`; add JSONB→JSON SQLite variant only if tests raise.

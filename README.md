@@ -2,7 +2,7 @@
 
 AI-powered programming assessment API built with FastAPI.
 
-> **Running the full stack?** See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for step-by-step instructions covering the database, backend, and frontend — including the end-to-end Definition of Done checklist.
+> **Running the full stack?** See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for step-by-step instructions covering the database, backend, and frontend - including the end-to-end Definition of Done checklist.
 
 ## Quick start (backend only)
 

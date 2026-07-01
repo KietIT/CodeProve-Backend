@@ -42,7 +42,7 @@ services:
   #
   # Default = QUICK tunnel: prints a free https://<random>.trycloudflare.com URL
   # in `docker compose logs tunnel`. The URL is ephemeral (changes if the tunnel
-  # restarts) — fine for demo/testing.
+  # restarts) - fine for demo/testing.
   #
   # For a STABLE URL: create a Named Tunnel in the Cloudflare Zero Trust
   # dashboard, put TUNNEL_TOKEN in .env, and swap the command for:

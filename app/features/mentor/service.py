@@ -40,7 +40,7 @@ def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
     """Compose the per-attempt context block injected into Ciel's system prompt
     so it can answer questions about *this* exercise instead of asking which one."""
     parts = [
-        "CURRENT EXERCISE CONTEXT — the student is working on the exercise below.",
+        "CURRENT EXERCISE CONTEXT - the student is working on the exercise below.",
         "When they say \"this exercise\" / \"bài này\" / \"bài tập này\", they mean THIS one;",
         "explain it directly using the details here, but still NEVER write the full solution.",
         f"- Title: {ex.title}",

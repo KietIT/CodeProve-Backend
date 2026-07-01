@@ -148,7 +148,7 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     # AI-driven fix from a user fix needs richer telemetry than is collected today.
 
     # Integrity raw signals. A PASTE_BLOCKED event means the student *tried* to
-    # paste (e.g. an answer copied from another AI) and the editor prevented it —
+    # paste (e.g. an answer copied from another AI) and the editor prevented it -
     # that intent is as strong a signal as a burst paste, so it counts the same.
     # FOCUS_LOST is kept for legacy sessions; new sessions emit specific
     # tab/window/fullscreen events.

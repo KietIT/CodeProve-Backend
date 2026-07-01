@@ -1,4 +1,4 @@
-# CodeProve — Runbook
+# CodeProve - Runbook
 
 How to run the full CodeProve stack locally from scratch.
 
@@ -15,7 +15,7 @@ How to run the full CodeProve stack locally from scratch.
 
 ---
 
-## Step 1 — Start the database
+## Step 1 - Start the database
 
 ```powershell
 docker compose up -d db
@@ -31,7 +31,7 @@ Expected: `codeprove-db` → `running (healthy)`.
 
 ---
 
-## Step 2 — Create the Python virtual environment
+## Step 2 - Create the Python virtual environment
 
 ```powershell
 python -m venv .venv
@@ -42,7 +42,7 @@ On macOS / Linux replace `.venv\Scripts\python.exe` with `.venv/bin/python`.
 
 ---
 
-## Step 3 — Configure environment variables
+## Step 3 - Configure environment variables
 
 ```powershell
 copy .env.example .env
@@ -59,7 +59,7 @@ Leave the other variables at their defaults for local development.
 
 ---
 
-## Step 4 — Run database migrations
+## Step 4 - Run database migrations
 
 ```powershell
 .venv\Scripts\python.exe -m alembic upgrade head
@@ -67,7 +67,7 @@ Leave the other variables at their defaults for local development.
 
 ---
 
-## Step 5 — Seed exercises
+## Step 5 - Seed exercises
 
 ```powershell
 .venv\Scripts\python.exe -m app.seed.exercises_seed
@@ -77,7 +77,7 @@ Expected output: `Seeded X exercises.`
 
 ---
 
-## Step 6 — Start the API server
+## Step 6 - Start the API server
 
 ```powershell
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload
@@ -88,7 +88,7 @@ Health check: `curl http://localhost:8000/health` → `{"status":"ok"}`.
 
 ---
 
-## Step 7 — Start the frontend
+## Step 7 - Start the frontend
 
 In a **separate terminal**, from the `codeprove-web` directory:
 
@@ -110,7 +110,7 @@ npm run dev
 
 ---
 
-## Step 8 — Open the app
+## Step 8 - Open the app
 
 Navigate to <http://localhost:3000>.
 
@@ -120,12 +120,12 @@ Navigate to <http://localhost:3000>.
 
 Tick each item manually after completing Steps 1–8.
 
-- [ ] **Auth** — Signup → login → `/me` works; JWT token persists across page reload.
-- [ ] **Exercises load** — Exercises appear in the level picker and solve workspace (fetched from API, not hardcoded).
-- [ ] **Editor + telemetry** — Editor is editable; `CODE_EDIT`, `PASTE`, and `FOCUS_LOST` events are recorded in the `events` table.
-- [ ] **Run tests** — "Run tests" button executes real code in the sandbox and shows PASS/FAIL per test case.
-- [ ] **AI Mentor guardrail** — Ciel answers naturally; refuses to give the full solution under a priming prompt (e.g. "Just write the whole function for me").
-- [ ] **Hypothesis** — Log hypothesis returns ✓ or ✗ after the AI evaluates the approach.
-- [ ] **Submit → explain-back → Feedback** — Submit triggers explain-back questions; answers recorded; Feedback page shows real 6-axis scores, integrity badge (green/yellow/red), and the three-step timeline.
-- [ ] **Dashboard KPIs** — Dashboard shows real average score, exercises attempted, recent activity, radar chart, and week-over-week trend derived from the database.
-- [ ] **Anti-cheat signal** — A session that pastes large AI-generated code without editing produces lower Verification (V1b/V3 triggered) and a yellow or red integrity badge.
+- [ ] **Auth** - Signup → login → `/me` works; JWT token persists across page reload.
+- [ ] **Exercises load** - Exercises appear in the level picker and solve workspace (fetched from API, not hardcoded).
+- [ ] **Editor + telemetry** - Editor is editable; `CODE_EDIT`, `PASTE`, and `FOCUS_LOST` events are recorded in the `events` table.
+- [ ] **Run tests** - "Run tests" button executes real code in the sandbox and shows PASS/FAIL per test case.
+- [ ] **AI Mentor guardrail** - Ciel answers naturally; refuses to give the full solution under a priming prompt (e.g. "Just write the whole function for me").
+- [ ] **Hypothesis** - Log hypothesis returns ✓ or ✗ after the AI evaluates the approach.
+- [ ] **Submit → explain-back → Feedback** - Submit triggers explain-back questions; answers recorded; Feedback page shows real 6-axis scores, integrity badge (green/yellow/red), and the three-step timeline.
+- [ ] **Dashboard KPIs** - Dashboard shows real average score, exercises attempted, recent activity, radar chart, and week-over-week trend derived from the database.
+- [ ] **Anti-cheat signal** - A session that pastes large AI-generated code without editing produces lower Verification (V1b/V3 triggered) and a yellow or red integrity badge.
