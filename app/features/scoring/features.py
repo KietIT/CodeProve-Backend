@@ -131,8 +131,15 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     # D2 (ai-dependent) is intentionally left 0 for the MVP: cleanly distinguishing an
     # AI-driven fix from a user fix needs richer telemetry than is collected today.
 
-    # Integrity raw signals
-    f.paste_flags = sum(1 for e in events if "BURST_PASTE" in e.get("integrity_flags", []))
+    # Integrity raw signals. A PASTE_BLOCKED event means the student *tried* to
+    # paste (e.g. an answer copied from another AI) and the editor prevented it —
+    # that intent is as strong a signal as a burst paste, so it counts the same.
+    f.paste_flags = sum(
+        1
+        for e in events
+        if "BURST_PASTE" in e.get("integrity_flags", [])
+        or "PASTE_BLOCKED" in e.get("integrity_flags", [])
+    )
     f.focus_lost = sum(1 for e in events if e["type"] == "FOCUS_LOST")
     f.integrity_flag_total = f.paste_flags + f.focus_lost
     return f

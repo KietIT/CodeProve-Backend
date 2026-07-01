@@ -15,6 +15,10 @@ class ExerciseSummary(BaseModel):
     acceptance: float
     topics: list[str]
     level: str
+    # Per-user progress: "solved" (a scored attempt exists), "attempted" (an
+    # attempt exists but none scored), or "todo". Matches the dashboard's
+    # "completed" definition so the two surfaces never disagree.
+    status: str = "todo"
 
 
 class ExerciseDetail(ExerciseSummary):

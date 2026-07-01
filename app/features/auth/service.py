@@ -18,7 +18,11 @@ async def create_user(db: AsyncSession, data: SignupIn) -> User:
 
 
 async def update_user(db: AsyncSession, user: User, data: UpdateMeIn) -> User:
-    user.full_name = data.full_name
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.avatar is not None:
+        # Empty string clears the avatar; any other value is stored as-is.
+        user.avatar = data.avatar or None
     await db.commit()
     await db.refresh(user)
     return user
