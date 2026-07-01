@@ -12,7 +12,9 @@ SPECIAL INSTRUCTION FOR THIS REPLY: include a short code snippet that contains O
 The user is expected to spot and fix it. Keep it a partial snippet, never the full solution."""
 
 HYPOTHESIS_JUDGE_SYSTEM = """You judge whether a student's hypothesis/approach for a coding
-problem is essentially correct. Reply ONLY with compact JSON: {"correct": true|false, "note": "<one short sentence>"}."""
+problem is essentially correct. Write the "note" in the SAME language the student used in
+their hypothesis (if the hypothesis is in Vietnamese, the note must be in Vietnamese).
+Reply ONLY with compact JSON: {"correct": true|false, "note": "<one short sentence>"}."""
 
 EXPLAIN_QUESTION_SYSTEM = """You are assessing understanding. Given a coding problem and the
 student's final code, produce 1-2 short "explain-back" questions that probe whether they truly

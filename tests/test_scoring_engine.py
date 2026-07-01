@@ -25,12 +25,28 @@ def test_strong_attempt_scores_high():
         _ev("SUBMIT", 70000, {}),
     ]
     res = score_attempt(events, explain_score=18.0)
-    assert res["axes"]["hypothesis"] >= 12      # 6 (logged) + 6 (H1 correct) + 6 (before code)
+    assert res["axes"]["hypothesis"] >= 12      # 3 (logged) + 9 (H1 correct) + 5 (before code)
     assert res["axes"]["verification"] >= 18    # 10 (V1 caught) + 4 (tested) + 4 (coverage)
     assert res["axes"]["testing"] > 0
     assert res["axes"]["debugging"] >= 14       # 6 + 8 (one fix cycle)
     assert 0 <= res["overall"] <= 100
     assert res["overall"] > 75   # earn-from-zero rubric still rewards a genuinely strong attempt
+
+
+def test_gibberish_and_wrong_hypothesis_score_low():
+    # User's stress test: typed nonsense (chars added but no test ever passes) and
+    # logged a WRONG hypothesis after coding. Must not earn meaningful credit.
+    events = [
+        _ev("OPEN", 0, {}),
+        _ev("CODE_EDIT", 1000, {"charsAdded": 30}),                       # gibberish
+        _ev("HYPOTHESIS", 2000, {"proposedBy": "user", "correct": False}),  # wrong, after code
+        _ev("RUN", 2500, {"passed": False}),
+        _ev("SUBMIT", 3000, {}),
+    ]
+    res = score_attempt(events, explain_score=0.0)
+    assert res["axes"]["understanding"] == 0.0   # no passing run, no real explanation
+    assert res["axes"]["hypothesis"] <= 3.0      # wrong hypothesis after coding = habit credit only
+    assert res["overall"] < 10
 
 
 def test_empty_attempt_scores_zero():

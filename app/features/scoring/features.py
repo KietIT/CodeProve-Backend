@@ -33,6 +33,7 @@ class AxisFeatures:
     t1_count: int = 0
     best_coverage: float = 0.0
     has_test_run: bool = False
+    any_pass: bool = False
     d1_count: int = 0
     d2_count: int = 0
     paste_flags: int = 0
@@ -137,6 +138,10 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
 
     # Debugging: fail -> (edit) -> pass cycles
     runs = [e for e in events if e["type"] in ("RUN", "TEST_RUN")]
+    # any_pass: the code produced a fully-passing run at least once. Real evidence
+    # the student solved it - unlike merely typing characters, which garbage input
+    # can fake. Used to gate the understanding engagement bonus.
+    f.any_pass = any(bool(e["payload"].get("passed")) for e in runs)
     prev_failed = False
     for e in runs:
         passed = bool(e["payload"].get("passed"))

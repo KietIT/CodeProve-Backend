@@ -15,31 +15,24 @@ def clamp(lo: float, hi: float, x: float) -> float:
 # no test, no real explanation) scores 0 on every axis and 0 overall - there is
 # no "baseline" credit for showing up. Penalties then push earned scores down.
 
-# A student is considered to have genuinely written code once they add a
-# meaningful amount of source beyond the starter scaffold.
-_REAL_CODE_MIN_CHARS = 10
-
-
-def _wrote_real_code(f: AxisFeatures) -> bool:
-    return f.chars_added >= _REAL_CODE_MIN_CHARS
-
-
 def _understanding(f: AxisFeatures) -> float:
-    # Driven almost entirely by the explain-back score (0-20, LLM-judged). A tiny
-    # engagement bonus rewards actually writing code; shallow concept-only prompts
-    # and a rushed start reduce it. No explanation + no code => 0.
+    # Driven almost entirely by the explain-back score (0-20, LLM-judged). The
+    # small engagement bonus is tied to actually SOLVING (a fully-passing run),
+    # not to typing characters - so gibberish like "asfasdf" earns nothing.
+    # Shallow concept-only prompts and a rushed start reduce it.
     u1 = -3 if (f.first_prompt_delay_ms is not None and f.first_prompt_delay_ms < 20000
                 and f.problem_read_ratio < 0.6) else 0
-    engage = 2 if _wrote_real_code(f) else 0
+    engage = 2 if f.any_pass else 0
     return clamp(0, 20, 0.9 * f.explain_score + engage - 2 * f.u2_hits + u1)
 
 
 def _hypothesis(f: AxisFeatures) -> float:
-    # No hypothesis logged => 0. Credit is for logging one, getting it right, and
-    # (most importantly) doing so before writing code.
+    # No hypothesis logged => 0. Correctness dominates: a WRONG hypothesis earns
+    # only a small credit for the habit, while a correct one - especially logged
+    # before coding - earns most of the axis. AI-proposed hypotheses subtract.
     if f.hypothesis_count == 0:
         return 0.0
-    raw = 6 + 6 * f.h1_count + (6 if f.has_hypothesis_before_code else 0) - 4 * f.h2_count
+    raw = 3 + 9 * f.h1_count + (5 if f.has_hypothesis_before_code else 0) - 4 * f.h2_count
     return clamp(0, 20, raw)
 
 
