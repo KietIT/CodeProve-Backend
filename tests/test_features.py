@@ -72,6 +72,31 @@ def test_paste_blind_and_integrity():
     assert f.integrity_flag_total == 2
 
 
+def test_integrity_uses_specific_anticheat_events():
+    events = [
+        _ev("OPEN", 0),
+        _ev("TAB_HIDDEN", 100),
+        _ev("TAB_VISIBLE", 200),
+        _ev("WINDOW_BLUR", 300),
+        _ev("WINDOW_FOCUS", 400),
+        _ev("FULLSCREEN_EXIT", 500),
+        _ev("FULLSCREEN_ENTER", 600),
+        _ev("COPY", 700, {"length": 10}),
+        _ev("CUT", 800, {"length": 5}),
+        _ev("PASTE", 900, {"length": 20}),
+        _ev("BURST_PASTE", 1000, {"length": 200}, ["BURST_PASTE"]),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.tab_hidden == 1
+    assert f.window_blur == 1
+    assert f.fullscreen_exits == 1
+    assert f.copy_count == 1
+    assert f.cut_count == 1
+    assert f.paste_count == 1
+    assert f.paste_flags == 1
+    assert f.integrity_flag_total == 4
+
+
 def test_prompting_clusters_and_keywords():
     dup = {"messageLength": 50, "keywordsMatched": ["a", "b"], "messageText": "fix my loop please"}
     events = [

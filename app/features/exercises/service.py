@@ -1,6 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.exercises.starters import student_safe_starter
 from app.models import Attempt, Exercise, TestCase
 
 _LEVEL_NAMES = {"fresher": "Fresher", "junior": "Junior", "senior": "Senior"}
@@ -73,6 +74,6 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
     return {
         "id": ex.id, "num": num, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
         "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level,
-        "summary": ex.summary, "language": ex.language, "starter": ex.starter_code,
+        "summary": ex.summary, "language": ex.language, "starter": student_safe_starter(ex.starter_code),
         "hint": ex.hint, "tests": [t.description for t in tests],
     }
