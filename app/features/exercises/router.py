@@ -12,8 +12,8 @@ router = APIRouter(prefix="/api/exercises", tags=["exercises"])
 
 @router.get("", response_model=list[LevelGroup])
 async def list_exercises(level: str | None = None, db: AsyncSession = Depends(get_db),
-                         _: User = Depends(get_current_user)) -> list[dict]:
-    return await service.list_grouped(db, level)
+                         user: User = Depends(get_current_user)) -> list[dict]:
+    return await service.list_grouped(db, level, user.id)
 
 
 @router.get("/{code}", response_model=ExerciseDetail)
