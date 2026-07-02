@@ -37,28 +37,37 @@ def integrity_from_features(f: AxisFeatures) -> str:
 
 
 def build_feedback(axes: dict, f: AxisFeatures) -> dict:
+    # Each entry carries a stable machine-readable `code` so the frontend can
+    # localise the message; `note` stays as the English fallback for old clients.
     strengths, risks, per_axis = [], [], {}
     for axis, score in axes.items():
         if score is None:
             continue
         notes = []
         if score >= 16:
-            strengths.append({"axis": _AXIS_LABELS[axis], "note": f"Strong {_AXIS_LABELS[axis].lower()}."})
+            strengths.append({"axis": _AXIS_LABELS[axis], "code": "strong",
+                              "note": f"Strong {_AXIS_LABELS[axis].lower()}."})
             notes.append("Above target.")
         elif score < 10:
-            risks.append({"axis": _AXIS_LABELS[axis], "note": f"Improve your {_AXIS_LABELS[axis].lower()}."})
+            risks.append({"axis": _AXIS_LABELS[axis], "code": "improve",
+                          "note": f"Improve your {_AXIS_LABELS[axis].lower()}."})
             notes.append("Below target.")
         per_axis[axis] = {"score": score, "notes": notes}
     if f.has_v1b:
-        risks.append({"axis": "Verification", "note": "You accepted AI code containing a bug without checking it."})
+        risks.append({"axis": "Verification", "code": "accepted_buggy_ai",
+                      "note": "You accepted AI code containing a bug without checking it."})
     if f.p1_hits:
-        risks.append({"axis": "Prompting", "note": "Some prompts were too short to be effective."})
+        risks.append({"axis": "Prompting", "code": "short_prompts",
+                      "note": "Some prompts were too short to be effective."})
     return {"strengths": strengths[:4], "risks": risks[:4], "per_axis": per_axis}
 
 
 def build_timeline(f: AxisFeatures) -> list[dict]:
+    # `key` + numeric params let the frontend rebuild each line in the user's
+    # locale; `step`/`title`/`desc` remain the English fallback text.
     return [
         {
+            "key": "hypothesis",
             "step": "Step 1 · Hypothesis",
             "title": "Approach logged before coding",
             "desc": (
@@ -69,12 +78,16 @@ def build_timeline(f: AxisFeatures) -> list[dict]:
             "active": f.has_hypothesis_before_code,
         },
         {
+            "key": "implementation",
+            "coverage_pct": int(f.best_coverage * 100) if f.has_test_run else None,
             "step": "Step 2 · Implementation",
             "title": "Solution ran against tests",
             "desc": f"Best coverage {int(f.best_coverage * 100)}%." if f.has_test_run else "No tests were run.",
             "active": f.has_test_run,
         },
         {
+            "key": "explain_back",
+            "explain_score": round(f.explain_score),
             "step": "Step 3 · Explain-back",
             "title": "Reasoning verified",
             "desc": f"Explanation scored {f.explain_score:.0f}/20.",
