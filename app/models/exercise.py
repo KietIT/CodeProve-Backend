@@ -18,6 +18,9 @@ class Exercise(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     learning_objective: Mapped[str] = mapped_column(Text, default="")
     level: Mapped[str] = mapped_column(String(16))         # fresher|junior|senior
+    # "implement" = student writes the solution (starter is stripped to a stub);
+    # "debug" = student must find/fix a flaw, so the buggy starter is shown as-is.
+    kind: Mapped[str] = mapped_column(String(16), default="implement", server_default="implement")
     language: Mapped[str] = mapped_column(String(32), default="python")
     acceptance: Mapped[float] = mapped_column(Float, default=0.0)
     summary: Mapped[str] = mapped_column(Text, default="")

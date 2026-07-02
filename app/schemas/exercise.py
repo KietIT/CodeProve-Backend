@@ -22,6 +22,9 @@ class ExerciseSummary(BaseModel):
 
 
 class ExerciseDetail(ExerciseSummary):
+    # "implement" (starter is a stub to fill in) or "debug" (starter shows the
+    # buggy code the student must find the flaw in).
+    kind: str = "implement"
     summary: str
     language: str
     starter: str

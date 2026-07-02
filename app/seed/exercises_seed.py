@@ -142,6 +142,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-004",
+        "kind": "debug",
         "title": "Fix the Off-By-One Loop",
         "difficulty": "Easy",
         "category": "Debugging",
@@ -312,6 +313,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-008",
+        "kind": "debug",
         "title": "Debug the Null Reference",
         "difficulty": "Easy",
         "category": "Debugging",
@@ -486,6 +488,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-012",
+        "kind": "debug",
         "title": "Trace the Race Condition",
         "difficulty": "Medium",
         "category": "Concurrency",
@@ -587,6 +590,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-102",
+        "kind": "debug",
         "title": "Debug the Memory Leak",
         "difficulty": "Medium",
         "category": "Debugging",
@@ -763,6 +767,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-106",
+        "kind": "debug",
         "title": "Patch the SQL Injection",
         "difficulty": "Medium",
         "category": "API security",
@@ -898,6 +903,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-109",
+        "kind": "debug",
         "title": "Reconstruct the Stack Trace",
         "difficulty": "Medium",
         "category": "Debugging",
@@ -1105,6 +1111,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-203",
+        "kind": "debug",
         "title": "Audit the Auth Middleware",
         "difficulty": "Hard",
         "category": "API security",
@@ -1242,6 +1249,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-206",
+        "kind": "debug",
         "title": "Diagnose the Deadlock",
         "difficulty": "Hard",
         "category": "Concurrency",
@@ -1341,6 +1349,7 @@ EXERCISES: list[dict] = [
     },
     {
         "code": "CP-208",
+        "kind": "debug",
         "title": "Harden the Upload Endpoint",
         "difficulty": "Hard",
         "category": "API security",

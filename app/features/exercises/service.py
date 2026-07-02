@@ -71,9 +71,12 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
         select(func.count()).select_from(Exercise)
         .where(Exercise.level == ex.level, Exercise.code <= ex.code)
     )).scalar_one()
+    # Debug-type exercises exist to have their flaw found: show the buggy
+    # starter verbatim. Implement-type starters are stripped to a scaffold.
+    starter = ex.starter_code if ex.kind == "debug" else student_safe_starter(ex.starter_code)
     return {
         "id": ex.id, "num": num, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
-        "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level,
-        "summary": ex.summary, "language": ex.language, "starter": student_safe_starter(ex.starter_code),
+        "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level, "kind": ex.kind,
+        "summary": ex.summary, "language": ex.language, "starter": starter,
         "hint": ex.hint, "tests": [t.description for t in tests],
     }
