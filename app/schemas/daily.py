@@ -14,6 +14,8 @@ class DailyChallengeOut(BaseModel):
     challenge_number: int
     prompt_title: str
     buggy_code: str
+    hint_1: str
+    hint_2: str
     already_played: bool
     result: DailyResult | None = None
 

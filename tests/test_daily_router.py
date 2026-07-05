@@ -41,6 +41,8 @@ async def test_today_works_without_auth(client):
     assert body["result"] is None
     assert "buggy_line" not in body  # never leak the answer before submit
     assert body["challenge_number"] >= 1
+    assert body["hint_1"] == "h1"
+    assert body["hint_2"] == "h2"
 
 
 async def test_attempt_works_without_auth_and_does_not_return_streak(client):

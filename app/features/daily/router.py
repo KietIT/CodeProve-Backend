@@ -50,6 +50,8 @@ async def today(
         challenge_number=num,
         prompt_title=challenge.prompt_title,
         buggy_code=challenge.buggy_code,
+        hint_1=challenge.hint_1,
+        hint_2=challenge.hint_2,
         already_played=already_played,
         result=result,
     )
