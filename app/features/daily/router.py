@@ -4,10 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_db
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user, get_current_user_optional
 from app.features.daily import service
 from app.models import DailyChallenge, User
-from app.schemas.daily import DailyAttemptIn, DailyAttemptOut, DailyChallengeOut, DailyResult
+from app.schemas.daily import (
+    ClaimStreakIn,
+    ClaimStreakOut,
+    DailyAttemptIn,
+    DailyAttemptOut,
+    DailyChallengeOut,
+    DailyResult,
+)
 
 router = APIRouter(prefix="/api/daily", tags=["daily"])
 
@@ -82,3 +89,13 @@ async def regenerate(
         await db.commit()
     challenge = await service.get_or_create_challenge(db, d)
     return {"regenerated": True, "prompt_title": challenge.prompt_title}
+
+
+@router.post("/claim-streak", response_model=ClaimStreakOut)
+async def claim_streak(
+    data: ClaimStreakIn,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ClaimStreakOut:
+    streak = await service.claim_streak(db, user.id, [item.model_dump() for item in data.history])
+    return ClaimStreakOut(streak=streak)

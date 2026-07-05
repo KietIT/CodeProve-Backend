@@ -30,3 +30,18 @@ class DailyAttemptOut(BaseModel):
     buggy_line: int
     explanation: str
     streak: int | None = None
+
+
+class ClaimHistoryItem(BaseModel):
+    date: str
+    selected_line: int
+    hints_used: int = 0
+    time_taken_seconds: int = 0
+
+
+class ClaimStreakIn(BaseModel):
+    history: list[ClaimHistoryItem]
+
+
+class ClaimStreakOut(BaseModel):
+    streak: int

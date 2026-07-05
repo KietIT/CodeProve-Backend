@@ -104,3 +104,45 @@ async def submit_attempt(
         "explanation": challenge.explanation,
         "streak": streak,
     }
+
+
+async def claim_streak(db: AsyncSession, user_id: int, history: list[dict]) -> int:
+    """Merge a client's localStorage play history into real DailyAttempt rows.
+
+    Skips any date with no matching DailyChallenge (can't verify a tier for
+    it) and never overwrites a date that already has a real submitted
+    attempt for this user (spec section 5 - claiming must not clobber real
+    play with replayed/edited client data).
+    """
+    for item in history:
+        try:
+            challenge_date = date.fromisoformat(item["date"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        challenge = (
+            await db.execute(select(DailyChallenge).where(DailyChallenge.challenge_date == challenge_date))
+        ).scalar_one_or_none()
+        if challenge is None:
+            continue
+
+        existing = await get_attempt(db, user_id, challenge_date)
+        if existing is not None and existing.submitted_at is not None:
+            continue
+
+        selected_line = item.get("selected_line", 0)
+        hints_used = item.get("hints_used", 0)
+        time_taken_seconds = item.get("time_taken_seconds", 0)
+        correct = selected_line == challenge.buggy_line
+        tier = tier_for(correct, hints_used, time_taken_seconds)
+
+        if existing is None:
+            existing = DailyAttempt(user_id=user_id, challenge_date=challenge_date)
+            db.add(existing)
+        existing.selected_line = selected_line
+        existing.hints_used = hints_used
+        existing.time_taken_seconds = time_taken_seconds
+        existing.tier = tier
+        existing.submitted_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    return await user_streak(db, user_id, today_vn())
