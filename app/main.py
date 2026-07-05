@@ -34,6 +34,9 @@ def create_app() -> FastAPI:
     from app.features.dashboard.router import router as dashboard_router
     app.include_router(dashboard_router)
 
+    from app.features.daily.router import router as daily_router
+    app.include_router(daily_router)
+
     return app
 
 

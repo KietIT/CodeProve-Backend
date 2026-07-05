@@ -38,3 +38,22 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found", headers=_UNAUTH_HEADERS
         )
     return user
+
+
+async def get_current_user_optional(
+    creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """Same identity resolution as get_current_user, but returns None instead
+    of raising 401 - for endpoints that must work for anonymous visitors too
+    (Daily Bug Hunt, spec section 7)."""
+    if creds is None:
+        return None
+    sub = decode_token(creds.credentials)
+    if sub is None:
+        return None
+    try:
+        user_id = int(sub)
+    except (TypeError, ValueError):
+        return None
+    return (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
