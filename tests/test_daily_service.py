@@ -37,7 +37,7 @@ async def _make_user(db_session, email="svc@example.com"):
     return user
 
 
-def test_today_vn_returns_a_date():
+async def test_today_vn_returns_a_date():
     from app.features.daily.service import today_vn
 
     assert isinstance(today_vn(), date)
@@ -80,20 +80,20 @@ async def test_challenge_number_counts_up_to_date(db_session):
     assert await challenge_number(db_session, date(2026, 7, 3)) == 3
 
 
-def test_tier_for_green_requires_no_hints_and_under_60s():
+async def test_tier_for_green_requires_no_hints_and_under_60s():
     from app.features.daily.service import tier_for
 
     assert tier_for(correct=True, hints_used=0, time_taken_seconds=59) == "green"
 
 
-def test_tier_for_yellow_with_hint_or_slow():
+async def test_tier_for_yellow_with_hint_or_slow():
     from app.features.daily.service import tier_for
 
     assert tier_for(correct=True, hints_used=1, time_taken_seconds=10) == "yellow"
     assert tier_for(correct=True, hints_used=0, time_taken_seconds=61) == "yellow"
 
 
-def test_tier_for_red_when_incorrect():
+async def test_tier_for_red_when_incorrect():
     from app.features.daily.service import tier_for
 
     assert tier_for(correct=False, hints_used=0, time_taken_seconds=5) == "red"
