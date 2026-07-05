@@ -38,12 +38,12 @@ class MentorClient:
             "code_loc": _code_loc(text),
         }
 
-    async def judge(self, system: str, user: str) -> dict:
+    async def judge(self, system: str, user: str, max_tokens: int = 300) -> dict:
         resp = await self._client.chat.completions.create(
             model=self._model,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             temperature=0.0,
-            max_tokens=300,
+            max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
         try:

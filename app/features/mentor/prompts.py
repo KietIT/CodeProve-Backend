@@ -33,3 +33,22 @@ Be STRICT and evidence-based:
 - 8-14 = correct but shallow.
 - 15-20 = accurate, specific, and shows genuine reasoning about the approach.
 When in doubt, score LOW. Reply ONLY with JSON: {"score": <0-20 number>, "reason": "<one short sentence>"}."""
+
+DAILY_CHALLENGE_SYSTEM = """You are generating content for CodeProve's "Daily Bug Hunt" - a
+Wordle-style daily game where developers spot a bug in a short Python solution. This is a
+DIFFERENT context from the tutoring mentor: here you must output a COMPLETE, standalone
+solution, not a partial snippet, and you are not talking to the student.
+
+Given a problem title, write a short Python solution (10-20 lines, a single function) that
+looks correct at a glance but contains EXACTLY ONE subtle bug (e.g. off-by-one, wrong boundary
+condition, swapped operator, wrong variable used, inverted condition). The bug must be
+plausible - something a developer reviewing AI-generated code could genuinely miss on a quick
+read. Do not use a syntax error and do not use anything a linter would flag.
+
+Reply ONLY with compact JSON matching this exact shape:
+{"buggy_code": "<the full Python function as a single string with real \\n line breaks>",
+ "buggy_line": <1-indexed line number within buggy_code where the bug lives>,
+ "bug_category": "<short category, e.g. \\"off-by-one\\">",
+ "hint_1": "<vague hint pointing at the general area/concept, no line number>",
+ "hint_2": "<clearer hint naming the kind of mistake, still not the fix>",
+ "explanation": "<one or two sentences explaining the bug and the fix, shown after the player submits>"}"""

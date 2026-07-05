@@ -1,5 +1,7 @@
 from app.models.attempt import Attempt
 from app.models.code_snapshot import CodeSnapshot
+from app.models.daily_attempt import DailyAttempt
+from app.models.daily_challenge import DailyChallenge
 from app.models.event import Event
 from app.models.exercise import Exercise
 from app.models.fluency_report import FluencyReport
@@ -9,6 +11,6 @@ from app.models.user import User
 from app.models.verification_answer import VerificationAnswer
 
 __all__ = [
-    "Attempt", "CodeSnapshot", "Event", "Exercise", "FluencyReport",
-    "PromptLog", "TestCase", "User", "VerificationAnswer",
+    "Attempt", "CodeSnapshot", "DailyAttempt", "DailyChallenge", "Event", "Exercise",
+    "FluencyReport", "PromptLog", "TestCase", "User", "VerificationAnswer",
 ]
