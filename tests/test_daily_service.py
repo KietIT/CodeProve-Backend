@@ -8,7 +8,7 @@ class FakeJudgeClient:
     _model = "fake"
     calls = 0
 
-    async def judge(self, system, user):
+    async def judge(self, system, user, max_tokens=300):
         FakeJudgeClient.calls += 1
         return {
             "buggy_code": "def f():\n    return 1",

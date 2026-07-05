@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DailyResult(BaseModel):
@@ -40,7 +40,7 @@ class ClaimHistoryItem(BaseModel):
 
 
 class ClaimStreakIn(BaseModel):
-    history: list[ClaimHistoryItem]
+    history: list[ClaimHistoryItem] = Field(max_length=60)
 
 
 class ClaimStreakOut(BaseModel):

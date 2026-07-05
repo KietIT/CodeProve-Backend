@@ -10,6 +10,15 @@ from app.features.mentor.prompts import DAILY_CHALLENGE_SYSTEM
 from app.models import DailyChallenge
 
 _LOOKBACK_DAYS = 30
+_JUDGE_MAX_TOKENS = 1000
+
+
+class DailyGenerationError(Exception):
+    """Raised when the LLM response for a daily challenge is missing or unusable.
+
+    Prevents committing a garbage DailyChallenge row (e.g. from a truncated
+    or empty JSON response) that would otherwise be locked in for the day.
+    """
 
 
 async def _recent_titles(db: AsyncSession, before: date) -> set[str]:
@@ -36,12 +45,23 @@ async def generate_challenge(db: AsyncSession, challenge_date: date) -> DailyCha
     """Pick an unused prompt title and ask Ciel to write a buggy solution for it."""
     exclude = await _recent_titles(db, challenge_date)
     prompt_title = _pick_prompt(exclude)
-    data = await get_mentor_client().judge(DAILY_CHALLENGE_SYSTEM, f"Problem title: {prompt_title}")
+    data = await get_mentor_client().judge(
+        DAILY_CHALLENGE_SYSTEM, f"Problem title: {prompt_title}", max_tokens=_JUDGE_MAX_TOKENS
+    )
+
+    buggy_code = data.get("buggy_code") or ""
+    if not buggy_code.strip():
+        raise DailyGenerationError("Judge response is missing buggy_code (empty or truncated JSON)")
+
+    buggy_line = data.get("buggy_line")
+    if not isinstance(buggy_line, int) or isinstance(buggy_line, bool) or buggy_line <= 0:
+        raise DailyGenerationError(f"Judge response has an invalid buggy_line: {buggy_line!r}")
+
     challenge = DailyChallenge(
         challenge_date=challenge_date,
         prompt_title=prompt_title,
-        buggy_code=data.get("buggy_code", ""),
-        buggy_line=int(data.get("buggy_line") or 1),
+        buggy_code=buggy_code,
+        buggy_line=buggy_line,
         bug_category=data.get("bug_category", "unknown"),
         hint_1=data.get("hint_1", ""),
         hint_2=data.get("hint_2", ""),

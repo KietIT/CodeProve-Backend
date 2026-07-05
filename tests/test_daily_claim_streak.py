@@ -7,7 +7,7 @@ pytestmark = pytest.mark.asyncio
 class FakeJudgeClient:
     _model = "fake"
 
-    async def judge(self, system, user):
+    async def judge(self, system, user, max_tokens=300):
         return {
             "buggy_code": "def f():\n    return 1",
             "buggy_line": 2,
@@ -89,3 +89,16 @@ async def test_claim_streak_never_overwrites_an_existing_real_attempt(client, db
 async def test_claim_streak_requires_auth(client):
     r = await client.post("/api/daily/claim-streak", json={"history": []})
     assert r.status_code == 401
+
+
+async def test_claim_streak_rejects_more_than_60_history_items(client, auth_headers):
+    history = [
+        {"date": f"2020-01-{(i % 28) + 1:02d}", "selected_line": 1, "hints_used": 0, "time_taken_seconds": 5}
+        for i in range(61)
+    ]
+    r = await client.post(
+        "/api/daily/claim-streak",
+        json={"history": history},
+        headers=auth_headers,
+    )
+    assert r.status_code == 422

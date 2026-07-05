@@ -6,7 +6,7 @@ pytestmark = pytest.mark.asyncio
 class FakeJudgeClient:
     _model = "fake"
 
-    async def judge(self, system, user):
+    async def judge(self, system, user, max_tokens=300):
         return {
             "buggy_code": "def f():\n    return 1",
             "buggy_line": 2,
@@ -15,6 +15,15 @@ class FakeJudgeClient:
             "hint_2": "h2",
             "explanation": "e",
         }
+
+
+class OutageJudgeClient:
+    """Simulates an OpenAI outage - the judge call itself raises."""
+
+    _model = "fake"
+
+    async def judge(self, system, user, max_tokens=300):
+        raise RuntimeError("OpenAI is down")
 
 
 @pytest.fixture(autouse=True)
@@ -84,3 +93,13 @@ async def test_regenerate_requires_admin_key(client, monkeypatch):
     assert ok.status_code == 200
 
     get_settings.cache_clear()
+
+
+async def test_today_returns_503_when_generation_fails(client, monkeypatch):
+    import app.features.daily.content as content_mod
+
+    monkeypatch.setattr(content_mod, "get_mentor_client", lambda: OutageJudgeClient())
+
+    r = await client.get("/api/daily/today")
+    assert r.status_code == 503, r.text
+    assert r.json()["detail"] == "Daily challenge is not ready yet, try again shortly"

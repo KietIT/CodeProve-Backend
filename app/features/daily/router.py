@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user, get_current_user_optional
 from app.features.daily import service
+from app.features.daily.content import DailyGenerationError
 from app.models import DailyChallenge, User
 from app.schemas.daily import (
     ClaimStreakIn,
@@ -25,7 +26,10 @@ async def today(
     user: User | None = Depends(get_current_user_optional),
 ) -> DailyChallengeOut:
     d = service.today_vn()
-    challenge = await service.get_or_create_challenge(db, d)
+    try:
+        challenge = await service.get_or_create_challenge(db, d)
+    except DailyGenerationError:
+        raise HTTPException(status_code=503, detail="Daily challenge is not ready yet, try again shortly")
     num = await service.challenge_number(db, d)
 
     result = None
@@ -62,13 +66,16 @@ async def attempt(
         existing = await service.get_attempt(db, user.id, today_date)
         if existing is not None and existing.submitted_at is not None:
             raise HTTPException(status_code=409, detail="Already played today")
-    result = await service.submit_attempt(
-        db,
-        user.id if user is not None else None,
-        data.selected_line,
-        data.hints_used,
-        data.time_taken_seconds,
-    )
+    try:
+        result = await service.submit_attempt(
+            db,
+            user.id if user is not None else None,
+            data.selected_line,
+            data.hints_used,
+            data.time_taken_seconds,
+        )
+    except DailyGenerationError:
+        raise HTTPException(status_code=503, detail="Daily challenge is not ready yet, try again shortly")
     return DailyAttemptOut(**result)
 
 

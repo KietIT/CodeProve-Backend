@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.features.daily.content import generate_challenge
+from app.features.daily.content import DailyGenerationError, generate_challenge
 from app.features.daily.streak import compute_streak
 from app.models import DailyAttempt, DailyChallenge
 
@@ -31,6 +31,13 @@ async def get_or_create_challenge(db: AsyncSession, challenge_date: date) -> Dai
         return (
             await db.execute(select(DailyChallenge).where(DailyChallenge.challenge_date == challenge_date))
         ).scalar_one()
+    except DailyGenerationError:
+        raise
+    except Exception as exc:
+        # Any unexpected failure while talking to the LLM (network error,
+        # rate limit, bad key, etc.) - surface it as the same typed error so
+        # callers only need to handle one exception for "generation failed".
+        raise DailyGenerationError("Unexpected error while generating the daily challenge") from exc
 
 
 async def challenge_number(db: AsyncSession, challenge_date: date) -> int:
