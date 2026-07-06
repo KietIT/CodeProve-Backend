@@ -5,15 +5,21 @@ class DailyResult(BaseModel):
     correct: bool
     tier: str
     buggy_line: int
-    explanation: str
+    explanation_vi: str
+    explanation_en: str
     hints_used: int
     time_taken_seconds: int
 
 
 class DailyChallengeOut(BaseModel):
     challenge_number: int
-    prompt_title: str
+    prompt_title_vi: str
+    prompt_title_en: str
     buggy_code: str
+    hint_1_vi: str
+    hint_1_en: str
+    hint_2_vi: str
+    hint_2_en: str
     already_played: bool
     result: DailyResult | None = None
 
@@ -28,7 +34,8 @@ class DailyAttemptOut(BaseModel):
     correct: bool
     tier: str
     buggy_line: int
-    explanation: str
+    explanation_vi: str
+    explanation_en: str
     streak: int | None = None
 
 

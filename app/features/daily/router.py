@@ -42,14 +42,20 @@ async def today(
                 correct=attempt.selected_line == challenge.buggy_line,
                 tier=attempt.tier or "red",
                 buggy_line=challenge.buggy_line,
-                explanation=challenge.explanation,
+                explanation_vi=challenge.explanation_vi,
+                explanation_en=challenge.explanation_en,
                 hints_used=attempt.hints_used,
                 time_taken_seconds=attempt.time_taken_seconds or 0,
             )
     return DailyChallengeOut(
         challenge_number=num,
-        prompt_title=challenge.prompt_title,
+        prompt_title_vi=challenge.prompt_title_vi,
+        prompt_title_en=challenge.prompt_title_en,
         buggy_code=challenge.buggy_code,
+        hint_1_vi=challenge.hint_1_vi,
+        hint_1_en=challenge.hint_1_en,
+        hint_2_vi=challenge.hint_2_vi,
+        hint_2_en=challenge.hint_2_en,
         already_played=already_played,
         result=result,
     )
@@ -95,7 +101,7 @@ async def regenerate(
         await db.delete(existing)
         await db.commit()
     challenge = await service.get_or_create_challenge(db, d)
-    return {"regenerated": True, "prompt_title": challenge.prompt_title}
+    return {"regenerated": True, "prompt_title": challenge.prompt_title_en}
 
 
 @router.post("/claim-streak", response_model=ClaimStreakOut)

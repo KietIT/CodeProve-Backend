@@ -108,7 +108,8 @@ async def submit_attempt(
         "correct": correct,
         "tier": tier,
         "buggy_line": challenge.buggy_line,
-        "explanation": challenge.explanation,
+        "explanation_vi": challenge.explanation_vi,
+        "explanation_en": challenge.explanation_en,
         "streak": streak,
     }
 

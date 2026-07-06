@@ -11,9 +11,12 @@ class FakeJudgeClient:
             "buggy_code": "def f():\n    return 1",
             "buggy_line": 2,
             "bug_category": "off-by-one",
-            "hint_1": "h1",
-            "hint_2": "h2",
-            "explanation": "e",
+            "hint_1_vi": "g1",
+            "hint_1_en": "h1",
+            "hint_2_vi": "g2",
+            "hint_2_en": "h2",
+            "explanation_vi": "gt",
+            "explanation_en": "e",
         }
 
 
@@ -41,6 +44,13 @@ async def test_today_works_without_auth(client):
     assert body["result"] is None
     assert "buggy_line" not in body  # never leak the answer before submit
     assert body["challenge_number"] >= 1
+    assert body["hint_1_vi"] == "g1"
+    assert body["hint_1_en"] == "h1"
+    assert body["hint_2_vi"] == "g2"
+    assert body["hint_2_en"] == "h2"
+    # Both title languages are served; the bank stores proper Vietnamese.
+    assert body["prompt_title_en"]
+    assert body["prompt_title_vi"]
 
 
 async def test_attempt_works_without_auth_and_does_not_return_streak(client):
