@@ -45,10 +45,16 @@ condition, swapped operator, wrong variable used, inverted condition). The bug m
 plausible - something a developer reviewing AI-generated code could genuinely miss on a quick
 read. Do not use a syntax error and do not use anything a linter would flag.
 
+The hints and the explanation are shown in a bilingual UI: write the _vi fields in natural
+Vietnamese and the _en fields in natural English; each pair must convey the same meaning.
+
 Reply ONLY with compact JSON matching this exact shape:
 {"buggy_code": "<the full Python function as a single string with real \\n line breaks>",
  "buggy_line": <1-indexed line number within buggy_code where the bug lives>,
  "bug_category": "<short category, e.g. \\"off-by-one\\">",
- "hint_1": "<vague hint pointing at the general area/concept, no line number>",
- "hint_2": "<clearer hint naming the kind of mistake, still not the fix>",
- "explanation": "<one or two sentences explaining the bug and the fix, shown after the player submits>"}"""
+ "hint_1_vi": "<goi y mo ho chi vao khu vuc/khai niem, khong neu so dong>",
+ "hint_1_en": "<vague hint pointing at the general area/concept, no line number>",
+ "hint_2_vi": "<goi y ro hon, neu loai loi nhung chua phai cach sua>",
+ "hint_2_en": "<clearer hint naming the kind of mistake, still not the fix>",
+ "explanation_vi": "<1-2 cau giai thich loi va cach sua, hien sau khi nguoi choi nop>",
+ "explanation_en": "<one or two sentences explaining the bug and the fix, shown after the player submits>"}"""

@@ -12,13 +12,17 @@ async def test_daily_challenge_round_trip(db_session):
     db_session.add(
         DailyChallenge(
             challenge_date=date(2026, 7, 4),
-            prompt_title="Kiem tra so nguyen to",
+            prompt_title_vi="Kiểm tra một số có phải số nguyên tố",
+            prompt_title_en="Check whether a number is prime",
             buggy_code="def is_prime(n):\n    return n > 1",
             buggy_line=2,
             bug_category="off-by-one",
-            hint_1="Xem lai dieu kien bien",
-            hint_2="So 4 co qua duoc khong?",
-            explanation="Thieu kiem tra uoc so, moi n > 1 deu bi coi la nguyen to.",
+            hint_1_vi="Xem lại điều kiện biên",
+            hint_1_en="Look at the boundary condition",
+            hint_2_vi="Số 4 có qua được không?",
+            hint_2_en="Does 4 pass this check?",
+            explanation_vi="Thiếu kiểm tra ước số, mọi n > 1 đều bị coi là nguyên tố.",
+            explanation_en="The divisor check is missing, so every n > 1 counts as prime.",
         )
     )
     await db_session.commit()
@@ -28,7 +32,8 @@ async def test_daily_challenge_round_trip(db_session):
             select(DailyChallenge).where(DailyChallenge.challenge_date == date(2026, 7, 4))
         )
     ).scalar_one()
-    assert row.prompt_title == "Kiem tra so nguyen to"
+    assert row.prompt_title_vi == "Kiểm tra một số có phải số nguyên tố"
+    assert row.prompt_title_en == "Check whether a number is prime"
     assert row.buggy_line == 2
 
 
@@ -38,15 +43,17 @@ async def test_daily_challenge_date_is_unique(db_session):
 
     db_session.add(
         DailyChallenge(
-            challenge_date=date(2026, 7, 5), prompt_title="a", buggy_code="x", buggy_line=1,
-            bug_category="c", hint_1="h1", hint_2="h2", explanation="e",
+            challenge_date=date(2026, 7, 5), prompt_title_vi="a", prompt_title_en="a", buggy_code="x",
+            buggy_line=1, bug_category="c", hint_1_vi="h1", hint_1_en="h1", hint_2_vi="h2", hint_2_en="h2",
+            explanation_vi="e", explanation_en="e",
         )
     )
     await db_session.commit()
     db_session.add(
         DailyChallenge(
-            challenge_date=date(2026, 7, 5), prompt_title="b", buggy_code="y", buggy_line=1,
-            bug_category="c", hint_1="h1", hint_2="h2", explanation="e",
+            challenge_date=date(2026, 7, 5), prompt_title_vi="b", prompt_title_en="b", buggy_code="y",
+            buggy_line=1, bug_category="c", hint_1_vi="h1", hint_1_en="h1", hint_2_vi="h2", hint_2_en="h2",
+            explanation_vi="e", explanation_en="e",
         )
     )
     with pytest.raises(IntegrityError):

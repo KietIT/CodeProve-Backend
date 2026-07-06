@@ -12,9 +12,12 @@ class FakeJudgeClient:
             "buggy_code": "def f():\n    return 1",
             "buggy_line": 2,
             "bug_category": "off-by-one",
-            "hint_1": "h1",
-            "hint_2": "h2",
-            "explanation": "e",
+            "hint_1_vi": "g1",
+            "hint_1_en": "h1",
+            "hint_2_vi": "g2",
+            "hint_2_en": "h2",
+            "explanation_vi": "gt",
+            "explanation_en": "e",
         }
 
 
