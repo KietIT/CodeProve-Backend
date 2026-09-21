@@ -146,6 +146,9 @@ try:
 except RuntimeError as e:
     sys.settrace(None)
     error = None if "__cap__" in str(e) else "%s: %s" % (type(e).__name__, e)
+except EOFError:
+    sys.settrace(None)
+    error = "input() không hỗ trợ ở chế độ luyện tập — hãy gán giá trị cố định (ví dụ n = 7)."
 except Exception as e:
     sys.settrace(None)
     error = "%s: %s" % (type(e).__name__, e)
@@ -178,6 +181,9 @@ def _run_trace(script: Path, payload: Path, timeout: int) -> subprocess.Complete
         [sys.executable, "-I", str(script), str(payload)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        # No interactive stdin in practice mode: feed EOF so input() fails fast
+        # with EOFError instead of blocking the whole trace until the timeout.
+        stdin=subprocess.DEVNULL,
         timeout=timeout,
         check=False,
     )
