@@ -64,6 +64,131 @@ def _run_script(script: Path, timeout: int) -> subprocess.CompletedProcess[bytes
     )
 
 
+# ── Execution trace (algorithm visualizer) ───────────────────────────────────
+# Runs the user's code with sys.settrace and records one frame per executed line
+# (line number + locals serialised to VizValue). The user code is compiled with
+# the filename "user_code" so the tracer records only the student's lines, and
+# line numbers map back to their source. Reuses the subprocess isolation above.
+_TRACE_HARNESS = r'''
+import json, sys, io, types, contextlib
+with open(sys.argv[1], encoding="utf-8") as _f:
+    _p = json.load(_f)
+USER_SOURCE = _p["source"]; CALL = _p["call"]; MAX_FRAMES = 500
+frames = []; error = None
+
+# In practice mode the code runs at module scope, so frame.f_locals is the
+# module globals - which Python auto-populates with __builtins__ and the
+# user's own function/class/import bindings. None of that is a "variable" the
+# student is tracking, so drop dunders and module/function/type values.
+def _skip(n, v):
+    if n.startswith("__") and n.endswith("__"):
+        return True
+    return isinstance(v, (types.ModuleType, types.FunctionType,
+                          types.BuiltinFunctionType, type))
+
+def _short(x):
+    s = x if isinstance(x, str) else repr(x)
+    return s if len(s) <= 60 else s[:57] + "..."
+
+def _to_viz(v):
+    if isinstance(v, bool):
+        return {"kind": "scalar", "value": str(v)}
+    if isinstance(v, (int, float, str)):
+        return {"kind": "scalar", "value": _short(v)}
+    if isinstance(v, (list, tuple)):
+        return {"kind": "array", "items": [_short(x) for x in list(v)[:50]]}
+    if isinstance(v, dict):
+        return {"kind": "map", "entries": [[_short(k), _short(val)] for k, val in list(v.items())[:50]]}
+    return {"kind": "scalar", "value": _short(v)}
+
+def _tracer(frame, event, arg):
+    if frame.f_code.co_filename != "user_code":
+        return None
+    if event == "line":
+        if len(frames) >= MAX_FRAMES:
+            raise RuntimeError("__cap__")
+        raw = {n: v for n, v in frame.f_locals.items() if not _skip(n, v)}
+        viz = {}
+        for n, val in raw.items():
+            try:
+                viz[n] = _to_viz(val)
+            except Exception:
+                viz[n] = {"kind": "scalar", "value": "<unrepr>"}
+        # Pointer inference: int vars whose value indexes into an array in scope.
+        ints = {n: v for n, v in raw.items() if type(v) is int}
+        for n, val in raw.items():
+            if isinstance(val, (list, tuple)) and viz.get(n, {}).get("kind") == "array":
+                length = len(val)
+                ptrs = {a: b for a, b in ints.items() if 0 <= b < length}
+                if ptrs:
+                    viz[n]["ptrs"] = ptrs
+        frames.append({"line": frame.f_lineno, "event": "line", "locals": viz})
+    return _tracer
+
+_buf = io.StringIO(); ns = {}
+try:
+    with contextlib.redirect_stdout(_buf):
+        exec(compile(USER_SOURCE, "user_code", "exec"), ns)
+        if CALL.strip():
+            # Workspace: trace the student's function running on a sample input.
+            sys.settrace(_tracer)
+            try:
+                eval(compile(CALL, "<call>", "eval"), ns)
+            finally:
+                sys.settrace(None)
+        else:
+            # Practice: no sample call - trace the script's own top-level run.
+            sys.settrace(_tracer)
+            try:
+                exec(compile(USER_SOURCE, "user_code", "exec"), {})
+            finally:
+                sys.settrace(None)
+except RuntimeError as e:
+    sys.settrace(None)
+    error = None if "__cap__" in str(e) else "%s: %s" % (type(e).__name__, e)
+except EOFError:
+    sys.settrace(None)
+    error = "input() không hỗ trợ ở chế độ luyện tập — hãy gán giá trị cố định (ví dụ n = 7)."
+except Exception as e:
+    sys.settrace(None)
+    error = "%s: %s" % (type(e).__name__, e)
+
+print(json.dumps({"frames": frames, "stdout": _buf.getvalue()[:2000], "error": error}))
+'''
+
+
+async def trace_code(source_code: str, call: str, timeout: int) -> dict:
+    with tempfile.TemporaryDirectory() as tmp:
+        script = Path(tmp) / "trace.py"
+        script.write_text(_TRACE_HARNESS, encoding="utf-8")
+        payload = Path(tmp) / "payload.json"
+        payload.write_text(json.dumps({"source": source_code, "call": call or ""}), encoding="utf-8")
+        try:
+            proc = await asyncio.to_thread(_run_trace, script, payload, timeout)
+        except subprocess.TimeoutExpired:
+            return {"frames": [], "stdout": "", "error": f"Timeout after {timeout}s"}
+        lines = proc.stdout.decode().strip().splitlines()
+        if not lines:
+            return {"frames": [], "stdout": "", "error": (proc.stderr.decode()[:500] or "Process error")}
+        try:
+            return json.loads(lines[-1])
+        except ValueError:
+            return {"frames": [], "stdout": "", "error": "Invalid trace output"}
+
+
+def _run_trace(script: Path, payload: Path, timeout: int) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        [sys.executable, "-I", str(script), str(payload)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        # No interactive stdin in practice mode: feed EOF so input() fails fast
+        # with EOFError instead of blocking the whole trace until the timeout.
+        stdin=subprocess.DEVNULL,
+        timeout=timeout,
+        check=False,
+    )
+
+
 def _result(cases: list[dict], runtime_error: str | None, test_cases: list[dict]) -> dict:
     total = len(test_cases)
     if not cases:

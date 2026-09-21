@@ -103,3 +103,26 @@ async def test_non_integer_token_subject_returns_401(client):
     token = create_access_token("not-an-int")
     r = await client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 401
+
+
+async def test_oauth_state_carries_redirect_roundtrip():
+    # The OAuth state (a signed JWT) must carry the redirect origin so it
+    # survives the round-trip to Google and back to the callback.
+    from app.features.auth import service
+
+    state = service.create_oauth_state("http://localhost:3000")
+    payload = service.decode_oauth_state(state)
+    assert payload is not None
+    assert payload.get("redirect") == "http://localhost:3000"
+    assert service.decode_oauth_state("garbage") is None
+
+
+async def test_frontend_origin_allowlist_blocks_open_redirect():
+    # Only allowlisted origins (cors_origins + frontend_url) pass; anything else
+    # (a foreign host, junk, None) is rejected so the callback can't be hijacked.
+    from app.features.auth import router
+
+    assert router._validate_frontend_origin("http://localhost:3000/auth/callback") == "http://localhost:3000"
+    assert router._validate_frontend_origin("https://evil.example.com/auth/callback") is None
+    assert router._validate_frontend_origin("not-a-url") is None
+    assert router._validate_frontend_origin(None) is None

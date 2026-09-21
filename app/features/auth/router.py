@@ -1,4 +1,4 @@
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
@@ -15,14 +15,34 @@ from app.schemas.auth import AuthOut, LoginIn, SignupIn, UpdateMeIn, UserOut
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-def _frontend_callback_url(token: str | None = None, error: str | None = None) -> str:
+def _allowed_frontend_origins() -> set[str]:
+    settings = get_settings()
+    origins = {o.rstrip("/") for o in settings.cors_origins}
+    origins.add(settings.frontend_url.rstrip("/"))
+    return origins
+
+
+def _validate_frontend_origin(url: str | None) -> str | None:
+    """Return scheme://host[:port] of `url` if it is an allowlisted frontend
+    origin, else None. Guards against open-redirect - only the origin is used,
+    the path is always the fixed /auth/callback below."""
+    if not url:
+        return None
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.netloc:
+        return None
+    origin = f"{parts.scheme}://{parts.netloc}"
+    return origin if origin in _allowed_frontend_origins() else None
+
+
+def _frontend_callback_url(base: str, token: str | None = None, error: str | None = None) -> str:
     params = []
     if token:
         params.append(("token", token))
     if error:
         params.append(("error", error))
     query = urlencode(params)
-    return f"{get_settings().frontend_url}/auth/callback{f'?{query}' if query else ''}"
+    return f"{base.rstrip('/')}/auth/callback{f'?{query}' if query else ''}"
 
 
 @router.post("/signup", response_model=AuthOut)
@@ -43,11 +63,15 @@ async def login(data: LoginIn, db: AsyncSession = Depends(get_db)) -> AuthOut:
 
 
 @router.get("/google/start")
-async def google_start() -> RedirectResponse:
+async def google_start(redirect: str | None = None) -> RedirectResponse:
+    # Validated caller origin (localhost in dev, deployed URL in prod); carried
+    # through Google via the signed state so the callback returns to it.
+    origin = _validate_frontend_origin(redirect)
+    fallback = get_settings().frontend_url
     try:
-        url = service.google_auth_url(service.create_oauth_state())
+        url = service.google_auth_url(service.create_oauth_state(origin))
     except RuntimeError as exc:
-        return RedirectResponse(_frontend_callback_url(error=str(exc)))
+        return RedirectResponse(_frontend_callback_url(origin or fallback, error=str(exc)))
     return RedirectResponse(url)
 
 
@@ -58,15 +82,18 @@ async def google_callback(
     error: str | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
+    payload = service.decode_oauth_state(state) if state else None
+    # Re-validate the origin from the signed state (defense in depth).
+    base = (_validate_frontend_origin(payload.get("redirect")) if payload else None) or get_settings().frontend_url
     if error:
-        return RedirectResponse(_frontend_callback_url(error=error))
-    if not code or not state or not service.verify_oauth_state(state):
-        return RedirectResponse(_frontend_callback_url(error="Invalid Google sign-in response"))
+        return RedirectResponse(_frontend_callback_url(base, error=error))
+    if not code or payload is None:
+        return RedirectResponse(_frontend_callback_url(base, error="Invalid Google sign-in response"))
     try:
         user = await service.authenticate_google(db, code)
     except (RuntimeError, ValueError) as exc:
-        return RedirectResponse(_frontend_callback_url(error=str(exc)))
-    return RedirectResponse(_frontend_callback_url(token=create_access_token(str(user.id))))
+        return RedirectResponse(_frontend_callback_url(base, error=str(exc)))
+    return RedirectResponse(_frontend_callback_url(base, token=create_access_token(str(user.id))))
 
 
 @router.get("/me", response_model=UserOut)
