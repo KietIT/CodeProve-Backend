@@ -37,6 +37,9 @@ def create_app() -> FastAPI:
     from app.features.daily.router import router as daily_router
     app.include_router(daily_router)
 
+    from app.features.practice.router import router as practice_router
+    app.include_router(practice_router)
+
     return app
 
 
