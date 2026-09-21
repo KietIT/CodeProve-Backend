@@ -70,11 +70,21 @@ def _run_script(script: Path, timeout: int) -> subprocess.CompletedProcess[bytes
 # the filename "user_code" so the tracer records only the student's lines, and
 # line numbers map back to their source. Reuses the subprocess isolation above.
 _TRACE_HARNESS = r'''
-import json, sys, io, contextlib
+import json, sys, io, types, contextlib
 with open(sys.argv[1], encoding="utf-8") as _f:
     _p = json.load(_f)
 USER_SOURCE = _p["source"]; CALL = _p["call"]; MAX_FRAMES = 500
 frames = []; error = None
+
+# In practice mode the code runs at module scope, so frame.f_locals is the
+# module globals - which Python auto-populates with __builtins__ and the
+# user's own function/class/import bindings. None of that is a "variable" the
+# student is tracking, so drop dunders and module/function/type values.
+def _skip(n, v):
+    if n.startswith("__") and n.endswith("__"):
+        return True
+    return isinstance(v, (types.ModuleType, types.FunctionType,
+                          types.BuiltinFunctionType, type))
 
 def _short(x):
     s = x if isinstance(x, str) else repr(x)
@@ -97,7 +107,7 @@ def _tracer(frame, event, arg):
     if event == "line":
         if len(frames) >= MAX_FRAMES:
             raise RuntimeError("__cap__")
-        raw = dict(frame.f_locals)
+        raw = {n: v for n, v in frame.f_locals.items() if not _skip(n, v)}
         viz = {}
         for n, val in raw.items():
             try:
