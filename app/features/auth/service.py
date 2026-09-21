@@ -46,21 +46,28 @@ async def authenticate(db: AsyncSession, data: LoginIn) -> User | None:
     return user
 
 
-def create_oauth_state() -> str:
+def create_oauth_state(redirect: str | None = None) -> str:
     settings = get_settings()
-    payload = {
+    payload: dict = {
         "nonce": secrets.token_urlsafe(16),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=10),
     }
+    # Carry the (already validated) frontend origin through the Google round-trip
+    # so the callback returns to whichever origin started sign-in.
+    if redirect:
+        payload["redirect"] = redirect
     return jwt.encode(payload, settings.jwt_secret, algorithm=_ALGO)
 
 
-def verify_oauth_state(state: str) -> bool:
+def decode_oauth_state(state: str) -> dict | None:
     try:
-        jwt.decode(state, get_settings().jwt_secret, algorithms=[_ALGO])
-        return True
+        return jwt.decode(state, get_settings().jwt_secret, algorithms=[_ALGO])
     except JWTError:
-        return False
+        return None
+
+
+def verify_oauth_state(state: str) -> bool:
+    return decode_oauth_state(state) is not None
 
 
 def google_auth_url(state: str) -> str:
