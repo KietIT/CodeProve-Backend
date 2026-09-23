@@ -148,3 +148,65 @@ async def test_generate_challenge_requests_max_tokens_1500(db_session, monkeypat
 
     assert len(recorder.calls) == 1
     assert recorder.calls[0]["max_tokens"] == 1500
+
+
+class PayloadJudgeClient:
+    """Returns _FULL_PAYLOAD with the given fields overridden."""
+
+    _model = "fake"
+
+    def __init__(self, **overrides):
+        self.payload = {**_FULL_PAYLOAD, **overrides}
+
+    async def judge(self, system, user, max_tokens=300):
+        return dict(self.payload)
+
+
+async def test_generate_challenge_strips_comments_from_buggy_code(db_session, monkeypatch):
+    from app.features.daily.content import generate_challenge
+    import app.features.daily.content as content_mod
+
+    client = PayloadJudgeClient(
+        buggy_code=(
+            "def reverse(s):\n"
+            "    # reverse the string\n"
+            "    reversed_str = s[::-1]\n"
+            "    return reversed_str[::-1]  # This line is incorrect"
+        ),
+        buggy_line=4,
+    )
+    monkeypatch.setattr(content_mod, "get_mentor_client", lambda: client)
+
+    challenge = await generate_challenge(db_session, date(2026, 7, 4))
+
+    assert challenge.buggy_code == (
+        "def reverse(s):\n"
+        "\n"
+        "    reversed_str = s[::-1]\n"
+        "    return reversed_str[::-1]"
+    )
+    assert challenge.buggy_line == 4
+
+
+@pytest.mark.parametrize(
+    "buggy_code, buggy_line",
+    [
+        ("def f():\n    return 1", 3),  # past the last line
+        ("def f():\n    # bug here\n    return 1", 2),  # comment-only line, blank after stripping
+        ('def f():\n    return """unterminated', 2),  # untokenizable
+    ],
+)
+async def test_generate_challenge_rejects_unusable_code_or_line(db_session, monkeypatch, buggy_code, buggy_line):
+    from app.features.daily.content import DailyGenerationError, generate_challenge
+    from app.models import DailyChallenge
+    from sqlalchemy import select
+    import app.features.daily.content as content_mod
+
+    client = PayloadJudgeClient(buggy_code=buggy_code, buggy_line=buggy_line)
+    monkeypatch.setattr(content_mod, "get_mentor_client", lambda: client)
+
+    with pytest.raises(DailyGenerationError):
+        await generate_challenge(db_session, date(2026, 7, 4))
+
+    rows = (await db_session.execute(select(DailyChallenge))).scalars().all()
+    assert rows == []

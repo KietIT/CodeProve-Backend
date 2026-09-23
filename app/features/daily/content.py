@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.daily.prompts_bank import DAILY_PROMPTS
+from app.features.daily.sanitize import strip_python_comments
 from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import DAILY_CHALLENGE_SYSTEM
 from app.models import DailyChallenge
@@ -56,9 +57,22 @@ async def generate_challenge(db: AsyncSession, challenge_date: date) -> DailyCha
     if not buggy_code.strip():
         raise DailyGenerationError("Judge response is missing buggy_code (empty or truncated JSON)")
 
+    # Safety net for the prompt's no-comments rule: the LLM sometimes leaves
+    # comments like "# This line is incorrect" that give the answer away.
+    try:
+        buggy_code = strip_python_comments(buggy_code)
+    except ValueError as exc:
+        raise DailyGenerationError(f"Judge response has untokenizable buggy_code: {exc}") from exc
+
     buggy_line = data.get("buggy_line")
     if not isinstance(buggy_line, int) or isinstance(buggy_line, bool) or buggy_line <= 0:
         raise DailyGenerationError(f"Judge response has an invalid buggy_line: {buggy_line!r}")
+    # Split on newlines like the frontend does when numbering lines.
+    code_lines = buggy_code.split("\n")
+    if buggy_line > len(code_lines) or not code_lines[buggy_line - 1].strip():
+        raise DailyGenerationError(
+            f"Judge response buggy_line {buggy_line} does not point at a line of code"
+        )
 
     # A missing hint degrades gracefully (still playable); a missing
     # explanation in either language is not - the reveal would be blank.
