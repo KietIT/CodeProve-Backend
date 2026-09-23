@@ -17,9 +17,16 @@ How to run the full CodeProve stack locally from scratch.
 
 ## Step 1 - Start the database
 
+Compose reads the DB password from `.env`, so create it first (see Step 3 for
+the other values) and set `POSTGRES_PASSWORD` to a long random string - and the
+same password in `DATABASE_URL`:
+
 ```powershell
+copy .env.example .env
 docker compose up -d db
 ```
+
+Postgres is published on `127.0.0.1:5432` only (loopback), never on the network.
 
 Wait until the container is healthy (about 5 s):
 
@@ -44,11 +51,7 @@ On macOS / Linux replace `.venv\Scripts\python.exe` with `.venv/bin/python`.
 
 ## Step 3 - Configure environment variables
 
-```powershell
-copy .env.example .env
-```
-
-Open `.env` and fill in the two required secrets:
+Open `.env` (created in Step 1) and fill in the two required secrets:
 
 ```
 OPENAI_API_KEY=sk-...            # your real OpenAI key

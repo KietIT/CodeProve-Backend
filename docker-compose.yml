@@ -7,7 +7,8 @@ services:
     environment:
       # Override .env: inside the compose network the DB is reachable via the
       # "db" service hostname, not localhost.
-      - DATABASE_URL=postgresql+asyncpg://codeprove:codeprove@db:5432/codeprove
+      # Credentials come from .env (compose interpolates ${...} from it).
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-codeprove}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-codeprove}
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
@@ -20,17 +21,19 @@ services:
     image: postgres:16
     container_name: codeprove_db
     environment:
-      POSTGRES_USER: codeprove
-      POSTGRES_PASSWORD: codeprove
-      POSTGRES_DB: codeprove
+      POSTGRES_USER: ${POSTGRES_USER:-codeprove}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-codeprove}
     ports:
-      # Publish to host so tools run from .venv (alembic, seed scripts) can
-      # reach the DB via localhost:5432. The backend container still uses "db".
-      - "5432:5432"
+      # Loopback only: tools run from .venv on the same host (alembic, seed
+      # scripts) reach the DB via localhost:5432, but it is NOT exposed to the
+      # network. Docker-published ports bypass ufw/iptables rules, so never use
+      # a bare "5432:5432" here. The backend container still uses "db".
+      - "127.0.0.1:5432:5432"
     volumes:
       - codeprove_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U codeprove -d codeprove"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5

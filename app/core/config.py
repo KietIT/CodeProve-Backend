@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     # parses a comma-separated string straight from the .env value.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
     sandbox_timeout: int = 5
+    # Per-user cap on sandbox executions (trace + run) per minute.
+    sandbox_rate_limit_per_minute: int = 20
     # Shared-secret for the daily-challenge regenerate ops endpoint. Empty by
     # default so the endpoint is a no-op (always 403) until an operator sets
     # it - there is no user-role/admin system in this codebase to hook into.
