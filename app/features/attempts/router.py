@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
@@ -55,13 +56,15 @@ async def add_snapshot(attempt_id: int, data: SnapshotIn, db: AsyncSession = Dep
 @router.post("/{attempt_id}/run", response_model=RunResult)
 async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
               user: User = Depends(get_current_user)) -> RunResult:
+    settings = get_settings()
+    rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     attempt = await service.require_attempt(db, attempt_id, user)
     cases = (await db.execute(
         select(TestCase).where(TestCase.exercise_id == attempt.exercise_id).order_by(TestCase.order_index)
     )).scalars().all()
     case_dicts = [{"input_data": c.input_data, "expected_output": c.expected_output,
                    "description": c.description, "weight": c.weight} for c in cases]
-    result = await sandbox_run(data.source_code, case_dicts, get_settings().sandbox_timeout)
+    result = await sandbox_run(data.source_code, case_dicts, settings.sandbox_timeout)
 
     # snapshot + telemetry
     next_version = 1 + len((await db.execute(

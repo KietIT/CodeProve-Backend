@@ -4,8 +4,15 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 import app.models  # noqa: F401 - ensures all models are registered on Base.metadata
+from app.core import rate_limit
 from app.core.db import Base, get_db
 from app.main import create_app
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    # Limiter state is process-global; every test starts with a clean slate.
+    rate_limit.reset()
 
 
 @pytest_asyncio.fixture

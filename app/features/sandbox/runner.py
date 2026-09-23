@@ -1,12 +1,108 @@
-"""Subprocess sandbox: runs user code + test expressions in an isolated Python
+"""Subprocess sandbox: runs user code + test expressions in a separate Python
 process with a timeout. MVP-grade isolation (not container-level). Interface is
-stable so a Docker backend can replace it later."""
+stable so a Docker backend can replace it later.
+
+What this layer does:
+  - the child gets a minimal env (no API keys, JWT secret, DATABASE_URL, ...);
+  - it starts in a private scratch dir, not the backend's working directory;
+  - on POSIX it runs under rlimits (memory, CPU, file size, no core dumps);
+  - when the backend runs as root and a `sandbox` user exists (see Dockerfile),
+    it runs as that unprivileged user, so it cannot read the backend's
+    /proc/<pid>/environ or root-only files.
+
+What it does NOT do: block network access (the child can still reach the `db`
+service and the internet) or stop reads of world-readable files. Real isolation
+needs a dedicated sandbox container with no network and no secrets (e.g. a
+separate runner service using nsjail / gVisor / Firecracker) - tracked as
+follow-up.
+"""
 import asyncio
 import json
+import logging
+import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+SANDBOX_USER = "sandbox"
+_MEMORY_LIMIT_BYTES = 256 * 1024 * 1024
+_FILE_SIZE_LIMIT_BYTES = 1024 * 1024
+# The sandbox user must be able to read the harness but never write next to it:
+# owner-only write on both. Loosening these lets user code tamper with its cwd.
+_SCRATCH_DIR_MODE = 0o755
+_SCRATCH_FILE_MODE = 0o644
+
+# Prepended to both harnesses: applies rlimits inside the child before any user
+# code runs (done here rather than via preexec_fn, which is not safe to use from
+# the worker threads that launch the subprocess).
+_LIMITS_PRELUDE = """
+import sys as _sys
+if _sys.platform != "win32":
+    import resource as _r
+    for _res, _soft in ((_r.RLIMIT_AS, {memory}), (_r.RLIMIT_CPU, {cpu}),
+                        (_r.RLIMIT_FSIZE, {fsize}), (_r.RLIMIT_CORE, 0)):
+        _hard = _r.getrlimit(_res)[1]
+        _v = _soft if _hard == _r.RLIM_INFINITY else min(_soft, _hard)
+        _r.setrlimit(_res, (_v, _v))
+    del _r, _res, _soft, _hard, _v
+del _sys
+"""
+
+
+def _limits_prelude(timeout: int) -> str:
+    return _LIMITS_PRELUDE.format(memory=_MEMORY_LIMIT_BYTES, cpu=timeout + 1, fsize=_FILE_SIZE_LIMIT_BYTES)
+
+
+def _sandbox_env() -> dict[str, str]:
+    """Explicit allow-list: nothing from the backend's environment leaks into
+    user code. SYSTEMROOT is required for Python to start on Windows."""
+    env = {"PATH": os.environ.get("PATH", os.defpath)}
+    if sys.platform == "win32":
+        env["SYSTEMROOT"] = os.environ.get("SYSTEMROOT", r"C:\Windows")
+    else:
+        env["LANG"] = "C.UTF-8"
+    return env
+
+
+def _sandbox_identity() -> dict[str, object]:
+    """subprocess kwargs that drop root to the unprivileged sandbox user."""
+    if not hasattr(os, "geteuid") or os.geteuid() != 0:
+        return {}
+    import pwd
+
+    try:
+        pw = pwd.getpwnam(SANDBOX_USER)
+    except KeyError:
+        logger.warning("Sandbox user %r not found; running user code as root", SANDBOX_USER)
+        return {}
+    return {"user": pw.pw_uid, "group": pw.pw_gid, "extra_groups": []}
+
+
+def _spawn(argv: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        [sys.executable, "-I", *argv],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        # No interactive stdin: feed EOF so input() fails fast with EOFError
+        # instead of blocking until the timeout.
+        stdin=subprocess.DEVNULL,
+        env=_sandbox_env(),
+        cwd=cwd,
+        timeout=timeout,
+        check=False,
+        **_sandbox_identity(),
+    )
+
+
+def _make_scratch_readable(tmp: Path) -> None:
+    """TemporaryDirectory is 0700; the sandbox user needs to read the harness.
+    Files stay read-only for it, so user code cannot write into its cwd."""
+    tmp.chmod(_SCRATCH_DIR_MODE)
+    for f in tmp.iterdir():
+        f.chmod(_SCRATCH_FILE_MODE)
 
 _HARNESS = '''
 import json, sys, io, contextlib
@@ -37,10 +133,11 @@ print(json.dumps({{"results": results, "runtime_error": runtime_error}}))
 
 
 async def run_tests(source_code: str, test_cases: list[dict], timeout: int) -> dict:
-    harness = _HARNESS.format(source=source_code, cases=json.dumps(test_cases))
+    harness = _limits_prelude(timeout) + _HARNESS.format(source=source_code, cases=json.dumps(test_cases))
     with tempfile.TemporaryDirectory() as tmp:
         script = Path(tmp) / "runner.py"
         script.write_text(harness, encoding="utf-8")
+        _make_scratch_readable(Path(tmp))
         try:
             proc = await asyncio.to_thread(_run_script, script, timeout)
         except subprocess.TimeoutExpired:
@@ -55,13 +152,7 @@ async def run_tests(source_code: str, test_cases: list[dict], timeout: int) -> d
 
 
 def _run_script(script: Path, timeout: int) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        [sys.executable, "-I", str(script)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=timeout,
-        check=False,
-    )
+    return _spawn([str(script)], script.parent, timeout)
 
 
 # ── Execution trace (algorithm visualizer) ───────────────────────────────────
@@ -160,9 +251,10 @@ print(json.dumps({"frames": frames, "stdout": _buf.getvalue()[:2000], "error": e
 async def trace_code(source_code: str, call: str, timeout: int) -> dict:
     with tempfile.TemporaryDirectory() as tmp:
         script = Path(tmp) / "trace.py"
-        script.write_text(_TRACE_HARNESS, encoding="utf-8")
+        script.write_text(_limits_prelude(timeout) + _TRACE_HARNESS, encoding="utf-8")
         payload = Path(tmp) / "payload.json"
         payload.write_text(json.dumps({"source": source_code, "call": call or ""}), encoding="utf-8")
+        _make_scratch_readable(Path(tmp))
         try:
             proc = await asyncio.to_thread(_run_trace, script, payload, timeout)
         except subprocess.TimeoutExpired:
@@ -177,16 +269,7 @@ async def trace_code(source_code: str, call: str, timeout: int) -> dict:
 
 
 def _run_trace(script: Path, payload: Path, timeout: int) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(
-        [sys.executable, "-I", str(script), str(payload)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        # No interactive stdin in practice mode: feed EOF so input() fails fast
-        # with EOFError instead of blocking the whole trace until the timeout.
-        stdin=subprocess.DEVNULL,
-        timeout=timeout,
-        check=False,
-    )
+    return _spawn([str(script), str(payload)], script.parent, timeout)
 
 
 def _result(cases: list[dict], runtime_error: str | None, test_cases: list[dict]) -> dict:

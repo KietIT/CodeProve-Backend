@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.db import get_db
+from app.core.deps import get_current_user
 from app.features.sandbox import runner
-from app.models import Exercise, TestCase
+from app.models import Exercise, TestCase, User
 from app.schemas.practice import TraceIn
 
 router = APIRouter(prefix="/api/practice", tags=["practice"])
@@ -31,10 +33,14 @@ async def _first_visible_input(db: AsyncSession, exercise_code: str) -> str:
 
 
 @router.post("/trace")
-async def trace(data: TraceIn, db: AsyncSession = Depends(get_db)) -> dict:
+async def trace(data: TraceIn, db: AsyncSession = Depends(get_db),
+                user: User = Depends(get_current_user)) -> dict:
     """Trace the student's code step by step for the algorithm visualizer.
-    Non-graded practice aid: runs in the same sandbox as /run, with a timeout."""
+    Non-graded practice aid: runs in the same sandbox as /run, with a timeout.
+    Executes arbitrary code, so it requires login and is rate limited."""
+    settings = get_settings()
+    rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     call = data.call or ""
     if not call and data.exercise_code:
         call = await _first_visible_input(db, data.exercise_code)
-    return await runner.trace_code(data.source_code, call, get_settings().sandbox_timeout)
+    return await runner.trace_code(data.source_code, call, settings.sandbox_timeout)

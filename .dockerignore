@@ -1,0 +1,13 @@
+# Secrets must never be baked into the image: the sandbox child could read them.
+.env
+.env.*
+!.env.example
+.git
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.claude/
+*.sqlite3
+*.pem

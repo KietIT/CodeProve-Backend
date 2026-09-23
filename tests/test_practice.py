@@ -13,10 +13,11 @@ TWO_SUM = (
 )
 
 
-async def test_trace_returns_per_line_frames_with_array_pointer(client):
+async def test_trace_returns_per_line_frames_with_array_pointer(client, auth_headers):
     r = await client.post(
         "/api/practice/trace",
         json={"source_code": TWO_SUM, "call": "two_sum([2, 7, 11, 15], 9)"},
+        headers=auth_headers,
     )
     assert r.status_code == 200
     body = r.json()
@@ -31,18 +32,38 @@ async def test_trace_returns_per_line_frames_with_array_pointer(client):
     assert "i" in ptr_frames[0]["locals"]["nums"]["ptrs"]
 
 
-async def test_trace_renders_dict_as_map(client):
+async def test_trace_renders_dict_as_map(client, auth_headers):
     src = "def count(xs):\n    d = {}\n    for x in xs:\n        d[x] = d.get(x, 0) + 1\n    return d\n"
-    r = await client.post("/api/practice/trace", json={"source_code": src, "call": "count(['a','b','a'])"})
+    r = await client.post("/api/practice/trace", json={"source_code": src, "call": "count(['a','b','a'])"},
+                          headers=auth_headers)
     assert r.status_code == 200
     frames = r.json()["frames"]
     maps = [f["locals"]["d"] for f in frames if f["locals"].get("d", {}).get("kind") == "map"]
     assert maps and maps[-1]["entries"]  # dict captured as a map
 
 
-async def test_trace_of_empty_body_has_no_array_frames(client):
-    r = await client.post("/api/practice/trace", json={"source_code": "def f(nums):\n    pass\n", "call": "f([1,2,3])"})
+async def test_trace_of_empty_body_has_no_array_frames(client, auth_headers):
+    r = await client.post("/api/practice/trace", json={"source_code": "def f(nums):\n    pass\n", "call": "f([1,2,3])"},
+                          headers=auth_headers)
     assert r.status_code == 200
     frames = r.json()["frames"]
     # `pass` produces at most one trivial frame and no populated array to animate.
     assert not any(f["locals"].get("nums", {}).get("ptrs") for f in frames)
+
+
+async def test_trace_requires_login(client):
+    # Runs arbitrary code: anonymous callers must be rejected before execution.
+    r = await client.post("/api/practice/trace", json={"source_code": "x = 1\n"})
+    assert r.status_code == 401
+
+
+async def test_trace_is_rate_limited_per_user(client, auth_headers, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "sandbox_rate_limit_per_minute", 2)
+    body = {"source_code": "x = 1\n"}
+    for _ in range(2):
+        assert (await client.post("/api/practice/trace", json=body, headers=auth_headers)).status_code == 200
+    r = await client.post("/api/practice/trace", json=body, headers=auth_headers)
+    assert r.status_code == 429
+    assert r.headers["Retry-After"] == "60"
