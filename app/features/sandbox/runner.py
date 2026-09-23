@@ -30,6 +30,10 @@ logger = logging.getLogger(__name__)
 SANDBOX_USER = "sandbox"
 _MEMORY_LIMIT_BYTES = 256 * 1024 * 1024
 _FILE_SIZE_LIMIT_BYTES = 1024 * 1024
+# The sandbox user must be able to read the harness but never write next to it:
+# owner-only write on both. Loosening these lets user code tamper with its cwd.
+_SCRATCH_DIR_MODE = 0o755
+_SCRATCH_FILE_MODE = 0o644
 
 # Prepended to both harnesses: applies rlimits inside the child before any user
 # code runs (done here rather than via preexec_fn, which is not safe to use from
@@ -96,9 +100,9 @@ def _spawn(argv: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProc
 def _make_scratch_readable(tmp: Path) -> None:
     """TemporaryDirectory is 0700; the sandbox user needs to read the harness.
     Files stay read-only for it, so user code cannot write into its cwd."""
-    tmp.chmod(0o755)
+    tmp.chmod(_SCRATCH_DIR_MODE)
     for f in tmp.iterdir():
-        f.chmod(0o644)
+        f.chmod(_SCRATCH_FILE_MODE)
 
 _HARNESS = '''
 import json, sys, io, contextlib
