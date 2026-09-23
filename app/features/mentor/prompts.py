@@ -45,6 +45,11 @@ condition, swapped operator, wrong variable used, inverted condition). The bug m
 plausible - something a developer reviewing AI-generated code could genuinely miss on a quick
 read. Do not use a syntax error and do not use anything a linter would flag.
 
+The buggy_code must contain NO comments (no "#" anywhere outside string literals) and NO
+docstrings. Never annotate, mark, or hint at the bug or its location in the code itself (e.g.
+"# bug here", "# This line is incorrect", "# should be <="); the player must find it by
+reading the logic alone.
+
 The hints and the explanation are shown in a bilingual UI: write the _vi fields in natural
 Vietnamese and the _en fields in natural English; each pair must convey the same meaning.
 
