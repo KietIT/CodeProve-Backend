@@ -86,3 +86,20 @@ async def test_submitting_a_scored_attempt_is_rejected(client, db_session, auth_
     await db_session.commit()
     r = await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
     assert r.status_code == 409
+
+
+async def test_report_lists_the_failing_hidden_test_and_scores_testing_from_it(client, db_session, auth_headers):
+    aid = await _attempt(client, db_session, auth_headers)
+    questions = (await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)).json()["questions"]
+    eb = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers,
+                           json={"answers": [{"question": questions[0], "answer": "It returns x plus one for every input."}]})
+    body = eb.json()
+    assert body["axes"]["testing"] == round(20 * 2 / 3, 2)
+    suite = body["feedback"]["submit_tests"]
+    assert (suite["passed"], suite["total"], suite["failed_categories"]) == (2, 3, ["edge"])
+    assert suite["failures"][0]["input"] == "inc(-5)"
+    implementation = next(t for t in body["timeline"] if t["key"] == "implementation")
+    assert implementation["coverage_pct"] == 66
+
+    report = (await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)).json()
+    assert report["feedback"]["submit_tests"] == suite

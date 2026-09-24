@@ -60,7 +60,36 @@ def build_feedback(axes: dict, f: AxisFeatures, not_applicable: dict[str, str] |
         risks.append({"axis": "Prompting", "code": "short_prompts",
                       "note": "Some prompts were too short to be effective."})
     return {"strengths": strengths[:4], "risks": risks[:4], "per_axis": per_axis,
-            "not_applicable": dict(not_applicable or {})}
+            "not_applicable": dict(not_applicable or {}),
+            "submit_tests": _submit_tests_view(f.submit_tests)}
+
+
+def _submit_tests_view(payload: dict | None) -> dict | None:
+    """The full-suite result shown on the Feedback page, failing inputs included."""
+    if not payload:
+        return None
+    return {
+        "passed": payload.get("passed"),
+        "total": payload.get("total"),
+        "hidden_passed": payload.get("hiddenPassed"),
+        "hidden_total": payload.get("hiddenTotal"),
+        "failed_categories": payload.get("failedCategories", []),
+        "failures": payload.get("failures", []),
+    }
+
+
+def _implementation_item(f: AxisFeatures) -> dict:
+    base = {"key": "implementation", "step": "Step 2 · Implementation", "title": "Solution ran against tests"}
+    suite = f.submit_tests
+    if suite and suite.get("total"):
+        pct = int(100 * suite["passed"] / suite["total"])
+        return {**base, "coverage_pct": pct,
+                "desc": f"Passed {suite['passed']}/{suite['total']} tests at submit.", "active": True}
+    # Older sessions without a submit suite: best run of the visible tests.
+    return {**base,
+            "coverage_pct": int(f.best_coverage * 100) if f.has_test_run else None,
+            "desc": f"Best coverage {int(f.best_coverage * 100)}%." if f.has_test_run else "No tests were run.",
+            "active": f.has_test_run}
 
 
 def build_timeline(f: AxisFeatures) -> list[dict]:
@@ -78,14 +107,7 @@ def build_timeline(f: AxisFeatures) -> list[dict]:
             ),
             "active": f.has_hypothesis_before_code,
         },
-        {
-            "key": "implementation",
-            "coverage_pct": int(f.best_coverage * 100) if f.has_test_run else None,
-            "step": "Step 2 · Implementation",
-            "title": "Solution ran against tests",
-            "desc": f"Best coverage {int(f.best_coverage * 100)}%." if f.has_test_run else "No tests were run.",
-            "active": f.has_test_run,
-        },
+        _implementation_item(f),
         {
             "key": "explain_back",
             "explain_score": round(f.explain_score),

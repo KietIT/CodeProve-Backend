@@ -69,7 +69,8 @@ def _testing(f: AxisFeatures) -> float:
     # suite (visible + hidden) the submitted code passes. Sessions without a
     # submit suite (older ones) fall back to the last run of the visible tests.
     if f.submit_tests and f.submit_tests.get("total"):
-        return clamp(0, 20, 20 * float(f.submit_tests["passRatio"]))
+        # passed/total, not the stored passRatio, which is rounded to 3 places.
+        return clamp(0, 20, 20 * f.submit_tests["passed"] / f.submit_tests["total"])
     if f.run_count == 0:
         return 0.0
     return clamp(0, 20, 20 * f.final_pass_ratio)
