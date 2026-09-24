@@ -43,6 +43,18 @@ class ContentLimits(BaseModel):
     reason: str = Field(min_length=10)
 
 
+class ExerciseOverrides(BaseModel):
+    """Replacements for the exercise's own fields, for exercises whose seeded
+    statement cannot be tested fairly. Reviewed like the rest of the file."""
+
+    summary: str | None = Field(default=None, min_length=1)
+    starter_code: CodeText | None = None
+    hint: str | None = Field(default=None, min_length=1)
+
+    def fields_set(self) -> list[str]:
+        return [name for name in ("summary", "starter_code", "hint") if getattr(self, name) is not None]
+
+
 class ContentReview(BaseModel):
     status: Literal["draft", "approved"]
     author: str = Field(min_length=1)
@@ -55,7 +67,14 @@ class ExerciseContent(BaseModel):
     tests: list[ContentTest] = Field(min_length=1)
     mutants: list[ContentMutant]
     limits: ContentLimits | None = None
+    exercise: ExerciseOverrides | None = None
     review: ContentReview
+
+    def starter_for(self, current_starter: str) -> str:
+        """The starter the exercise will have once this file is synced."""
+        if self.exercise and self.exercise.starter_code is not None:
+            return self.exercise.starter_code
+        return current_starter
 
     @property
     def is_approved(self) -> bool:

@@ -51,6 +51,10 @@ async def validate_content(content: ExerciseContent, kind: str, starter_code: st
     """
     errors = _structure_errors(content)
     cases = _cases(content)
+    try:
+        compile(starter_code, "<starter>", "exec")
+    except SyntaxError as exc:
+        errors.append(f"starter does not compile: {exc.msg} (line {exc.lineno})")
 
     ref = await run_tests(content.reference_solution, cases, timeout)
     if ref["runtime_error"]:

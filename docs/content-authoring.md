@@ -83,6 +83,13 @@ the same hardened sandbox as student code, never in the backend process.
   cannot be tested deterministically in the sandbox (e.g. timing-dependent
   concurrency): `"limits": {"min_hidden": 3, "reason": "..."}`. The reviewer must
   agree with the reason.
+- **`exercise`** (optional) replaces the exercise's own `summary`, `starter_code`
+  (array of lines) and/or `hint`, for exercises whose seeded statement cannot be
+  tested fairly (e.g. it defines no function contract). Only the fields you give
+  are replaced. The validator checks the new starter compiles (and, for debug
+  exercises, still fails a test), and the sync dry run flags every override.
+  Implement exercises show students a scaffold of the starter (bodies replaced by
+  `pass`), so state the full contract in `summary`.
 
 ## What the validator already proves
 
@@ -106,6 +113,9 @@ descriptions. **You do not need to re-check these by hand.**
       student after submit, and say the same thing in both languages.
 - [ ] If `limits` is used, the reason is real (the exercise truly cannot be tested
       deterministically here).
+- [ ] If `exercise` overrides are used, the new summary states everything the tests
+      rely on (function names, arguments, return value, stopping rules), and the
+      starter matches it.
 
 If an exercise's summary is too ambiguous to test fairly, do not approve it:
 write the problem in the PR so the team can fix the summary first.

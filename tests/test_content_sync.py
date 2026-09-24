@@ -96,3 +96,33 @@ async def test_results_name_the_reviewer_for_the_operator(db_session, tmp_path):
     await _exercise(db_session)
     results = await sync_content(db_session, [_write(tmp_path, APPROVED)], apply=False)
     assert results[0]["reviewer"] == "an"
+
+
+async def test_overrides_are_written_and_reported(db_session, tmp_path):
+    from app.models import Exercise
+
+    await _exercise(db_session)
+    p = _write(tmp_path, APPROVED)
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    raw["exercise"] = {"summary": "Sum the integers 1..n (n <= 0 returns 0).",
+                       "starter_code": BUGGY_STARTER, "hint": "Try n = 3 by hand."}
+    p.write_text(json.dumps(raw), encoding="utf-8")
+
+    dry = await sync_content(db_session, [p], apply=False)
+    assert dry[0]["overrides"] == ["summary", "starter_code", "hint"]
+    await sync_content(db_session, [p], apply=True)
+    ex = (await db_session.execute(select(Exercise))).scalar_one()
+    assert ex.summary.startswith("Sum the integers")
+    assert ex.hint == "Try n = 3 by hand."
+
+
+async def test_debug_starter_check_uses_the_override(db_session, tmp_path):
+    await _exercise(db_session)
+    p = _write(tmp_path, APPROVED)
+    raw = json.loads(p.read_text(encoding="utf-8"))
+    # An override starter that is already correct leaves no bug to find.
+    raw["exercise"] = {"starter_code": raw["reference_solution"]}
+    p.write_text(json.dumps(raw), encoding="utf-8")
+    results = await sync_content(db_session, [p], apply=False)
+    assert results[0]["status"] == "invalid"
+    assert any("debug starter passes every test" in e for e in results[0]["errors"])

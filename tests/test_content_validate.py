@@ -105,3 +105,8 @@ async def test_descriptions_must_be_unique():
     c.tests[1].description = c.tests[0].description
     errors = await validate_content(c, "implement", "")
     assert any("duplicate test description" in e for e in errors)
+
+
+async def test_starter_must_compile():
+    errors = await validate_content(_content(), "implement", "def broken(:\n    pass")
+    assert any("starter does not compile" in e for e in errors)
