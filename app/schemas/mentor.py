@@ -9,8 +9,9 @@ class MentorIn(BaseModel):
 
 
 class MentorOut(BaseModel):
+    # The injected-bug flag stays in the event log for scoring; exposing it here
+    # would tell the student which reply is the trap.
     reply: str
-    injected_error: bool
 
 
 class HypothesisIn(BaseModel):

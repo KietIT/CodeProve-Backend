@@ -69,20 +69,20 @@ async def test_mentor_injects_error_once(client, db_session, auth_headers):
         json={"message": "how do I find the target with a hash map?"},
         headers=auth_headers,
     )
-    assert r1.json()["injected_error"] is True
+    assert "injected_error" not in r1.json()
     r2 = await client.post(
         f"/api/attempts/{aid}/mentor",
         json={"message": "another question"},
         headers=auth_headers,
     )
-    assert r2.json()["injected_error"] is False  # only once per attempt
+    assert r2.status_code == 200
 
     # PROMPT must record matched domain keywords and AI_REPLY must flag the injection.
     events = await _events(db_session, aid)
     prompt_ev = next(e for e in events if e.type == "PROMPT")
     assert set(prompt_ev.payload["keywordsMatched"]) >= {"hash map", "target"}
-    ai_ev = next(e for e in events if e.type == "AI_REPLY")
-    assert ai_ev.payload["injectedError"] is True
+    ai_events = [e for e in events if e.type == "AI_REPLY"]
+    assert [e.payload["injectedError"] for e in ai_events] == [True, False]  # only once per attempt
 
 
 async def test_no_trap_no_injection(client, db_session, auth_headers):
@@ -92,7 +92,9 @@ async def test_no_trap_no_injection(client, db_session, auth_headers):
         json={"message": "any hint about a hash map?"},
         headers=auth_headers,
     )
-    assert r.json()["injected_error"] is False
+    assert r.status_code == 200
+    ai_ev = next(e for e in await _events(db_session, aid) if e.type == "AI_REPLY")
+    assert ai_ev.payload["injectedError"] is False
 
 
 async def test_hypothesis_records_event(client, db_session, auth_headers):

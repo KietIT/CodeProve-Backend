@@ -104,7 +104,7 @@ async def mentor_reply(
         )
     )
     await db.commit()
-    return {"reply": result["text"], "injected_error": inject}
+    return {"reply": result["text"]}
 
 
 async def judge_hypothesis(db: AsyncSession, attempt: Attempt, text: str) -> dict:
