@@ -1,0 +1,154 @@
+{
+  "code": "CP-107",
+  "reference_solution": [
+    "def has_cycle(graph):",
+    "    state = {}  # 0 = visiting, 1 = done",
+    "",
+    "    def dfs(node):",
+    "        if state.get(node) == 0:",
+    "            return True",
+    "        if state.get(node) == 1:",
+    "            return False",
+    "        state[node] = 0",
+    "        if any(dfs(n) for n in graph[node]):",
+    "            return True",
+    "        state[node] = 1",
+    "        return False",
+    "",
+    "    return any(dfs(n) for n in graph)"
+  ],
+  "tests": [
+    {
+      "description": "test_acyclic_graph",
+      "input": "has_cycle({0: [1], 1: [2], 2: []})",
+      "expected": "False",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_cycle_graph",
+      "input": "has_cycle({0: [1], 1: [2], 2: [0]})",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "diamond is not a cycle",
+      "input": "has_cycle({0: [1, 2], 1: [3], 2: [3], 3: []})",
+      "expected": "False",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "self loop",
+      "input": "has_cycle({0: [0]})",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "cycle in a second component",
+      "input": "has_cycle({0: [1], 1: [], 2: [3], 3: [2]})",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty graph",
+      "input": "has_cycle({})",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "single node without edges",
+      "input": "has_cycle({0: []})",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "long chain",
+      "input": "has_cycle({i: [i + 1] for i in range(150)} | {150: []})",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def has_cycle(graph):",
+        "    state = {}  # 0 = visiting, 1 = done",
+        "",
+        "    def dfs(node):",
+        "        if state.get(node) == 0:",
+        "            return True",
+        "        if state.get(node) == 1:",
+        "            return False",
+        "        state[node] = 0",
+        "        if any(dfs(n) for n in graph[node]):",
+        "            return True",
+        "        state[node] = 0",
+        "        return False",
+        "",
+        "    return any(dfs(n) for n in graph)"
+      ],
+      "bug_line": 12,
+      "bug_type": "missing-update",
+      "note_vi": "Không đánh dấu nút đã xong nên duyệt lại nút cũ bị nhầm là chu trình.",
+      "note_en": "Never marks a node as done, so revisiting a finished node looks like a cycle."
+    },
+    {
+      "code": [
+        "def has_cycle(graph):",
+        "    state = {}  # 0 = visiting, 1 = done",
+        "",
+        "    def dfs(node):",
+        "        if state.get(node) == 0:",
+        "            return True",
+        "        if state.get(node) == 1:",
+        "            return True",
+        "        state[node] = 0",
+        "        if any(dfs(n) for n in graph[node]):",
+        "            return True",
+        "        state[node] = 1",
+        "        return False",
+        "",
+        "    return any(dfs(n) for n in graph)"
+      ],
+      "bug_line": 8,
+      "bug_type": "wrong-return",
+      "note_vi": "Coi nút đã xử lý xong là chu trình, nên đồ thị hình kim cương bị báo sai.",
+      "note_en": "Treats a finished node as a cycle, so a diamond-shaped graph is misreported."
+    },
+    {
+      "code": [
+        "def has_cycle(graph):",
+        "    state = {}  # 0 = visiting, 1 = done",
+        "",
+        "    def dfs(node):",
+        "        if state.get(node) == 0:",
+        "            return True",
+        "        if state.get(node) == 1:",
+        "            return False",
+        "        state[node] = 0",
+        "        if any(dfs(n) for n in graph[node]):",
+        "            return True",
+        "        state[node] = 1",
+        "        return False",
+        "",
+        "    return dfs(next(iter(graph)))"
+      ],
+      "bug_line": 15,
+      "bug_type": "missing-case",
+      "note_vi": "Chỉ duyệt từ nút đầu tiên nên bỏ sót chu trình ở thành phần khác.",
+      "note_en": "Only searches from the first node, so a cycle in another component is missed."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

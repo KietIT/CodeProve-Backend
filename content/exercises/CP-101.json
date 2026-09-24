@@ -1,0 +1,204 @@
+{
+  "code": "CP-101",
+  "reference_solution": [
+    "from collections import OrderedDict",
+    "",
+    "class LRUCache:",
+    "    def __init__(self, capacity):",
+    "        self.cap = capacity",
+    "        self.data = OrderedDict()",
+    "",
+    "    def get(self, key):",
+    "        if key not in self.data:",
+    "            return -1",
+    "        self.data.move_to_end(key)",
+    "        return self.data[key]",
+    "",
+    "    def put(self, key, value):",
+    "        if key in self.data:",
+    "            self.data.move_to_end(key)",
+    "        self.data[key] = value",
+    "        if len(self.data) > self.cap:",
+    "            self.data.popitem(last=False)"
+  ],
+  "tests": [
+    {
+      "description": "test_get_existing_key",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.get(1))[-1])(LRUCache(2))",
+      "expected": "1",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_evict_lru_key",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.get(1), c.put(3, 3), c.get(2))[-1])(LRUCache(2))",
+      "expected": "-1",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "missing key",
+      "input": "(lambda c: (c.get(7),)[-1])(LRUCache(2))",
+      "expected": "-1",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "recently used key survives eviction",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.get(1), c.put(3, 3), c.get(1),)[-1])(LRUCache(2))",
+      "expected": "1",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "updating a key refreshes it",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.put(1, 10), c.put(3, 3), c.get(2),)[-1])(LRUCache(2))",
+      "expected": "-1",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "updating a key changes its value",
+      "input": "(lambda c: (c.put(1, 1), c.put(1, 5), c.get(1),)[-1])(LRUCache(2))",
+      "expected": "5",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "capacity one",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.get(1),)[-1])(LRUCache(1))",
+      "expected": "-1",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "capacity one keeps the newest",
+      "input": "(lambda c: (c.put(1, 1), c.put(2, 2), c.get(2),)[-1])(LRUCache(1))",
+      "expected": "2",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "value zero is not treated as missing",
+      "input": "(lambda c: (c.put(1, 0), c.get(1),)[-1])(LRUCache(2))",
+      "expected": "0",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "from collections import OrderedDict",
+        "",
+        "class LRUCache:",
+        "    def __init__(self, capacity):",
+        "        self.cap = capacity",
+        "        self.data = OrderedDict()",
+        "",
+        "    def get(self, key):",
+        "        if key not in self.data:",
+        "            return -1",
+        "        self.data.move_to_end(key)",
+        "        return self.data[key]",
+        "",
+        "    def put(self, key, value):",
+        "        if key in self.data:",
+        "            self.data.move_to_end(key)",
+        "        self.data[key] = value",
+        "        if len(self.data) > self.cap:",
+        "            self.data.popitem()"
+      ],
+      "bug_line": 19,
+      "bug_type": "wrong-end",
+      "note_vi": "popitem() mặc định xoá phần tử mới nhất thay vì phần tử lâu nhất.",
+      "note_en": "popitem() removes the newest entry by default instead of the least recently used one."
+    },
+    {
+      "code": [
+        "from collections import OrderedDict",
+        "",
+        "class LRUCache:",
+        "    def __init__(self, capacity):",
+        "        self.cap = capacity",
+        "        self.data = OrderedDict()",
+        "",
+        "    def get(self, key):",
+        "        if key not in self.data:",
+        "            return -1",
+        "        self.data[key] = self.data[key]",
+        "        return self.data[key]",
+        "",
+        "    def put(self, key, value):",
+        "        if key in self.data:",
+        "            self.data.move_to_end(key)",
+        "        self.data[key] = value",
+        "        if len(self.data) > self.cap:",
+        "            self.data.popitem(last=False)"
+      ],
+      "bug_line": 11,
+      "bug_type": "missing-update",
+      "note_vi": "get không cập nhật thứ tự sử dụng nên khoá vừa đọc vẫn bị xoá.",
+      "note_en": "get does not refresh the usage order, so a key that was just read can still be evicted."
+    },
+    {
+      "code": [
+        "from collections import OrderedDict",
+        "",
+        "class LRUCache:",
+        "    def __init__(self, capacity):",
+        "        self.cap = capacity",
+        "        self.data = OrderedDict()",
+        "",
+        "    def get(self, key):",
+        "        if key not in self.data:",
+        "            return -1",
+        "        self.data.move_to_end(key)",
+        "        return self.data[key]",
+        "",
+        "    def put(self, key, value):",
+        "        if key in self.data:",
+        "            self.data.move_to_end(key)",
+        "        self.data[key] = value",
+        "        if len(self.data) >= self.cap:",
+        "            self.data.popitem(last=False)"
+      ],
+      "bug_line": 18,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng >= nên xoá bớt khi cache vừa mới đầy.",
+      "note_en": "Uses >=, so it evicts as soon as the cache becomes full."
+    },
+    {
+      "code": [
+        "from collections import OrderedDict",
+        "",
+        "class LRUCache:",
+        "    def __init__(self, capacity):",
+        "        self.cap = capacity",
+        "        self.data = OrderedDict()",
+        "",
+        "    def get(self, key):",
+        "        if key not in self.data:",
+        "            return -1",
+        "        self.data.move_to_end(key)",
+        "        return self.data[key]",
+        "",
+        "    def put(self, key, value):",
+        "        if key in self.data:",
+        "            pass",
+        "        self.data[key] = value",
+        "        if len(self.data) > self.cap:",
+        "            self.data.popitem(last=False)"
+      ],
+      "bug_line": 16,
+      "bug_type": "missing-update",
+      "note_vi": "Ghi đè khoá cũ mà không làm mới thứ tự sử dụng.",
+      "note_en": "Overwrites an existing key without refreshing its usage order."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

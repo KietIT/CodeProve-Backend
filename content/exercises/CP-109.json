@@ -1,0 +1,107 @@
+{
+  "code": "CP-109",
+  "reference_solution": [
+    "def load(path):",
+    "    try:",
+    "        return open(path).read()",
+    "    except Exception as exc:",
+    "        raise RuntimeError(\"load failed\") from exc"
+  ],
+  "tests": [
+    {
+      "description": "test_load_returns_string",
+      "input": "isinstance(load((lambda p: (open(p, 'w').write('hello'), p)[-1])(__import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_a.txt'))), str)",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_load_returns_file_contents",
+      "input": "load((lambda p: (open(p, 'w').write('abc'), p)[-1])(__import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_b.txt'))) == 'abc'",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "missing file raises RuntimeError",
+      "input": "(lambda ns: (ns.__setitem__('p', __import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_missing_' + __import__('uuid').uuid4().hex)), exec(\"try:\\n    load(p)\\nexcept Exception as e:\\n    r = type(e).__name__\", globals(), ns), ns['r'])[-1])({})",
+      "expected": "'RuntimeError'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "the original error is chained as the cause",
+      "input": "(lambda ns: (ns.__setitem__('p', __import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_missing_' + __import__('uuid').uuid4().hex)), exec(\"try:\\n    load(p)\\nexcept Exception as e:\\n    r = type(e.__cause__).__name__\", globals(), ns), ns['r'])[-1])({})",
+      "expected": "'FileNotFoundError'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the cause keeps the file name",
+      "input": "(lambda ns: (ns.__setitem__('p', __import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_missing_' + __import__('uuid').uuid4().hex)), exec(\"try:\\n    load(p)\\nexcept Exception as e:\\n    r = e.__cause__.filename == p\", globals(), ns), ns['r'])[-1])({})",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the message is kept",
+      "input": "(lambda ns: (ns.__setitem__('p', __import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_missing_' + __import__('uuid').uuid4().hex)), exec(\"try:\\n    load(p)\\nexcept Exception as e:\\n    r = str(e)\", globals(), ns), ns['r'])[-1])({})",
+      "expected": "'load failed'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "an empty file returns an empty string",
+      "input": "load((lambda p: (open(p, 'w').write(''), p)[-1])(__import__('os').path.join(__import__('tempfile').gettempdir(), 'cp109_empty.txt')))",
+      "expected": "''",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def load(path):",
+        "    try:",
+        "        return open(path).read()",
+        "    except Exception as exc:",
+        "        raise RuntimeError(\"load failed\") from None"
+      ],
+      "bug_line": 5,
+      "bug_type": "suppressed-cause",
+      "note_vi": "from None xoá hẳn nguyên nhân gốc khỏi stack trace.",
+      "note_en": "from None removes the original cause from the stack trace."
+    },
+    {
+      "code": [
+        "def load(path):",
+        "    try:",
+        "        return open(path).read()",
+        "    except Exception as exc:",
+        "        raise"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-exception",
+      "note_vi": "Ném lại lỗi gốc nên người gọi không nhận được RuntimeError như mong đợi.",
+      "note_en": "Re-raises the original error, so callers do not get the expected RuntimeError."
+    },
+    {
+      "code": [
+        "def load(path):",
+        "    try:",
+        "        return open(path).read()",
+        "    except Exception as exc:",
+        "        raise RuntimeError(f\"load failed: {exc}\")"
+      ],
+      "bug_line": 5,
+      "bug_type": "missing-chain",
+      "note_vi": "Chỉ chép thông báo lỗi vào chuỗi, không nối nguyên nhân bằng from.",
+      "note_en": "Only copies the message into the string instead of chaining the cause with from."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
