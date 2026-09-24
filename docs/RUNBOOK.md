@@ -296,3 +296,17 @@ script prints the rollback command:
 ```bash
 scripts/restore_db.sh restore ~/codeprove_pre_restore_<timestamp>.dump
 ```
+
+## Rescoring reports after a scoring change
+
+Take a backup first (`scripts/backup_db.sh`, or at least
+`docker exec codeprove_db pg_dump -U codeprove -d codeprove -Fc > ~/pre_rescore.dump`),
+deploy the new code (`docker compose up -d --build` also runs the migrations), then:
+
+```bash
+docker exec codeprove_backend python -m app.features.scoring.rescore          # dry run
+docker exec codeprove_backend python -m app.features.scoring.rescore --apply  # write
+```
+
+Scores are rebuilt from stored events and the stored explain-back score; the LLM
+is not called. Each report keeps its previous overall in `feedback.rescored_from`.
