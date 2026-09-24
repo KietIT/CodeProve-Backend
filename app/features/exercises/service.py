@@ -63,8 +63,10 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
     ex = (await db.execute(select(Exercise).where(Exercise.code == code.upper()))).scalar_one_or_none()
     if ex is None:
         return None
+    # Hidden tests only run at submit (P1.2); never expose their names here.
     tests = (await db.execute(
-        select(TestCase).where(TestCase.exercise_id == ex.id).order_by(TestCase.order_index)
+        select(TestCase).where(TestCase.exercise_id == ex.id, TestCase.is_hidden.is_(False))
+        .order_by(TestCase.order_index)
     )).scalars().all()
     # Display number = 1-based position within the level (codes sort numerically here).
     num = (await db.execute(

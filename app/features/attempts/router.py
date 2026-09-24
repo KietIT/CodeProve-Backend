@@ -61,8 +61,10 @@ async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     attempt = await service.require_attempt(db, attempt_id, user)
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    # Hidden tests only run at submit (P1.2); never expose their names or results here.
     cases = (await db.execute(
-        select(TestCase).where(TestCase.exercise_id == attempt.exercise_id).order_by(TestCase.order_index)
+        select(TestCase).where(TestCase.exercise_id == attempt.exercise_id, TestCase.is_hidden.is_(False))
+        .order_by(TestCase.order_index)
     )).scalars().all()
     case_dicts = [{"input_data": c.input_data, "expected_output": c.expected_output,
                    "description": c.description, "weight": c.weight} for c in cases]
