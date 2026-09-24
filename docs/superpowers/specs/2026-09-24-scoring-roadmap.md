@@ -75,9 +75,39 @@ improper linear models").
 ## P2 — New exercise mechanics
 
 - [2] "Tests" tab: short explainer, structured form (type / input / expected / why), checklist, live validity check against the reference solution, mutation-score grading shown after submit, learning mode for fresher
-- [1] "Review AI code" mode for debug exercises: pick the buggy line, fix it, see the answer after submit
+- [1] "Review AI code" mode for debug exercises: pick the buggy line, fix it, see the answer after submit. Detailed in "Debug exercise mode" below (the owner confirmed it on 2026-09-24 after testing showed debug exercises behave exactly like implement ones)
 - [2] New Ciel trap: served from the mutant bank, student must pick the line, outcome-based scoring, random 40–70% bug rate, Youden H − F, generic "AI can be wrong" note on every code reply, reveal after submit
-- [1] Proper Debugging scoring for debug exercises
+- [1] Proper Debugging scoring for debug exercises (indicators below)
+
+### Debug exercise mode (the 9 debug exercises: CP-004, 008, 012, 102, 106, 109, 203, 206, 208)
+
+Two steps instead of an open editor:
+
+1. **Locate.** The starter is shown read-only with clickable lines (reuse the Daily Bug
+   Hunt clickable code component). The student selects the line(s) they believe are
+   buggy and writes one sentence on why. Optional hints (a ladder, as in Bug Hunt)
+   lower this step's score.
+2. **Fix.** Once a location is submitted the editor unlocks; the student fixes the code,
+   runs the visible tests and submits (full suite at submit, as in P1.2).
+
+After submit the real bug location and its explanation are revealed (as in Bug Hunt).
+
+**Bug location needs no new data entry:** for a debug exercise the reference solution is
+the starter with the bug fixed, so the lines where the (effective) starter and the
+reference differ are the bug region. Exercises with several issues (e.g. CP-208: path
+traversal, type spoofing, size limit) allow selecting several lines, one per issue.
+
+**Debugging axis for debug exercises** (replaces the P0 interim formula for them):
+
+| Indicator | Evidence |
+|---|---|
+| Located the bug | selected line in the bug region on the first try / after hints / wrong |
+| Explained the bug | LLM judges the one-sentence reason against the real bug |
+| Fixed it | pass ratio of the full suite at submit |
+| Efficiency | failing runs before the fix |
+
+No interim workaround before P2 (owner's decision): until then debug exercises keep the
+current flow (fix the code in the editor).
 
 ## P3 — AI Tutor + infrastructure
 
