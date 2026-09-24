@@ -35,3 +35,24 @@ async def test_dashboard_empty_then_populated(client, db_session, auth_headers):
     radar = {r["name"]: r["value"] for r in body["radar"]}
     assert radar["Understanding"] == 85.0
     assert radar["Testing"] == 60.0                    # nullable axis present (12 * 5)
+
+
+async def test_radar_axis_is_null_when_never_observed(client, db_session, auth_headers):
+    from app.models import Attempt, Exercise, FluencyReport, User
+    from sqlalchemy import select
+    user = (await db_session.execute(select(User))).scalars().first()
+    ex = Exercise(code="CP-001", title="Two-Sum", difficulty="Easy", category="Algorithms",
+                  level="fresher", language="python", acceptance=1, summary="s", starter_code="x",
+                  hint="h", domain_keywords=["a"])
+    db_session.add(ex); await db_session.flush()
+    at = Attempt(user_id=user.id, exercise_id=ex.id, score=90.0, status="scored", integrity_status="green")
+    db_session.add(at); await db_session.flush()
+    db_session.add(FluencyReport(attempt_id=at.id, understanding_score=18, hypothesis_score=17,
+                                 prompt_score=None, verification_score=None, testing_score=20,
+                                 debugging_score=None, explanation_score=18, overall_score=90.0, feedback={}))
+    await db_session.commit()
+
+    radar = {r["name"]: r["value"] for r in (await client.get("/api/dashboard", headers=auth_headers)).json()["radar"]}
+    assert radar["Prompting"] is None
+    assert radar["Debugging"] is None
+    assert radar["Testing"] == 100.0
