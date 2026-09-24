@@ -50,6 +50,10 @@ class AxisFeatures:
     integrity_flag_total: int = field(default=0)
 
 
+# RUN and its TEST_RUN come from one request, logged milliseconds apart.
+_TWIN_WINDOW_MS = 1000
+
+
 def _ai_loc(reply: dict) -> int:
     return sum(c.get("loc", 0) for c in reply["payload"].get("aiCode", []))
 
@@ -161,7 +165,15 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     f.best_coverage = max((float(e["payload"].get("coverage", 0.0)) for e in test_runs), default=0.0)
     f.run_count = len(runs)
     if runs:
-        f.final_pass_ratio = _pass_ratio(runs[-1]["payload"])
+        last = runs[-1]
+        payload = last["payload"]
+        if last["type"] == "RUN" and "passRatio" not in payload:
+            # Pre-P0 RUN events only carried pass/fail; the ratio lives on the
+            # TEST_RUN the same /run call logged a few ms later.
+            twin = next((t for t in test_runs if 0 <= t["ts"] - last["ts"] < _TWIN_WINDOW_MS), None)
+            if twin is not None:
+                payload = twin["payload"]
+        f.final_pass_ratio = _pass_ratio(payload)
 
     # Debugging: failing runs of the student's own code before the first pass.
     # Starter/empty runs cannot manufacture a failure, and anything after the

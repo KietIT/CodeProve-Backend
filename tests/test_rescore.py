@@ -57,3 +57,12 @@ async def test_apply_rewrites_report_and_attempt(db_session):
     assert rep.feedback["rescored_from"]["overall"] == 53.45
     assert rep.feedback["not_applicable"]["debugging"] == "no_failure"
     assert len(rep.feedback["timeline"]) == 3
+
+
+async def test_changes_carry_per_axis_old_and_new(db_session):
+    await _legacy_report(db_session)
+    change = (await rescore_all(db_session, apply=False))[0]
+    assert change["axes_old"]["debugging"] == 0
+    assert change["axes_new"]["debugging"] is None
+    assert change["axes_new"]["testing"] == 20.0
+    assert change["explanation"] == 18
