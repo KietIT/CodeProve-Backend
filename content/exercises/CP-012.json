@@ -1,0 +1,123 @@
+{
+  "code": "CP-012",
+  "reference_solution": [
+    "import threading",
+    "",
+    "counter = 0",
+    "lock = threading.Lock()",
+    "",
+    "def increment():",
+    "    global counter",
+    "    with lock:",
+    "        counter += 1"
+  ],
+  "tests": [
+    {
+      "description": "test_single_increment",
+      "input": "(globals().__setitem__('counter', 0), increment(), counter)[-1]",
+      "expected": "1",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_two_increments",
+      "input": "(globals().__setitem__('counter', 0), [increment() for _ in range(2)], counter)[-1]",
+      "expected": "2",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "increment waits while another thread holds the lock",
+      "input": "(lambda th, g: (lambda L: (lambda t: (lambda r: (r[3], r[6]))((g.__setitem__('counter', 0), L.acquire(timeout=1), t.start(), (t.join(0.3), g['counter'])[1], L.release(), t.join(2), g['counter'])))(th.Thread(target=increment)))(next(v for v in list(g.values()) if hasattr(v, 'acquire') and hasattr(v, 'release'))))(__import__('threading'), globals())",
+      "expected": "(0, 1)",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the lock is released after an increment",
+      "input": "(lambda g: (g.__setitem__('counter', 0), increment(), (lambda L: (L.acquire(False), L.release())[0])(next(v for v in list(g.values()) if hasattr(v, 'acquire') and hasattr(v, 'release'))))[-1])(globals())",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "eight threads, 500 increments each",
+      "input": "(lambda th, g: (lambda ts: (g.__setitem__('counter', 0), [t.start() for t in ts], [t.join() for t in ts], g['counter'])[-1])([th.Thread(target=lambda: [increment() for _ in range(500)]) for _ in range(8)]))(__import__('threading'), globals())",
+      "expected": "4000",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "three sequential increments",
+      "input": "(globals().__setitem__('counter', 0), [increment() for _ in range(3)], counter)[-1]",
+      "expected": "3",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "a hundred sequential increments",
+      "input": "(globals().__setitem__('counter', 0), [increment() for _ in range(100)], counter)[-1]",
+      "expected": "100",
+      "category": "happy",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "import threading",
+        "",
+        "counter = 0",
+        "lock = threading.Lock()",
+        "",
+        "def increment():",
+        "    global counter",
+        "    with threading.Lock():",
+        "        counter += 1"
+      ],
+      "bug_line": 8,
+      "bug_type": "new-lock-per-call",
+      "note_vi": "Tạo lock mới ở mỗi lần gọi nên các luồng không bao giờ chờ nhau.",
+      "note_en": "Creates a new lock on every call, so threads never wait for each other."
+    },
+    {
+      "code": [
+        "import threading",
+        "",
+        "counter = 0",
+        "lock = threading.Lock()",
+        "",
+        "def increment():",
+        "    global counter",
+        "    if lock.acquire(blocking=False):",
+        "        counter += 1"
+      ],
+      "bug_line": 8,
+      "bug_type": "missing-release",
+      "note_vi": "Lấy lock kiểu không chờ và không bao giờ nhả, nên các lần gọi sau bị bỏ qua.",
+      "note_en": "Takes the lock without waiting and never releases it, so later calls are skipped."
+    },
+    {
+      "code": [
+        "import threading",
+        "",
+        "counter = 0",
+        "lock = threading.Semaphore(2)",
+        "",
+        "def increment():",
+        "    global counter",
+        "    with lock:",
+        "        counter += 1"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-capacity",
+      "note_vi": "Semaphore(2) cho hai luồng vào cùng lúc nên vẫn có race.",
+      "note_en": "Semaphore(2) lets two threads in at once, so the race remains."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

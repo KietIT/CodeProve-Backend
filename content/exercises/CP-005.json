@@ -1,0 +1,134 @@
+{
+  "code": "CP-005",
+  "reference_solution": [
+    "import re",
+    "",
+    "def sanitize_username(raw):",
+    "    raw = raw.strip()",
+    "    return re.sub(r\"[^a-zA-Z0-9_]\", \"\", raw)"
+  ],
+  "tests": [
+    {
+      "description": "test_strips_special_chars",
+      "input": "sanitize_username('alice!@#')",
+      "expected": "'alice'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_trims_and_keeps_underscore",
+      "input": "sanitize_username('  user_name123  ')",
+      "expected": "'user_name123'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "keeps upper case, digits and underscore",
+      "input": "sanitize_username('ALICE_99')",
+      "expected": "'ALICE_99'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "SQL injection attempt",
+      "input": "sanitize_username(\"Robert'); DROP TABLE users;--\")",
+      "expected": "'RobertDROPTABLEusers'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "script tag",
+      "input": "sanitize_username('<script>alert(1)</script>')",
+      "expected": "'scriptalert1script'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "inner space is removed",
+      "input": "sanitize_username('john doe')",
+      "expected": "'johndoe'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "dots and dashes",
+      "input": "sanitize_username('a-b.c')",
+      "expected": "'abc'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty string",
+      "input": "sanitize_username('')",
+      "expected": "''",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "only spaces",
+      "input": "sanitize_username('   ')",
+      "expected": "''",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "import re",
+        "",
+        "def sanitize_username(raw):",
+        "    raw = raw.strip()",
+        "    return re.sub(r\"[^a-zA-Z0-9]\", \"\", raw)"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-character-class",
+      "note_vi": "Quên cho phép dấu gạch dưới _ trong tên người dùng.",
+      "note_en": "Forgets to allow the underscore _ in usernames."
+    },
+    {
+      "code": [
+        "import re",
+        "",
+        "def sanitize_username(raw):",
+        "    raw = raw.strip()",
+        "    return re.sub(r\"[^a-zA-Z0-9_ ]\", \"\", raw)"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-character-class",
+      "note_vi": "Giữ lại khoảng trắng ở giữa tên.",
+      "note_en": "Keeps spaces inside the name."
+    },
+    {
+      "code": [
+        "import re",
+        "",
+        "def sanitize_username(raw):",
+        "    raw = raw.strip()",
+        "    return re.sub(r\"[^a-z0-9_]\", \"\", raw)"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-character-class",
+      "note_vi": "Chỉ cho phép chữ thường nên xoá mất chữ hoa.",
+      "note_en": "Only allows lower-case letters, so upper-case letters are deleted."
+    },
+    {
+      "code": [
+        "import re",
+        "",
+        "def sanitize_username(raw):",
+        "    raw = raw.strip()",
+        "    return re.sub(r\"[a-zA-Z0-9_]\", \"\", raw)"
+      ],
+      "bug_line": 5,
+      "bug_type": "inverted-condition",
+      "note_vi": "Thiếu dấu ^ nên xoá ký tự hợp lệ và giữ ký tự nguy hiểm.",
+      "note_en": "Missing ^ deletes the safe characters and keeps the dangerous ones."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

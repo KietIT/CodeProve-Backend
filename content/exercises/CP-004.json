@@ -1,0 +1,107 @@
+{
+  "code": "CP-004",
+  "reference_solution": [
+    "def sum_to_n(n):",
+    "    total = 0",
+    "    for i in range(1, n + 1):",
+    "        total += i",
+    "    return total"
+  ],
+  "tests": [
+    {
+      "description": "test_n_3_correct",
+      "input": "sum_to_n(3)",
+      "expected": "6",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_n_5_correct",
+      "input": "sum_to_n(5)",
+      "expected": "15",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "n is zero",
+      "input": "sum_to_n(0)",
+      "expected": "0",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "n is one",
+      "input": "sum_to_n(1)",
+      "expected": "1",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "n is two",
+      "input": "sum_to_n(2)",
+      "expected": "3",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "large n",
+      "input": "sum_to_n(1000)",
+      "expected": "500500",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "negative n sums nothing",
+      "input": "sum_to_n(-3)",
+      "expected": "0",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def sum_to_n(n):",
+        "    total = 0",
+        "    for i in range(1, n):",
+        "        total += i",
+        "    return total"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "range(1, n) dừng trước n nên không cộng n.",
+      "note_en": "range(1, n) stops before n, so n is never added."
+    },
+    {
+      "code": [
+        "def sum_to_n(n):",
+        "    total = 0",
+        "    for i in range(2, n + 1):",
+        "        total += i",
+        "    return total"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "Bắt đầu từ 2 nên bỏ sót số 1.",
+      "note_en": "Starts at 2, so 1 is skipped."
+    },
+    {
+      "code": [
+        "def sum_to_n(n):",
+        "    total = 0",
+        "    for i in range(1, n + 1):",
+        "        total = i",
+        "    return total"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-operator",
+      "note_vi": "Gán total = i thay vì cộng dồn total += i.",
+      "note_en": "Assigns total = i instead of accumulating total += i."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

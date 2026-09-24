@@ -1,0 +1,127 @@
+{
+  "code": "CP-006",
+  "reference_solution": [
+    "def word_count(text):",
+    "    counts = {}",
+    "    for word in text.lower().split():",
+    "        counts[word] = counts.get(word, 0) + 1",
+    "    return counts"
+  ],
+  "tests": [
+    {
+      "description": "test_basic_two_words",
+      "input": "dict(word_count('hello world'))",
+      "expected": "{'hello': 1, 'world': 1}",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_repeated_word",
+      "input": "dict(word_count('the cat and the dog'))",
+      "expected": "{'the': 2, 'cat': 1, 'and': 1, 'dog': 1}",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "several repeats",
+      "input": "sorted(word_count('a b a c b a').items())",
+      "expected": "[('a', 3), ('b', 2), ('c', 1)]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "case-insensitive",
+      "input": "sorted(word_count('Hello hello HELLO').items())",
+      "expected": "[('hello', 3)]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "extra spaces",
+      "input": "sorted(word_count('  multiple   spaces here ').items())",
+      "expected": "[('here', 1), ('multiple', 1), ('spaces', 1)]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "tabs and newlines",
+      "input": "sorted(word_count('Tab\\tand\\nnewline').items())",
+      "expected": "[('and', 1), ('newline', 1), ('tab', 1)]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty text",
+      "input": "dict(word_count(''))",
+      "expected": "{}",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "single word",
+      "input": "sorted(word_count('one').items())",
+      "expected": "[('one', 1)]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def word_count(text):",
+        "    counts = {}",
+        "    for word in text.split():",
+        "        counts[word] = counts.get(word, 0) + 1",
+        "    return counts"
+      ],
+      "bug_line": 3,
+      "bug_type": "missing-case",
+      "note_vi": "Không chuyển về chữ thường nên 'Hello' và 'hello' bị đếm riêng.",
+      "note_en": "Does not lower-case, so 'Hello' and 'hello' are counted separately."
+    },
+    {
+      "code": [
+        "def word_count(text):",
+        "    counts = {}",
+        "    for word in text.lower().split():",
+        "        counts[word] = 1",
+        "    return counts"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-operator",
+      "note_vi": "Luôn gán 1 thay vì cộng dồn số lần xuất hiện.",
+      "note_en": "Always sets 1 instead of adding up occurrences."
+    },
+    {
+      "code": [
+        "def word_count(text):",
+        "    counts = {}",
+        "    for word in text.lower().split(\" \"):",
+        "        counts[word] = counts.get(word, 0) + 1",
+        "    return counts"
+      ],
+      "bug_line": 3,
+      "bug_type": "wrong-argument",
+      "note_vi": "split(\" \") tạo ra chuỗi rỗng khi có nhiều khoảng trắng liên tiếp.",
+      "note_en": "split(\" \") produces empty strings when there are consecutive spaces."
+    },
+    {
+      "code": [
+        "def word_count(text):",
+        "    counts = {}",
+        "    for word in text.lower().split():",
+        "        counts[word] = counts.get(word, 1) + 1",
+        "    return counts"
+      ],
+      "bug_line": 4,
+      "bug_type": "off-by-one",
+      "note_vi": "Giá trị mặc định 1 làm mọi từ bị đếm thừa một lần.",
+      "note_en": "The default of 1 makes every word counted once too many."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

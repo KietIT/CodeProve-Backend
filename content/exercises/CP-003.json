@@ -1,0 +1,117 @@
+{
+  "code": "CP-003",
+  "reference_solution": [
+    "def is_palindrome(s):",
+    "    cleaned = [c.lower() for c in s if c.isalnum()]",
+    "    return cleaned == cleaned[::-1]"
+  ],
+  "tests": [
+    {
+      "description": "test_simple_palindrome",
+      "input": "is_palindrome('racecar')",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_not_palindrome",
+      "input": "is_palindrome('hello')",
+      "expected": "False",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "mixed case and punctuation",
+      "input": "is_palindrome('A man, a plan, a canal: Panama')",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "sentence with a question mark",
+      "input": "is_palindrome('Was it a car or a cat I saw?')",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "almost a palindrome",
+      "input": "is_palindrome('race a car')",
+      "expected": "False",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "digit next to a letter",
+      "input": "is_palindrome('0P')",
+      "expected": "False",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty string",
+      "input": "is_palindrome('')",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "single character",
+      "input": "is_palindrome('a')",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def is_palindrome(s):",
+        "    cleaned = [c for c in s if c.isalnum()]",
+        "    return cleaned == cleaned[::-1]"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-case",
+      "note_vi": "Quên chuyển về chữ thường nên 'A' và 'a' bị coi là khác nhau.",
+      "note_en": "Forgets to lower-case, so 'A' and 'a' are treated as different."
+    },
+    {
+      "code": [
+        "def is_palindrome(s):",
+        "    cleaned = [c.lower() for c in s]",
+        "    return cleaned == cleaned[::-1]"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-filter",
+      "note_vi": "Không bỏ dấu câu và khoảng trắng trước khi so sánh.",
+      "note_en": "Does not drop punctuation and spaces before comparing."
+    },
+    {
+      "code": [
+        "def is_palindrome(s):",
+        "    cleaned = [c.lower() for c in s if c.isalnum()]",
+        "    return len(cleaned) > 0 and cleaned == cleaned[::-1]"
+      ],
+      "bug_line": 3,
+      "bug_type": "wrong-boundary",
+      "note_vi": "Coi chuỗi rỗng không phải palindrome.",
+      "note_en": "Treats the empty string as not a palindrome."
+    },
+    {
+      "code": [
+        "def is_palindrome(s):",
+        "    cleaned = [c.lower() for c in s if c.isalpha()]",
+        "    return cleaned == cleaned[::-1]"
+      ],
+      "bug_line": 2,
+      "bug_type": "wrong-filter",
+      "note_vi": "Dùng isalpha nên bỏ mất các chữ số.",
+      "note_en": "Uses isalpha, so digits are dropped."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
