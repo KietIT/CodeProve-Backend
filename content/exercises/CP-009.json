@@ -1,0 +1,132 @@
+{
+  "code": "CP-009",
+  "reference_solution": [
+    "def is_allowed(client_id, store, limit=60):",
+    "    count = store.get(client_id, 0)",
+    "    if count >= limit:",
+    "        return False",
+    "    store[client_id] = count + 1",
+    "    return True"
+  ],
+  "tests": [
+    {
+      "description": "test_under_limit",
+      "input": "is_allowed('user1', {}, limit=60)",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_at_limit_blocked",
+      "input": "is_allowed('user1', {'user1': 60}, limit=60)",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "third request over a limit of two",
+      "input": "(lambda s: [is_allowed('a', s, limit=2) for _ in range(3)])({})",
+      "expected": "[True, True, False]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "the store counts each allowed request",
+      "input": "(lambda s: (is_allowed('a', s, limit=5), s)[1])({})",
+      "expected": "{'a': 1}",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "clients are limited independently",
+      "input": "(lambda s: [is_allowed('a', s, limit=1), is_allowed('b', s, limit=1), is_allowed('a', s, limit=1)])({})",
+      "expected": "[True, True, False]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "limit of zero blocks everything",
+      "input": "is_allowed('a', {}, limit=0)",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "limit of one",
+      "input": "(lambda s: [is_allowed('x', s, limit=1) for _ in range(2)])({})",
+      "expected": "[True, False]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "default limit is 60",
+      "input": "(lambda s: sum(is_allowed('a', s) for _ in range(61)))({})",
+      "expected": "60",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def is_allowed(client_id, store, limit=60):",
+        "    count = store.get(client_id, 0)",
+        "    if count > limit:",
+        "        return False",
+        "    store[client_id] = count + 1",
+        "    return True"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng > thay vì >= nên cho phép vượt giới hạn một request.",
+      "note_en": "Uses > instead of >=, letting one request past the limit."
+    },
+    {
+      "code": [
+        "def is_allowed(client_id, store, limit=60):",
+        "    count = store.get(client_id, 0)",
+        "    if count >= limit:",
+        "        return False",
+        "    store[client_id] = count",
+        "    return True"
+      ],
+      "bug_line": 5,
+      "bug_type": "missing-update",
+      "note_vi": "Không tăng bộ đếm nên client không bao giờ bị chặn.",
+      "note_en": "Never increments the counter, so a client is never blocked."
+    },
+    {
+      "code": [
+        "def is_allowed(client_id, store, limit=60):",
+        "    count = store.get(client_id, 1)",
+        "    if count >= limit:",
+        "        return False",
+        "    store[client_id] = count + 1",
+        "    return True"
+      ],
+      "bug_line": 2,
+      "bug_type": "wrong-initial-value",
+      "note_vi": "Bắt đầu đếm từ 1 nên client mới bị tính thừa một request.",
+      "note_en": "Starts counting at 1, so a new client is charged one request too many."
+    },
+    {
+      "code": [
+        "def is_allowed(client_id, store, limit=60):",
+        "    count = store.get(client_id, 0)",
+        "    if count >= limit:",
+        "        return False",
+        "    store[\"client_id\"] = count + 1",
+        "    return True"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-variable",
+      "note_vi": "Dùng chuỗi \"client_id\" làm khoá thay vì biến client_id.",
+      "note_en": "Uses the string \"client_id\" as the key instead of the client_id variable."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

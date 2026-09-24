@@ -1,0 +1,162 @@
+{
+  "code": "CP-010",
+  "reference_solution": [
+    "def fizzbuzz(n):",
+    "    out = []",
+    "    for i in range(1, n + 1):",
+    "        if i % 15 == 0:",
+    "            out.append(\"FizzBuzz\")",
+    "        elif i % 3 == 0:",
+    "            out.append(\"Fizz\")",
+    "        elif i % 5 == 0:",
+    "            out.append(\"Buzz\")",
+    "        else:",
+    "            out.append(str(i))",
+    "    return out"
+  ],
+  "tests": [
+    {
+      "description": "test_first_five",
+      "input": "fizzbuzz(5)",
+      "expected": "['1', '2', 'Fizz', '4', 'Buzz']",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_fizzbuzz_at_15",
+      "input": "fizzbuzz(15)[-1]",
+      "expected": "'FizzBuzz'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "full list up to 15",
+      "input": "fizzbuzz(15)",
+      "expected": "['1', '2', 'Fizz', '4', 'Buzz', 'Fizz', '7', '8', 'Fizz', 'Buzz', '11', 'Fizz', '13', '14', 'FizzBuzz']",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "six FizzBuzz up to 100",
+      "input": "fizzbuzz(100).count('FizzBuzz')",
+      "expected": "6",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "numbers are strings",
+      "input": "all(isinstance(x, str) for x in fizzbuzz(20))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative n gives an empty list",
+      "input": "fizzbuzz(-5)",
+      "expected": "[]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "n is zero",
+      "input": "fizzbuzz(0)",
+      "expected": "[]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "n is one",
+      "input": "fizzbuzz(1)",
+      "expected": "['1']",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def fizzbuzz(n):",
+        "    out = []",
+        "    for i in range(1, n + 1):",
+        "        if i % 5 == 0:",
+        "            out.append(\"FizzBuzz\")",
+        "        elif i % 3 == 0:",
+        "            out.append(\"Fizz\")",
+        "        elif i % 5 == 0:",
+        "            out.append(\"Buzz\")",
+        "        else:",
+        "            out.append(str(i))",
+        "    return out"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-condition",
+      "note_vi": "Kiểm tra chia hết cho 5 thay vì 15 nên số 5 thành FizzBuzz.",
+      "note_en": "Checks divisibility by 5 instead of 15, so 5 becomes FizzBuzz."
+    },
+    {
+      "code": [
+        "def fizzbuzz(n):",
+        "    out = []",
+        "    for i in range(1, n):",
+        "        if i % 15 == 0:",
+        "            out.append(\"FizzBuzz\")",
+        "        elif i % 3 == 0:",
+        "            out.append(\"Fizz\")",
+        "        elif i % 5 == 0:",
+        "            out.append(\"Buzz\")",
+        "        else:",
+        "            out.append(str(i))",
+        "    return out"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "range(1, n) bỏ sót chính số n.",
+      "note_en": "range(1, n) leaves out n itself."
+    },
+    {
+      "code": [
+        "def fizzbuzz(n):",
+        "    out = []",
+        "    for i in range(1, n + 1):",
+        "        if i % 15 == 0:",
+        "            out.append(\"FizzBuzz\")",
+        "        elif i % 3 == 0:",
+        "            out.append(\"Fizz\")",
+        "        elif i % 5 == 0:",
+        "            out.append(\"Buzz\")",
+        "        else:",
+        "            out.append(i)",
+        "    return out"
+      ],
+      "bug_line": 11,
+      "bug_type": "wrong-type",
+      "note_vi": "Thêm số nguyên thay vì chuỗi.",
+      "note_en": "Appends the integer instead of a string."
+    },
+    {
+      "code": [
+        "def fizzbuzz(n):",
+        "    out = []",
+        "    for i in range(1, n + 1):",
+        "        if i % 15 == 0:",
+        "            out.append(\"FizzBuzz\")",
+        "        elif i % 5 == 0:",
+        "            out.append(\"Fizz\")",
+        "        elif i % 5 == 0:",
+        "            out.append(\"Buzz\")",
+        "        else:",
+        "            out.append(str(i))",
+        "    return out"
+      ],
+      "bug_line": 6,
+      "bug_type": "swapped-condition",
+      "note_vi": "Đổi chỗ điều kiện nên bội của 5 in ra Fizz.",
+      "note_en": "Swaps the conditions, so multiples of 5 print Fizz."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

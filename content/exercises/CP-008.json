@@ -1,0 +1,110 @@
+{
+  "code": "CP-008",
+  "reference_solution": [
+    "def display_name(user):",
+    "    profile = user.get(\"profile\") or {}",
+    "    return profile.get(\"name\", \"Unknown\")"
+  ],
+  "tests": [
+    {
+      "description": "test_has_profile",
+      "input": "display_name({'profile': {'name': 'Alice'}})",
+      "expected": "'Alice'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_missing_profile_returns_unknown",
+      "input": "display_name({})",
+      "expected": "'Unknown'",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "another name",
+      "input": "display_name({'profile': {'name': 'Bob'}, 'id': 7})",
+      "expected": "'Bob'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "non-ASCII name",
+      "input": "display_name({'profile': {'name': 'Zoë'}})",
+      "expected": "'Zoë'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "profile without a name",
+      "input": "display_name({'profile': {}})",
+      "expected": "'Unknown'",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "profile is None",
+      "input": "display_name({'profile': None})",
+      "expected": "'Unknown'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "name outside the profile does not count",
+      "input": "display_name({'name': 'Eve'})",
+      "expected": "'Unknown'",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def display_name(user):",
+        "    profile = user.get(\"profile\", {})",
+        "    return profile.get(\"name\", \"Unknown\")"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-null-check",
+      "note_vi": "Giá trị mặc định chỉ dùng khi thiếu khoá, không xử lý profile là None.",
+      "note_en": "The default only applies when the key is missing, not when profile is None."
+    },
+    {
+      "code": [
+        "def display_name(user):",
+        "    profile = user.get(\"profile\") or {}",
+        "    return profile[\"name\"]"
+      ],
+      "bug_line": 3,
+      "bug_type": "missing-null-check",
+      "note_vi": "Vẫn truy cập trực tiếp khoá name nên lỗi khi profile không có tên.",
+      "note_en": "Still indexes name directly, so it crashes when the profile has no name."
+    },
+    {
+      "code": [
+        "def display_name(user):",
+        "    profile = user.get(\"profile\") or {}",
+        "    return profile.get(\"name\")"
+      ],
+      "bug_line": 3,
+      "bug_type": "missing-default",
+      "note_vi": "Trả về None thay vì 'Unknown' khi thiếu tên.",
+      "note_en": "Returns None instead of 'Unknown' when the name is missing."
+    },
+    {
+      "code": [
+        "def display_name(user):",
+        "    profile = user[\"profile\"] or {}",
+        "    return profile.get(\"name\", \"Unknown\")"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-null-check",
+      "note_vi": "Vẫn dùng user[\"profile\"] nên lỗi khi không có khoá profile.",
+      "note_en": "Still uses user[\"profile\"], so it crashes when the key is missing."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

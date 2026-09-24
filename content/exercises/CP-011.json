@@ -1,0 +1,115 @@
+{
+  "code": "CP-011",
+  "reference_solution": [
+    "def find_duplicate(nums):",
+    "    seen = set()",
+    "    for n in nums:",
+    "        if n in seen:",
+    "            return n",
+    "        seen.add(n)",
+    "    return -1"
+  ],
+  "tests": [
+    {
+      "description": "test_basic_duplicate",
+      "input": "find_duplicate([1, 3, 4, 2, 2])",
+      "expected": "2",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_duplicate_at_start",
+      "input": "find_duplicate([3, 1, 3, 4, 2])",
+      "expected": "3",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "duplicate in the middle",
+      "input": "find_duplicate([1, 4, 4, 2, 3])",
+      "expected": "4",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "smallest input",
+      "input": "find_duplicate([1, 1])",
+      "expected": "1",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "duplicate is the last element",
+      "input": "find_duplicate([1, 2, 3, 4, 4])",
+      "expected": "4",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "first and last are equal",
+      "input": "find_duplicate([2, 5, 1, 3, 4, 2])",
+      "expected": "2",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "long input",
+      "input": "find_duplicate(list(range(1, 1001)) + [500])",
+      "expected": "500",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def find_duplicate(nums):",
+        "    seen = set()",
+        "    for n in nums:",
+        "        if n not in seen:",
+        "            return n",
+        "        seen.add(n)",
+        "    return -1"
+      ],
+      "bug_line": 4,
+      "bug_type": "inverted-condition",
+      "note_vi": "Đảo điều kiện nên trả về ngay phần tử đầu tiên.",
+      "note_en": "Inverts the condition, so it returns the first element straight away."
+    },
+    {
+      "code": [
+        "def find_duplicate(nums):",
+        "    seen = set()",
+        "    for n in nums[1:]:",
+        "        if n in seen:",
+        "            return n",
+        "        seen.add(n)",
+        "    return -1"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "Bỏ qua phần tử đầu nên không thấy bản trùng ở vị trí đầu.",
+      "note_en": "Skips the first element, so a duplicate starting at index 0 is missed."
+    },
+    {
+      "code": [
+        "def find_duplicate(nums):",
+        "    seen = set()",
+        "    for n in nums[:-1]:",
+        "        if n in seen:",
+        "            return n",
+        "        seen.add(n)",
+        "    return -1"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "Bỏ qua phần tử cuối nên không thấy bản trùng ở cuối mảng.",
+      "note_en": "Skips the last element, so a duplicate at the end is missed."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "code": "CP-007",
+  "reference_solution": [
+    "def merge(a, b):",
+    "    i = j = 0",
+    "    out = []",
+    "    while i < len(a) and j < len(b):",
+    "        if a[i] <= b[j]:",
+    "            out.append(a[i]); i += 1",
+    "        else:",
+    "            out.append(b[j]); j += 1",
+    "    return out + a[i:] + b[j:]"
+  ],
+  "tests": [
+    {
+      "description": "test_interleaved",
+      "input": "merge([1, 3, 5], [2, 4, 6])",
+      "expected": "[1, 2, 3, 4, 5, 6]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_non_overlapping",
+      "input": "merge([1, 2], [3, 4])",
+      "expected": "[1, 2, 3, 4]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "second array first",
+      "input": "merge([4, 5, 6], [1, 2, 3])",
+      "expected": "[1, 2, 3, 4, 5, 6]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "repeated values",
+      "input": "merge([1, 1, 2], [1, 3])",
+      "expected": "[1, 1, 1, 2, 3]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative numbers",
+      "input": "merge([-5, 0, 5], [-3, 3])",
+      "expected": "[-5, -3, 0, 3, 5]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "both empty",
+      "input": "merge([], [])",
+      "expected": "[]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "first empty",
+      "input": "merge([], [1, 2])",
+      "expected": "[1, 2]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "second empty",
+      "input": "merge([1, 2], [])",
+      "expected": "[1, 2]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def merge(a, b):",
+        "    i = j = 0",
+        "    out = []",
+        "    while i < len(a) and j < len(b):",
+        "        if a[i] <= b[j]:",
+        "            out.append(a[i]); i += 1",
+        "        else:",
+        "            out.append(b[j]); j += 1",
+        "    return out + a[i:]"
+      ],
+      "bug_line": 9,
+      "bug_type": "missing-case",
+      "note_vi": "Quên nối phần còn lại của mảng b.",
+      "note_en": "Forgets to append what is left of b."
+    },
+    {
+      "code": [
+        "def merge(a, b):",
+        "    i = j = 0",
+        "    out = []",
+        "    while i < len(a) or j < len(b):",
+        "        if a[i] <= b[j]:",
+        "            out.append(a[i]); i += 1",
+        "        else:",
+        "            out.append(b[j]); j += 1",
+        "    return out + a[i:] + b[j:]"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-condition",
+      "note_vi": "Dùng or nên đọc ra ngoài mảng khi một mảng đã hết.",
+      "note_en": "Uses or, so it reads past the end once one array is exhausted."
+    },
+    {
+      "code": [
+        "def merge(a, b):",
+        "    i = j = 0",
+        "    out = []",
+        "    while i < len(a) and j < len(b):",
+        "        if a[i] >= b[j]:",
+        "            out.append(a[i]); i += 1",
+        "        else:",
+        "            out.append(b[j]); j += 1",
+        "    return out + a[i:] + b[j:]"
+      ],
+      "bug_line": 5,
+      "bug_type": "inverted-condition",
+      "note_vi": "Đảo phép so sánh nên lấy phần tử lớn hơn trước.",
+      "note_en": "Inverts the comparison, so the larger element is taken first."
+    },
+    {
+      "code": [
+        "def merge(a, b):",
+        "    i = j = 1",
+        "    out = []",
+        "    while i < len(a) and j < len(b):",
+        "        if a[i] <= b[j]:",
+        "            out.append(a[i]); i += 1",
+        "        else:",
+        "            out.append(b[j]); j += 1",
+        "    return out + a[i:] + b[j:]"
+      ],
+      "bug_line": 2,
+      "bug_type": "off-by-one",
+      "note_vi": "Bắt đầu từ chỉ số 1 nên bỏ sót phần tử đầu của mỗi mảng.",
+      "note_en": "Starts at index 1, so the first element of each array is skipped."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

@@ -1,0 +1,137 @@
+{
+  "code": "CP-001",
+  "reference_solution": [
+    "def two_sum(nums, target):",
+    "    seen = {}",
+    "    for i, n in enumerate(nums):",
+    "        if target - n in seen:",
+    "            return [seen[target - n], i]",
+    "        seen[n] = i",
+    "    return []"
+  ],
+  "tests": [
+    {
+      "description": "test_basic_case",
+      "input": "two_sum([2, 7, 11, 15], 9)",
+      "expected": "[0, 1]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_duplicates",
+      "input": "two_sum([3, 3], 6)",
+      "expected": "[0, 1]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "an element cannot pair with itself",
+      "input": "two_sum([3, 2, 4], 6)",
+      "expected": "[1, 2]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative numbers",
+      "input": "two_sum([-3, 4, 3, 90], 0)",
+      "expected": "[0, 2]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "zero target with repeated zeros",
+      "input": "two_sum([0, 4, 3, 0], 0)",
+      "expected": "[0, 3]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "smallest input",
+      "input": "two_sum([1, 9], 10)",
+      "expected": "[0, 1]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "pair at the very end",
+      "input": "two_sum([1, 2, 3, 4], 7)",
+      "expected": "[2, 3]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "long input, pair at the end",
+      "input": "two_sum(list(range(2000)), 3997)",
+      "expected": "[1998, 1999]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def two_sum(nums, target):",
+        "    seen = {}",
+        "    for i, n in enumerate(nums):",
+        "        if n - target in seen:",
+        "            return [seen[target - n], i]",
+        "        seen[n] = i",
+        "    return []"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-operator",
+      "note_vi": "Tính n - target thay vì target - n nên tìm sai phần bù.",
+      "note_en": "Computes n - target instead of target - n, so it looks up the wrong complement."
+    },
+    {
+      "code": [
+        "def two_sum(nums, target):",
+        "    seen = {}",
+        "    for i, n in enumerate(nums):",
+        "        if target - n in seen:",
+        "            return [seen[target - n], i]",
+        "        seen[n] = 0",
+        "    return []"
+      ],
+      "bug_line": 6,
+      "bug_type": "wrong-value",
+      "note_vi": "Luôn lưu chỉ số 0 thay vì chỉ số thật i của phần tử.",
+      "note_en": "Always stores index 0 instead of the element's real index i."
+    },
+    {
+      "code": [
+        "def two_sum(nums, target):",
+        "    seen = {}",
+        "    for i, n in enumerate(nums):",
+        "        if target - n in seen and target - n != n:",
+        "            return [seen[target - n], i]",
+        "        seen[n] = i",
+        "    return []"
+      ],
+      "bug_line": 4,
+      "bug_type": "wrong-condition",
+      "note_vi": "Loại trừ nhầm cặp hai số bằng nhau như [3, 3].",
+      "note_en": "Wrongly rules out pairs of equal numbers such as [3, 3]."
+    },
+    {
+      "code": [
+        "def two_sum(nums, target):",
+        "    seen = {}",
+        "    for i, n in enumerate(sorted(nums)):",
+        "        if target - n in seen:",
+        "            return [seen[target - n], i]",
+        "        seen[n] = i",
+        "    return []"
+      ],
+      "bug_line": 3,
+      "bug_type": "wrong-variable",
+      "note_vi": "Sắp xếp mảng trước nên chỉ số trả về không còn khớp với mảng gốc.",
+      "note_en": "Sorts the array first, so the returned indices no longer match the original array."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

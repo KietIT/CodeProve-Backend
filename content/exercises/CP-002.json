@@ -1,0 +1,142 @@
+{
+  "code": "CP-002",
+  "reference_solution": [
+    "def reverse_list(head):",
+    "    prev = None",
+    "    while head:",
+    "        nxt = head.next",
+    "        head.next = prev",
+    "        prev = head",
+    "        head = nxt",
+    "    return prev"
+  ],
+  "tests": [
+    {
+      "description": "test_empty_list",
+      "input": "reverse_list(None)",
+      "expected": "None",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "test_three_nodes_reversed",
+      "input": "(lambda NS, to_list: to_list(reverse_list(NS(1, NS(2, NS(3))))))(lambda v, n=None: __import__('types').SimpleNamespace(val=v, next=n), lambda node: [] if node is None else [node.val] + (lambda f, x: f(f, x))(lambda f, x: [] if x is None else [x.val] + f(f, x.next), node.next))",
+      "expected": "[3, 2, 1]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "single node",
+      "input": "(lambda f: lambda n: f(f, n))(lambda f, n: [] if n is None else [n.val] + f(f, n.next))(reverse_list(__import__('types').SimpleNamespace(val=1, next=None)))",
+      "expected": "[1]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "two nodes",
+      "input": "(lambda f: lambda n: f(f, n))(lambda f, n: [] if n is None else [n.val] + f(f, n.next))(reverse_list(__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=2, next=None))))",
+      "expected": "[2, 1]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "five nodes",
+      "input": "(lambda f: lambda n: f(f, n))(lambda f, n: [] if n is None else [n.val] + f(f, n.next))(reverse_list(__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=2, next=__import__('types').SimpleNamespace(val=3, next=__import__('types').SimpleNamespace(val=4, next=__import__('types').SimpleNamespace(val=5, next=None)))))))",
+      "expected": "[5, 4, 3, 2, 1]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "repeated values",
+      "input": "(lambda f: lambda n: f(f, n))(lambda f, n: [] if n is None else [n.val] + f(f, n.next))(reverse_list(__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=2, next=None)))))",
+      "expected": "[2, 1, 1]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "twenty nodes",
+      "input": "(lambda f: lambda n: f(f, n))(lambda f, n: [] if n is None else [n.val] + f(f, n.next))(reverse_list(__import__('types').SimpleNamespace(val=0, next=__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=2, next=__import__('types').SimpleNamespace(val=3, next=__import__('types').SimpleNamespace(val=4, next=__import__('types').SimpleNamespace(val=5, next=__import__('types').SimpleNamespace(val=6, next=__import__('types').SimpleNamespace(val=7, next=__import__('types').SimpleNamespace(val=8, next=__import__('types').SimpleNamespace(val=9, next=__import__('types').SimpleNamespace(val=10, next=__import__('types').SimpleNamespace(val=11, next=__import__('types').SimpleNamespace(val=12, next=__import__('types').SimpleNamespace(val=13, next=__import__('types').SimpleNamespace(val=14, next=__import__('types').SimpleNamespace(val=15, next=__import__('types').SimpleNamespace(val=16, next=__import__('types').SimpleNamespace(val=17, next=__import__('types').SimpleNamespace(val=18, next=__import__('types').SimpleNamespace(val=19, next=None))))))))))))))))))))))",
+      "expected": "[19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "old head becomes the tail",
+      "input": "(lambda h: (reverse_list(h), h.next)[1])(__import__('types').SimpleNamespace(val=1, next=__import__('types').SimpleNamespace(val=2, next=__import__('types').SimpleNamespace(val=3, next=None))))",
+      "expected": "None",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def reverse_list(head):",
+        "    prev = None",
+        "    while head:",
+        "        nxt = head.next",
+        "        head.next = prev",
+        "        prev = head",
+        "        head = nxt",
+        "    return head"
+      ],
+      "bug_line": 8,
+      "bug_type": "wrong-variable",
+      "note_vi": "Trả về head (lúc này đã là None) thay vì prev.",
+      "note_en": "Returns head, which is None by then, instead of prev."
+    },
+    {
+      "code": [
+        "def reverse_list(head):",
+        "    prev = None",
+        "    while head:",
+        "        nxt = head.next",
+        "        head.next = nxt",
+        "        prev = head",
+        "        head = nxt",
+        "    return prev"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-variable",
+      "note_vi": "Không đảo con trỏ: gán lại head.next bằng chính nút kế tiếp.",
+      "note_en": "Never reverses a pointer: head.next is set back to the next node."
+    },
+    {
+      "code": [
+        "def reverse_list(head):",
+        "    prev = None",
+        "    while head:",
+        "        nxt = head.next",
+        "        head.next = prev",
+        "        prev = head",
+        "        head = head.next",
+        "    return prev"
+      ],
+      "bug_line": 7,
+      "bug_type": "wrong-variable",
+      "note_vi": "Đi tiếp bằng head.next sau khi nó đã bị đổi thành prev nên dừng quá sớm.",
+      "note_en": "Advances via head.next after it was already redirected to prev, so it stops too early."
+    },
+    {
+      "code": [
+        "def reverse_list(head):",
+        "    prev = head",
+        "    while head:",
+        "        nxt = head.next",
+        "        head.next = prev",
+        "        prev = head",
+        "        head = nxt",
+        "    return prev"
+      ],
+      "bug_line": 2,
+      "bug_type": "wrong-initial-value",
+      "note_vi": "Khởi tạo prev bằng head tạo ra vòng lặp: nút đầu trỏ vào chính nó.",
+      "note_en": "Initialising prev to head creates a cycle: the first node points to itself."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
