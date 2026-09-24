@@ -1,0 +1,147 @@
+{
+  "code": "CP-108",
+  "reference_solution": [
+    "from threading import Lock",
+    "",
+    "class Counter:",
+    "    def __init__(self):",
+    "        self._n = 0",
+    "        self._lock = Lock()",
+    "",
+    "    def increment(self):",
+    "        with self._lock:",
+    "            self._n += 1",
+    "",
+    "    @property",
+    "    def value(self):",
+    "        with self._lock:",
+    "            return self._n"
+  ],
+  "tests": [
+    {
+      "description": "test_single_increment",
+      "input": "(lambda c: (c.increment(), c.value)[-1])(Counter())",
+      "expected": "1",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_three_increments",
+      "input": "(lambda c: (c.increment(), c.increment(), c.increment(), c.value)[-1])(Counter())",
+      "expected": "3",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "increment waits while another thread holds the lock",
+      "input": "(lambda th, c: (lambda L, t: (lambda r: (r[3], r[6]))((L.acquire(timeout=1), None, t.start(), (t.join(0.3), t.is_alive())[1], L.release(), t.join(2), c.value)))(next(v for v in list(vars(c).values()) if hasattr(v, 'acquire') and hasattr(v, 'release')), th.Thread(target=c.increment)))(__import__('threading'), Counter())",
+      "expected": "(True, 1)",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "eight threads, 500 increments each",
+      "input": "(lambda th, c: (lambda ts: ([t.start() for t in ts], [t.join() for t in ts], c.value)[-1])([th.Thread(target=lambda: [c.increment() for _ in range(500)]) for _ in range(8)]))(__import__('threading'), Counter())",
+      "expected": "4000",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "a new counter starts at zero",
+      "input": "Counter().value",
+      "expected": "0",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "the lock is released after an increment",
+      "input": "(lambda c: (c.increment(), (lambda L: (L.acquire(False), L.release())[0])(next(v for v in list(vars(c).values()) if hasattr(v, 'acquire') and hasattr(v, 'release'))))[-1])(Counter())",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "counters are independent",
+      "input": "(lambda a, b: (a.increment(), a.increment(), b.increment(), (a.value, b.value))[-1])(Counter(), Counter())",
+      "expected": "(2, 1)",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "from threading import Lock",
+        "",
+        "class Counter:",
+        "    def __init__(self):",
+        "        self._n = 0",
+        "        self._lock = Lock()",
+        "",
+        "    def increment(self):",
+        "        with Lock():",
+        "            self._n += 1",
+        "",
+        "    @property",
+        "    def value(self):",
+        "        with self._lock:",
+        "            return self._n"
+      ],
+      "bug_line": 9,
+      "bug_type": "new-lock-per-call",
+      "note_vi": "Tạo lock mới ở mỗi lần gọi nên các luồng không bao giờ chờ nhau.",
+      "note_en": "Creates a new lock on every call, so threads never wait for each other."
+    },
+    {
+      "code": [
+        "from threading import Lock",
+        "",
+        "class Counter:",
+        "    def __init__(self):",
+        "        self._n = 0",
+        "        self._lock = Lock()",
+        "",
+        "    def increment(self):",
+        "        with self._lock:",
+        "            self._n + 1",
+        "",
+        "    @property",
+        "    def value(self):",
+        "        with self._lock:",
+        "            return self._n"
+      ],
+      "bug_line": 10,
+      "bug_type": "missing-assignment",
+      "note_vi": "Tính self._n + 1 nhưng không gán lại nên giá trị không đổi.",
+      "note_en": "Computes self._n + 1 without assigning it, so the value never changes."
+    },
+    {
+      "code": [
+        "from threading import Lock",
+        "",
+        "class Counter:",
+        "    def __init__(self):",
+        "        self._n = 1",
+        "        self._lock = Lock()",
+        "",
+        "    def increment(self):",
+        "        with self._lock:",
+        "            self._n += 1",
+        "",
+        "    @property",
+        "    def value(self):",
+        "        with self._lock:",
+        "            return self._n"
+      ],
+      "bug_line": 5,
+      "bug_type": "wrong-initial-value",
+      "note_vi": "Bộ đếm bắt đầu từ 1 thay vì 0.",
+      "note_en": "The counter starts at 1 instead of 0."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

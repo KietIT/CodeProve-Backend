@@ -1,0 +1,167 @@
+{
+  "code": "CP-110",
+  "reference_solution": [
+    "from collections import deque",
+    "",
+    "def max_sliding_window(nums, k):",
+    "    dq, out = deque(), []",
+    "    for i, n in enumerate(nums):",
+    "        while dq and nums[dq[-1]] < n:",
+    "            dq.pop()",
+    "        dq.append(i)",
+    "        if dq[0] <= i - k:",
+    "            dq.popleft()",
+    "        if i >= k - 1:",
+    "            out.append(nums[dq[0]])",
+    "    return out"
+  ],
+  "tests": [
+    {
+      "description": "test_basic_window",
+      "input": "max_sliding_window([1, 3, -1, -3, 5, 3, 6, 7], 3)",
+      "expected": "[3, 3, 5, 5, 6, 7]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_single_element",
+      "input": "max_sliding_window([1], 1)",
+      "expected": "[1]",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "another window of three",
+      "input": "max_sliding_window([1, 3, 1, 2, 0, 5], 3)",
+      "expected": "[3, 3, 2, 5]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "strictly decreasing values",
+      "input": "max_sliding_window([9, 8, 7, 6], 2)",
+      "expected": "[9, 8, 7]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "all values equal",
+      "input": "max_sliding_window([4, 4, 4, 4], 2)",
+      "expected": "[4, 4, 4]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative values",
+      "input": "max_sliding_window([-1, -3, -2], 2)",
+      "expected": "[-1, -2]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "window as wide as the list",
+      "input": "max_sliding_window([2, 7, 1, 8], 4)",
+      "expected": "[8]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "window of one",
+      "input": "max_sliding_window([5, 1, 3], 1)",
+      "expected": "[5, 1, 3]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "from collections import deque",
+        "",
+        "def max_sliding_window(nums, k):",
+        "    dq, out = deque(), []",
+        "    for i, n in enumerate(nums):",
+        "        while dq and nums[dq[-1]] < n:",
+        "            dq.pop()",
+        "        dq.append(i)",
+        "        if dq[0] < i - k:",
+        "            dq.popleft()",
+        "        if i >= k - 1:",
+        "            out.append(nums[dq[0]])",
+        "    return out"
+      ],
+      "bug_line": 9,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng < nên giữ lại phần tử đã trôi ra khỏi cửa sổ.",
+      "note_en": "Uses <, so an element that already left the window is kept."
+    },
+    {
+      "code": [
+        "from collections import deque",
+        "",
+        "def max_sliding_window(nums, k):",
+        "    dq, out = deque(), []",
+        "    for i, n in enumerate(nums):",
+        "        while dq and nums[dq[-1]] > n:",
+        "            dq.pop()",
+        "        dq.append(i)",
+        "        if dq[0] <= i - k:",
+        "            dq.popleft()",
+        "        if i >= k - 1:",
+        "            out.append(nums[dq[0]])",
+        "    return out"
+      ],
+      "bug_line": 6,
+      "bug_type": "inverted-condition",
+      "note_vi": "Đảo phép so sánh nên hàng đợi không còn giữ được giá trị lớn nhất ở đầu.",
+      "note_en": "Inverts the comparison, so the front of the deque no longer holds the maximum."
+    },
+    {
+      "code": [
+        "from collections import deque",
+        "",
+        "def max_sliding_window(nums, k):",
+        "    dq, out = deque(), []",
+        "    for i, n in enumerate(nums):",
+        "        while dq and nums[dq[-1]] < n:",
+        "            dq.pop()",
+        "        dq.append(i)",
+        "        if dq[0] <= i - k:",
+        "            dq.popleft()",
+        "        if i >= k - 1:",
+        "            out.append(nums[dq[-1]])",
+        "    return out"
+      ],
+      "bug_line": 12,
+      "bug_type": "wrong-end",
+      "note_vi": "Lấy phần tử cuối hàng đợi thay vì phần tử đầu (lớn nhất).",
+      "note_en": "Takes the back of the deque instead of the front, which holds the maximum."
+    },
+    {
+      "code": [
+        "from collections import deque",
+        "",
+        "def max_sliding_window(nums, k):",
+        "    dq, out = deque(), []",
+        "    for i, n in enumerate(nums):",
+        "        while dq and nums[dq[-1]] < n:",
+        "            dq.pop()",
+        "        dq.append(i)",
+        "        if dq[0] <= i - k:",
+        "            dq.pop()",
+        "        if i >= k - 1:",
+        "            out.append(nums[dq[0]])",
+        "    return out"
+      ],
+      "bug_line": 10,
+      "bug_type": "wrong-end",
+      "note_vi": "Xoá nhầm đầu phải thay vì phần tử cũ nhất ở đầu trái.",
+      "note_en": "Removes from the right instead of the oldest element on the left."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

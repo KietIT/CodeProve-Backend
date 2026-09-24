@@ -1,0 +1,137 @@
+{
+  "code": "CP-103",
+  "reference_solution": [
+    "import jwt",
+    "",
+    "def verify_token(token, secret):",
+    "    try:",
+    "        return jwt.decode(token, secret, algorithms=[\"HS256\"])",
+    "    except jwt.InvalidTokenError:",
+    "        return None"
+  ],
+  "tests": [
+    {
+      "description": "test_malformed_token_returns_none",
+      "input": "verify_token('not.a.valid.token', 'secret')",
+      "expected": "None",
+      "category": "edge",
+      "hidden": false
+    },
+    {
+      "description": "test_wrong_secret_returns_none",
+      "input": "verify_token(__import__('jwt').encode({'sub': '1'}, 'wrong', algorithm='HS256'), 'right')",
+      "expected": "None",
+      "category": "edge",
+      "hidden": false
+    },
+    {
+      "description": "valid token returns its claims",
+      "input": "sorted(verify_token(__import__('jwt').encode({'sub': '1', 'exp': int(__import__('time').time()) + 3600}, 'k', algorithm='HS256'), 'k').items())[1]",
+      "expected": "('sub', '1')",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "token that has not expired yet",
+      "input": "verify_token(__import__('jwt').encode({'sub': '7', 'exp': int(__import__('time').time()) + 3600}, 'k', algorithm='HS256'), 'k')['sub']",
+      "expected": "'7'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "expired token is rejected",
+      "input": "verify_token(__import__('jwt').encode({'sub': '1', 'exp': int(__import__('time').time()) - 60}, 'k', algorithm='HS256'), 'k')",
+      "expected": "None",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "unsigned 'none' algorithm is rejected",
+      "input": "verify_token(__import__('jwt').encode({'sub': 'admin'}, None, algorithm='none'), 'k')",
+      "expected": "None",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "tampered payload is rejected",
+      "input": "(lambda p: verify_token(p[0] + '.' + __import__('jwt').encode({'sub': 'admin'}, 'k', algorithm='HS256').split('.')[1] + '.' + p[2], 'k'))(__import__('jwt').encode({'sub': '1'}, 'k', algorithm='HS256').split('.'))",
+      "expected": "None",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty token",
+      "input": "verify_token('', 'k')",
+      "expected": "None",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "import jwt",
+        "",
+        "def verify_token(token, secret):",
+        "    try:",
+        "        return jwt.decode(token, secret, algorithms=[\"HS256\"], options={\"verify_exp\": False})",
+        "    except jwt.InvalidTokenError:",
+        "        return None"
+      ],
+      "bug_line": 5,
+      "bug_type": "skipped-check",
+      "note_vi": "Tắt kiểm tra hạn dùng nên token đã hết hạn vẫn được chấp nhận.",
+      "note_en": "Turns off the expiry check, so expired tokens are still accepted."
+    },
+    {
+      "code": [
+        "import jwt",
+        "",
+        "def verify_token(token, secret):",
+        "    try:",
+        "        return jwt.decode(token, options={\"verify_signature\": False})",
+        "    except jwt.InvalidTokenError:",
+        "        return None"
+      ],
+      "bug_line": 5,
+      "bug_type": "skipped-check",
+      "note_vi": "Bỏ qua kiểm tra chữ ký nên ai cũng có thể tự tạo token.",
+      "note_en": "Skips the signature check, so anyone can forge a token."
+    },
+    {
+      "code": [
+        "import jwt",
+        "",
+        "def verify_token(token, secret):",
+        "    try:",
+        "        return jwt.decode(token, secret, algorithms=[\"HS256\"])",
+        "    except jwt.ExpiredSignatureError:",
+        "        return None"
+      ],
+      "bug_line": 6,
+      "bug_type": "narrow-except",
+      "note_vi": "Chỉ bắt lỗi hết hạn nên token sai định dạng làm chương trình ném lỗi.",
+      "note_en": "Only catches expiry errors, so a malformed token raises instead of returning None."
+    },
+    {
+      "code": [
+        "import jwt",
+        "",
+        "def verify_token(token, secret):",
+        "    try:",
+        "        return jwt.decode(token, secret, algorithms=[\"HS256\", \"none\"])",
+        "    except jwt.InvalidTokenError:",
+        "        return None"
+      ],
+      "bug_line": 5,
+      "bug_type": "algorithm-confusion",
+      "note_vi": "Cho phép thuật toán 'none' nên token không ký gây lỗi thay vì bị từ chối.",
+      "note_en": "Allows the 'none' algorithm, so an unsigned token errors instead of being rejected."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

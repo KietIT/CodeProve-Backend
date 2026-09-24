@@ -1,0 +1,103 @@
+{
+  "code": "CP-106",
+  "reference_solution": [
+    "def find_user(db, name):",
+    "    return db.execute(",
+    "        \"SELECT * FROM users WHERE name = ?\", (name,)",
+    "    )"
+  ],
+  "tests": [
+    {
+      "description": "finds an existing user",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\", \"INSERT INTO users VALUES ('bob')\"]], find_user(db, 'alice').fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[('alice',)]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "unknown name returns no rows",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\"]], find_user(db, 'carol').fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[]",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "classic OR injection returns nothing",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\", \"INSERT INTO users VALUES ('bob')\"]], find_user(db, \"' OR '1'='1\").fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "stacked DROP TABLE is harmless",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\"]], find_user(db, \"x'; DROP TABLE users; --\").fetchall(), db.execute('SELECT count(*) FROM users').fetchone()[0])[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "1",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a name with an apostrophe",
+      "input": "(lambda db: (db.execute('CREATE TABLE users(name TEXT)'), db.execute('INSERT INTO users VALUES (?)', (\"O'Brien\",)), find_user(db, \"O'Brien\").fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[(\"O'Brien\",)]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a percent sign is not a wildcard",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\", \"INSERT INTO users VALUES ('bob')\"]], find_user(db, '%').fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty name",
+      "input": "(lambda db: ([db.execute(s) for s in ['CREATE TABLE users(name TEXT)', \"INSERT INTO users VALUES ('alice')\"]], find_user(db, '').fetchall())[-1])(__import__('sqlite3').connect(':memory:'))",
+      "expected": "[]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def find_user(db, name):",
+        "    return db.execute(",
+        "        \"SELECT * FROM users WHERE name = '\" + name + \"'\"",
+        "    )"
+      ],
+      "bug_line": 3,
+      "bug_type": "sql-injection",
+      "note_vi": "Nối chuỗi trực tiếp đầu vào vào câu SQL nên bị SQL injection.",
+      "note_en": "Concatenates the input straight into the SQL, so it is injectable."
+    },
+    {
+      "code": [
+        "def find_user(db, name):",
+        "    return db.execute(",
+        "        f\"SELECT * FROM users WHERE name = '{name}'\"",
+        "    )"
+      ],
+      "bug_line": 3,
+      "bug_type": "sql-injection",
+      "note_vi": "f-string vẫn là nối chuỗi nên vẫn bị SQL injection.",
+      "note_en": "An f-string is still concatenation, so it is still injectable."
+    },
+    {
+      "code": [
+        "def find_user(db, name):",
+        "    return db.execute(",
+        "        \"SELECT * FROM users WHERE name LIKE ?\", (name,)",
+        "    )"
+      ],
+      "bug_line": 3,
+      "bug_type": "wrong-operator",
+      "note_vi": "Dùng LIKE nên ký tự % trong tên trở thành ký tự đại diện.",
+      "note_en": "Uses LIKE, so a % in the name becomes a wildcard."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

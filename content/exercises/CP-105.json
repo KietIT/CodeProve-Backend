@@ -1,0 +1,154 @@
+{
+  "code": "CP-105",
+  "reference_solution": [
+    "def length_of_longest(s):",
+    "    seen = {}",
+    "    start = best = 0",
+    "    for i, c in enumerate(s):",
+    "        if c in seen and seen[c] >= start:",
+    "            start = seen[c] + 1",
+    "        seen[c] = i",
+    "        best = max(best, i - start + 1)",
+    "    return best"
+  ],
+  "tests": [
+    {
+      "description": "test_basic_abcabc",
+      "input": "length_of_longest('abcabcbb')",
+      "expected": "3",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_all_same",
+      "input": "length_of_longest('bbbbb')",
+      "expected": "1",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "repeat in the middle",
+      "input": "length_of_longest('pwwkew')",
+      "expected": "3",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "window must not jump back",
+      "input": "length_of_longest('abba')",
+      "expected": "2",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "restart right after the repeat",
+      "input": "length_of_longest('dvdf')",
+      "expected": "3",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "old repeat outside the window",
+      "input": "length_of_longest('tmmzuxt')",
+      "expected": "5",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a single space",
+      "input": "length_of_longest(' ')",
+      "expected": "1",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty string",
+      "input": "length_of_longest('')",
+      "expected": "0",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "all characters unique",
+      "input": "length_of_longest('abcdef')",
+      "expected": "6",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def length_of_longest(s):",
+        "    seen = {}",
+        "    start = best = 0",
+        "    for i, c in enumerate(s):",
+        "        if c in seen:",
+        "            start = seen[c] + 1",
+        "        seen[c] = i",
+        "        best = max(best, i - start + 1)",
+        "    return best"
+      ],
+      "bug_line": 5,
+      "bug_type": "missing-condition",
+      "note_vi": "Không kiểm tra vị trí cũ còn nằm trong cửa sổ nên start bị kéo lùi.",
+      "note_en": "Does not check the old position is inside the window, so start can move backwards."
+    },
+    {
+      "code": [
+        "def length_of_longest(s):",
+        "    seen = {}",
+        "    start = best = 0",
+        "    for i, c in enumerate(s):",
+        "        if c in seen and seen[c] >= start:",
+        "            start = seen[c]",
+        "        seen[c] = i",
+        "        best = max(best, i - start + 1)",
+        "    return best"
+      ],
+      "bug_line": 6,
+      "bug_type": "off-by-one",
+      "note_vi": "Bắt đầu lại tại chính ký tự lặp nên cửa sổ vẫn chứa hai ký tự giống nhau.",
+      "note_en": "Restarts at the repeated character itself, so the window still holds it twice."
+    },
+    {
+      "code": [
+        "def length_of_longest(s):",
+        "    seen = {}",
+        "    start = best = 0",
+        "    for i, c in enumerate(s):",
+        "        if c in seen and seen[c] >= start:",
+        "            start = seen[c] + 1",
+        "        seen[c] = i",
+        "        best = max(best, i - start)",
+        "    return best"
+      ],
+      "bug_line": 8,
+      "bug_type": "off-by-one",
+      "note_vi": "Độ dài cửa sổ bị tính thiếu 1.",
+      "note_en": "The window length is computed one too short."
+    },
+    {
+      "code": [
+        "def length_of_longest(s):",
+        "    seen = {}",
+        "    start = best = 0",
+        "    for i, c in enumerate(s):",
+        "        if c in seen and seen[c] > start:",
+        "            start = seen[c] + 1",
+        "        seen[c] = i",
+        "        best = max(best, i - start + 1)",
+        "    return best"
+      ],
+      "bug_line": 5,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng > nên bỏ sót ký tự lặp nằm đúng ở đầu cửa sổ.",
+      "note_en": "Uses >, so a repeat sitting exactly at the window start is missed."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
