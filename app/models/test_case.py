@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -18,3 +18,5 @@ class TestCase(Base):
     description: Mapped[str] = mapped_column(Text, default="")
     is_hidden: Mapped[bool] = mapped_column(Boolean, default=True)
     order_index: Mapped[int] = mapped_column(Integer, default=0)
+    # happy | boundary | edge | error (None for legacy seed rows).
+    category: Mapped[str | None] = mapped_column(String(16), nullable=True)
