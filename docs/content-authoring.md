@@ -8,14 +8,16 @@ database. Design: `docs/superpowers/specs/2026-09-24-p1-design.md` (P1.1).
 ## Trust model
 
 The `review` block inside a content file is a **workflow marker**, not proof
-of review: anyone who can push can write any name there. The actual controls
-are:
+of review: anyone who can push can write any name there, and GitHub does not
+require an approving review on `main` (team decision: the owner merges without
+waiting). Review is therefore a **team convention**. What is enforced:
 
-1. **GitHub branch protection on `main`**: changes only land through a pull
-   request with at least one approving review.
-2. **`.github/CODEOWNERS`**: pull requests touching `content/` need an
-   approval from a team member listed there.
-3. **EC2 access**: only people who can SSH into the server can run the sync.
+1. **`main` only changes through pull requests** (no direct pushes, no force
+   pushes, no deletion), so every content change is visible in a PR.
+2. **The operator running the sync is the gate.** Only people with EC2 access
+   can run it, and the dry run prints the reviewer of every file. Before
+   `--apply`, check that each file's reviewer actually reviewed it.
+3. **Drafts are never synced** (the marker stops accidental loads).
 
 Content code (reference solutions, mutants) is executed by the validator in
 the same hardened sandbox as student code, never in the backend process.
@@ -29,7 +31,7 @@ the same hardened sandbox as student code, never in the backend process.
    checklist, edits it if needed, re-runs the validator, then sets
    `"status": "approved", "reviewer": "<your name as in the table>"`.
    The reviewer must not be the author.
-4. **Approve the pull request on GitHub** (this is the approval that counts,
+4. **Approve the pull request on GitHub** (leave a review so there is a record,
    see Trust model), then **merge**.
 5. **Load into production** (EC2):
    ```bash

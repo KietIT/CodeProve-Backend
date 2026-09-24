@@ -56,7 +56,8 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
             results.append({"code": content.code, "status": "invalid", "errors": errors})
             continue
         results.append({"code": content.code, "status": "ok", "tests": len(content.tests),
-                        "hidden": sum(t.hidden for t in content.tests), "mutants": len(content.mutants)})
+                        "hidden": sum(t.hidden for t in content.tests), "mutants": len(content.mutants),
+                        "reviewer": content.review.reviewer})
         if apply:
             await _write(db, ex, content)
     if apply:
@@ -74,7 +75,8 @@ async def _main(codes: list[str], apply: bool) -> int:
         results = await sync_content(db, files, apply)
     for r in results:
         if r["status"] == "ok":
-            print(f"{r['code']}  ok       tests={r['tests']} hidden={r['hidden']} mutants={r['mutants']}")
+            print(f"{r['code']}  ok       tests={r['tests']} hidden={r['hidden']} mutants={r['mutants']}"
+                  f"  reviewer={r['reviewer']}")
         elif r["status"] == "skipped":
             print(f"{r['code']}  skipped  {r['reason']}")
         else:

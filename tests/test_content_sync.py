@@ -88,3 +88,11 @@ async def test_a_broken_file_is_reported_without_blocking_the_others(db_session,
     by_code = {r["code"]: r for r in results}
     assert by_code["CP-005"]["status"] == "invalid"
     assert by_code["CP-004"]["status"] == "ok"
+
+
+async def test_results_name_the_reviewer_for_the_operator(db_session, tmp_path):
+    # The operator running the sync is the real gate, so the dry run shows who
+    # approved each file.
+    await _exercise(db_session)
+    results = await sync_content(db_session, [_write(tmp_path, APPROVED)], apply=False)
+    assert results[0]["reviewer"] == "an"
