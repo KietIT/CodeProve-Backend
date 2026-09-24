@@ -53,4 +53,6 @@ async def test_detail_starter_stripped_for_implement_kept_for_debug(client, db_s
 
     debug = (await client.get("/api/exercises/CP-902", headers=auth_headers)).json()
     assert debug["kind"] == "debug"
-    assert debug["starter"] == buggy_code  # buggy body shown verbatim
+    # Buggy body shown, but the comment that names the bug is stripped.
+    assert "range(1, n)" in debug["starter"]
+    assert "#" not in debug["starter"]

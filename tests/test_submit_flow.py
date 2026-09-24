@@ -85,3 +85,22 @@ async def test_explain_back_twice_returns_409(client, db_session, auth_headers):
     assert first.status_code == 200
     second = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json=answers)
     assert second.status_code == 409
+
+
+async def test_report_marks_axes_without_opportunity_not_applicable(client, db_session, auth_headers):
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
+    eb = await client.post(
+        f"/api/attempts/{aid}/explain-back", headers=auth_headers,
+        json={"answers": [{"question": "q", "answer": "Because I use a hash map for O(1) lookups."}]},
+    )
+    body = eb.json()
+    assert body["axes"]["prompting"] is None
+    assert body["axes"]["verification"] is None
+    assert body["axes"]["debugging"] is None
+    assert body["feedback"]["not_applicable"] == {
+        "prompting": "no_ai_use", "verification": "no_ai_code", "debugging": "no_failure",
+    }
+    rep = (await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)).json()
+    assert rep["axes"]["prompting"] is None
+    assert rep["feedback"]["not_applicable"] == body["feedback"]["not_applicable"]

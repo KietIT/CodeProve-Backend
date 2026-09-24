@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.features.attempts import scoring_service, service
+from app.features.exercises.starters import is_untouched, student_starter
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
 from app.schemas.attempt import AttemptOut, AttemptState, CreateAttemptIn, RunIn, RunResult, SnapshotIn
@@ -59,6 +60,7 @@ async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
     settings = get_settings()
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     attempt = await service.require_attempt(db, attempt_id, user)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     cases = (await db.execute(
         select(TestCase).where(TestCase.exercise_id == attempt.exercise_id).order_by(TestCase.order_index)
     )).scalars().all()
@@ -71,7 +73,14 @@ async def run(attempt_id: int, data: RunIn, db: AsyncSession = Depends(get_db),
         select(CodeSnapshot).where(CodeSnapshot.attempt_id == attempt_id))).scalars().all())
     db.add(CodeSnapshot(attempt_id=attempt_id, version=next_version, source_code=data.source_code))
     all_passed = result["total"] > 0 and result["passed"] == result["total"]
-    await service.add_event(db, attempt_id, "RUN", {"passed": all_passed})
+    pass_ratio = round(result["passed"] / result["total"], 3) if result["total"] else 0.0
+    # isStarter: running the untouched scaffold (or an empty editor) is not a real
+    # attempt, so scoring must not count its failure as something "debugged".
+    await service.add_event(db, attempt_id, "RUN", {
+        "passed": all_passed,
+        "passRatio": pass_ratio,
+        "isStarter": is_untouched(data.source_code, student_starter(ex.starter_code, ex.kind)),
+    })
     if data.run_tests:
         await service.add_event(db, attempt_id, "TEST_RUN", {
             "passed": all_passed, "testCount": result["total"], "coverage": result["coverage"]})

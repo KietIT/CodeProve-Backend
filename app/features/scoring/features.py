@@ -26,16 +26,19 @@ class AxisFeatures:
     p3_hits: int = 0
     p4_hits: int = 0
     prompt_count: int = 0
+    trap_injected: bool = False
     has_v1: bool = False
     has_v1b: bool = False
     v2_count: int = 0
     has_v3: bool = False
-    t1_count: int = 0
+    ai_code_received: bool = False
+    tested_after_ai_code: bool = False
     best_coverage: float = 0.0
     has_test_run: bool = False
+    run_count: int = 0
+    final_pass_ratio: float = 0.0
     any_pass: bool = False
-    d1_count: int = 0
-    d2_count: int = 0
+    real_fails_before_first_pass: int = 0
     paste_flags: int = 0
     focus_lost: int = 0
     tab_hidden: int = 0
@@ -47,6 +50,18 @@ class AxisFeatures:
     integrity_flag_total: int = field(default=0)
 
 
+def _ai_loc(reply: dict) -> int:
+    return sum(c.get("loc", 0) for c in reply["payload"].get("aiCode", []))
+
+
+def _pass_ratio(payload: dict) -> float:
+    if "passRatio" in payload:
+        return float(payload["passRatio"])
+    if "coverage" in payload:  # legacy TEST_RUN: "coverage" was the pass ratio
+        return float(payload["coverage"])
+    return 1.0 if payload.get("passed") else 0.0
+
+
 def compute_features(events: list[dict], explain_score: float | None) -> AxisFeatures:
     f = AxisFeatures(explain_score=explain_score or 0.0)
     # Work on a timestamp-ordered copy so every "first"/transition derivation is
@@ -55,6 +70,10 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     open_ts = next((e["ts"] for e in events if e["type"] == "OPEN"), None)
     first_prompt = next((e for e in events if e["type"] == "PROMPT"), None)
     first_code = next((e for e in events if e["type"] == "CODE_EDIT"), None)
+    # Every /run call logs one RUN (plus a duplicate TEST_RUN when tests are run),
+    # so RUN is the one-event-per-execution stream. Sessions that only logged
+    # TEST_RUN fall back to it.
+    runs = [e for e in events if e["type"] == "RUN"] or [e for e in events if e["type"] == "TEST_RUN"]
 
     if open_ts is not None and first_prompt is not None:
         f.first_prompt_delay_ms = first_prompt["ts"] - open_ts
@@ -105,9 +124,10 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     elif hyps and not first_code:
         f.has_hypothesis_before_code = True
 
-    # Verification: trap caught/missed, speed-accept, paste-blind
+    # Verification: trap caught/missed, speed-accept, paste-blind, testing AI code
     submit_ts = next((e["ts"] for e in events if e["type"] == "SUBMIT"), None)
     injected = [e for e in replies if e["payload"].get("injectedError")]
+    f.trap_injected = bool(injected)
     if injected:
         trap_ts = injected[0]["ts"]
         edited_after = any(
@@ -119,38 +139,42 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
     # V2 speed-accept: an AI reply with >=20 loc followed by the next event within 15s.
     for i, e in enumerate(events):
         if e["type"] == "AI_REPLY":
-            loc = sum(c.get("loc", 0) for c in e["payload"].get("aiCode", []))
-            if loc >= 20 and i + 1 < len(events) and (events[i + 1]["ts"] - e["ts"]) < 15000:
+            if _ai_loc(e) >= 20 and i + 1 < len(events) and (events[i + 1]["ts"] - e["ts"]) < 15000:
                 f.v2_count += 1
-    total_ai_loc = sum(sum(c.get("loc", 0) for c in e["payload"].get("aiCode", [])) for e in replies)
+    total_ai_loc = sum(_ai_loc(e) for e in replies)
     if total_ai_loc >= 50:
         # paste-blind if no CODE_EDIT follows the last AI reply
         last_reply_ts = max((e["ts"] for e in replies), default=None)
         f.has_v3 = last_reply_ts is not None and not any(
             e["type"] == "CODE_EDIT" and e["ts"] > last_reply_ts for e in events
         )
+    # Verification needs something to verify: an AI reply that contained code.
+    ai_code_replies = [e for e in replies if _ai_loc(e) > 0]
+    f.ai_code_received = bool(ai_code_replies)
+    if ai_code_replies:
+        first_ai_code_ts = ai_code_replies[0]["ts"]
+        f.tested_after_ai_code = any(r["ts"] > first_ai_code_ts for r in runs)
 
     # Testing
     test_runs = [e for e in events if e["type"] == "TEST_RUN"]
     f.has_test_run = len(test_runs) > 0
-    f.t1_count = min(max((int(e["payload"].get("testCount", 0)) for e in test_runs), default=0), 5)
     f.best_coverage = max((float(e["payload"].get("coverage", 0.0)) for e in test_runs), default=0.0)
+    f.run_count = len(runs)
+    if runs:
+        f.final_pass_ratio = _pass_ratio(runs[-1]["payload"])
 
-    # Debugging: fail -> (edit) -> pass cycles
-    runs = [e for e in events if e["type"] in ("RUN", "TEST_RUN")]
+    # Debugging: failing runs of the student's own code before the first pass.
+    # Starter/empty runs cannot manufacture a failure, and anything after the
+    # first pass is ignored, so toggling pass/fail cannot farm the axis.
     # any_pass: the code produced a fully-passing run at least once. Real evidence
     # the student solved it - unlike merely typing characters, which garbage input
     # can fake. Used to gate the understanding engagement bonus.
     f.any_pass = any(bool(e["payload"].get("passed")) for e in runs)
-    prev_failed = False
     for e in runs:
-        passed = bool(e["payload"].get("passed"))
-        if prev_failed and passed:
-            f.d1_count += 1
-        prev_failed = not passed
-    f.d1_count = min(f.d1_count, 3)
-    # D2 (ai-dependent) is intentionally left 0 for the MVP: cleanly distinguishing an
-    # AI-driven fix from a user fix needs richer telemetry than is collected today.
+        if e["payload"].get("passed"):
+            break
+        if not e["payload"].get("isStarter"):
+            f.real_fails_before_first_pass += 1
 
     # Integrity raw signals. A PASTE_BLOCKED event means the student *tried* to
     # paste (e.g. an answer copied from another AI) and the editor prevented it -

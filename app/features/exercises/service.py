@@ -1,7 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.features.exercises.starters import student_safe_starter
+from app.features.exercises.starters import student_starter
 from app.models import Attempt, Exercise, TestCase
 
 _LEVEL_NAMES = {"fresher": "Fresher", "junior": "Junior", "senior": "Senior"}
@@ -71,9 +71,9 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
         select(func.count()).select_from(Exercise)
         .where(Exercise.level == ex.level, Exercise.code <= ex.code)
     )).scalar_one()
-    # Debug-type exercises exist to have their flaw found: show the buggy
-    # starter verbatim. Implement-type starters are stripped to a scaffold.
-    starter = ex.starter_code if ex.kind == "debug" else student_safe_starter(ex.starter_code)
+    # Debug-type starters keep the buggy body but lose comments, which often
+    # name the bug; implement-type starters are stripped to a scaffold.
+    starter = student_starter(ex.starter_code, ex.kind)
     return {
         "id": ex.id, "num": num, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
         "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level, "kind": ex.kind,

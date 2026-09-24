@@ -28,7 +28,7 @@ async def build_dashboard(db: AsyncSession, user: User) -> dict:
     radar = []
     for name, attr in _AXES:
         vals = [getattr(r[1], attr) for r in rows if getattr(r[1], attr) is not None]
-        radar.append({"name": name, "value": round((sum(vals) / len(vals)) * 5, 1) if vals else 0.0})
+        radar.append({"name": name, "value": round((sum(vals) / len(vals)) * 5, 1) if vals else None})
 
     trend = [round(r[0].score or 0, 1) for r in reversed(rows)][-8:]
 

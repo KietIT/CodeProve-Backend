@@ -9,7 +9,7 @@ class Kpis(BaseModel):
 
 class RadarPoint(BaseModel):
     name: str
-    value: float  # 0..100
+    value: float | None  # 0..100; None = never observed in any report
 
 
 class RecentItem(BaseModel):
