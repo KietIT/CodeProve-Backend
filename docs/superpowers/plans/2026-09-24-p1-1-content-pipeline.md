@@ -832,14 +832,14 @@ With no files yet pytest reports this test as skipped (empty parameter set). Com
    - Each mutant is a bug a real developer (or an AI) could plausibly write; `note_vi`/`note_en` explain it in one sentence each, and would make sense to show to a student after submit.
    - For debug exercises: the planted bug in the starter is caught by at least one hidden test.
    - Nothing in visible test descriptions reveals hidden cases.
-4. **Assignment** (4 members, each reviews ~7–8 exercises; fill in names):
+4. **Assignment** (4 members, each reviews 6–8 exercises):
 
 | Reviewer | Exercises |
 |---|---|
-| Member 1 | CP-001 … CP-008 |
-| Member 2 | CP-009 … CP-012, CP-101 … CP-104 |
-| Member 3 | CP-105 … CP-110, CP-201, CP-202 |
-| Member 4 | CP-203 … CP-208 |
+| Kiệt | CP-001 … CP-008 |
+| Trung | CP-009 … CP-012, CP-101 … CP-104 |
+| Minh | CP-105 … CP-110, CP-201, CP-202 |
+| Phát | CP-203 … CP-208 |
 
 Commit — `docs(content): add authoring and review guide`.
 
