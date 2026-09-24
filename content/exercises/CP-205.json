@@ -176,8 +176,8 @@
     "summary": "Implement is_match(s, p): '.' matches any single character and '*' matches zero or more of the preceding element. The pattern must match the entire string, not just part of it (like re.fullmatch). Explain your DP state definition."
   },
   "review": {
-    "status": "draft",
+    "status": "approved",
     "author": "claude",
-    "reviewer": null
+    "reviewer": "Phát"
   }
 }

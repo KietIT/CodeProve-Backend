@@ -120,8 +120,8 @@
     }
   ],
   "review": {
-    "status": "draft",
+    "status": "approved",
     "author": "claude",
-    "reviewer": null
+    "reviewer": "Kiệt"
   }
 }
