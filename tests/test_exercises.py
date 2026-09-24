@@ -56,3 +56,18 @@ async def test_detail_starter_stripped_for_implement_kept_for_debug(client, db_s
     # Buggy body shown, but the comment that names the bug is stripped.
     assert "range(1, n)" in debug["starter"]
     assert "#" not in debug["starter"]
+
+
+async def test_detail_lists_visible_tests_only(client, db_session, auth_headers):
+    from app.models import Exercise, TestCase
+
+    ex = Exercise(code="CP-903", title="t", difficulty="Easy", category="c", level="fresher",
+                  language="python", summary="s", starter_code="def f(): pass", hint="", domain_keywords=[])
+    db_session.add(ex)
+    await db_session.flush()
+    db_session.add(TestCase(exercise_id=ex.id, description="shown", is_hidden=False, order_index=1))
+    db_session.add(TestCase(exercise_id=ex.id, description="secret_edge_case", is_hidden=True, order_index=2))
+    await db_session.commit()
+
+    body = (await client.get("/api/exercises/CP-903", headers=auth_headers)).json()
+    assert body["tests"] == ["shown"]

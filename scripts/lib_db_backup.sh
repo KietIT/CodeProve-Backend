@@ -39,8 +39,14 @@ load_config() {
   AWS_REGION_ARG=()
   local region="${BACKUP_AWS_REGION:-$(env_get BACKUP_AWS_REGION)}"
   [[ -n "$region" ]] && AWS_REGION_ARG=(--region "$region")
-  [[ -n "$S3_BUCKET" ]] || die "BACKUP_S3_BUCKET is not set (in .env or the environment)"
   return 0
+}
+
+# Only operations that talk to S3 need a bucket and the AWS CLI; restoring a
+# local dump needs neither.
+require_s3() {
+  [[ -n "$S3_BUCKET" ]] || die "BACKUP_S3_BUCKET is not set (in .env or the environment)"
+  require_cmds aws
 }
 
 require_cmds() {

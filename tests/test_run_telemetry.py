@@ -46,3 +46,19 @@ async def test_run_records_starter_flag_and_pass_ratio(client, db_session, auth_
     assert [p["isStarter"] for p in payloads] == [True, False, False]
     assert [p["passRatio"] for p in payloads] == [0.0, 0.5, 1.0]
     assert [p["passed"] for p in payloads] == [False, False, True]
+
+
+async def test_run_executes_visible_tests_only(client, db_session, auth_headers):
+    from app.models import TestCase
+
+    aid = await _attempt(client, db_session, auth_headers)   # 2 visible cases
+    ex_id = (await db_session.execute(select(TestCase.exercise_id))).scalars().first()
+    db_session.add(TestCase(exercise_id=ex_id, input_data="double(-1)", expected_output="-2",
+                            description="secret_negative", is_hidden=True, order_index=3))
+    await db_session.commit()
+
+    r = await client.post(f"/api/attempts/{aid}/run", headers=auth_headers,
+                          json={"source_code": "def double(x):\n    return x + x", "run_tests": True})
+    body = r.json()
+    assert body["total"] == 2
+    assert all(c["name"] != "secret_negative" for c in body["cases"])
