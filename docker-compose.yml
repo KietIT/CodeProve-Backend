@@ -11,7 +11,12 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-codeprove}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-codeprove}
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
-      - "8000:8000"
+      # Loopback only: the public entry point is the Cloudflare tunnel, which
+      # reaches the backend over the compose network (http://backend:8000), not
+      # via this host port. Publishing on 0.0.0.0 would expose plain HTTP (JWTs
+      # in cleartext) and bypass Cloudflare; Docker-published ports also bypass
+      # ufw/iptables, so never use a bare "8000:8000" here.
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
