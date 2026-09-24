@@ -172,3 +172,22 @@ def test_text_only_ai_reply_is_not_ai_code():
     f = compute_features(events, explain_score=0.0)
     assert f.ai_code_received is False
     assert f.tested_after_ai_code is False
+
+
+def test_legacy_run_takes_pass_ratio_from_its_twin_test_run():
+    # Before P0 a /run call logged RUN {"passed"} and then TEST_RUN {"coverage"}
+    # a few ms later; the pass ratio only lived on the TEST_RUN.
+    events = [
+        _ev("RUN", 1000, {"passed": True}),
+        _ev("TEST_RUN", 1002, {"passed": True, "testCount": 2, "coverage": 1.0}),
+        _ev("RUN", 5000, {"passed": False}),
+        _ev("TEST_RUN", 5001, {"passed": False, "testCount": 2, "coverage": 0.5}),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.run_count == 2
+    assert f.final_pass_ratio == 0.5
+
+
+def test_legacy_run_without_twin_falls_back_to_pass_fail():
+    events = [_ev("RUN", 1000, {"passed": False})]
+    assert compute_features(events, explain_score=0.0).final_pass_ratio == 0.0
