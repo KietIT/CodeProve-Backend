@@ -1,0 +1,251 @@
+{
+  "code": "CP-207",
+  "reference_solution": [
+    "from types import SimpleNamespace",
+    "",
+    "def serialize(root):",
+    "    out = []",
+    "",
+    "    def dfs(node):",
+    "        if not node:",
+    "            out.append(\"#\")",
+    "            return",
+    "        out.append(str(node.val))",
+    "        dfs(node.left)",
+    "        dfs(node.right)",
+    "",
+    "    dfs(root)",
+    "    return \",\".join(out)",
+    "",
+    "def deserialize(data):",
+    "    vals = iter(data.split(\",\"))",
+    "",
+    "    def build():",
+    "        v = next(vals)",
+    "        if v == \"#\":",
+    "            return None",
+    "        return SimpleNamespace(val=int(v), left=build(), right=build())",
+    "",
+    "    return build()"
+  ],
+  "tests": [
+    {
+      "description": "test_empty_tree",
+      "input": "serialize(None)",
+      "expected": "'#'",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "test_three_node_tree",
+      "input": "(lambda NS: serialize(NS(1, NS(2), NS(3))))(lambda v, l=None, r=None: __import__('types').SimpleNamespace(val=v, left=l, right=r))",
+      "expected": "'1,2,#,#,3,#,#'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "round trip of a full tree",
+      "input": "serialize(deserialize(serialize(__import__('types').SimpleNamespace(val=1, left=__import__('types').SimpleNamespace(val=2, left=__import__('types').SimpleNamespace(val=4, left=None, right=None), right=__import__('types').SimpleNamespace(val=5, left=None, right=None)), right=__import__('types').SimpleNamespace(val=3, left=__import__('types').SimpleNamespace(val=6, left=None, right=None), right=__import__('types').SimpleNamespace(val=7, left=None, right=None))))))",
+      "expected": "'1,2,4,#,#,5,#,#,3,6,#,#,7,#,#'",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "deserialize rebuilds the structure",
+      "input": "(lambda t: (t.val, t.left.val, t.right.val, t.left.left))(deserialize('1,2,#,#,3,#,#'))",
+      "expected": "(1, 2, 3, None)",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "empty tree round trip",
+      "input": "deserialize(serialize(None))",
+      "expected": "None",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "single node",
+      "input": "(lambda t: (t.val, t.left, t.right))(deserialize(serialize(__import__('types').SimpleNamespace(val=9, left=None, right=None))))",
+      "expected": "(9, None, None)",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "left-leaning tree keeps its shape",
+      "input": "serialize(deserialize(serialize(__import__('types').SimpleNamespace(val=1, left=__import__('types').SimpleNamespace(val=2, left=__import__('types').SimpleNamespace(val=3, left=None, right=None), right=None), right=None))))",
+      "expected": "'1,2,3,#,#,#,#'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "right-leaning tree keeps its shape",
+      "input": "serialize(deserialize(serialize(__import__('types').SimpleNamespace(val=1, left=None, right=__import__('types').SimpleNamespace(val=2, left=None, right=__import__('types').SimpleNamespace(val=3, left=None, right=None))))))",
+      "expected": "'1,#,2,#,3,#,#'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative and multi-digit values",
+      "input": "(lambda t: (t.val, t.left.val))(deserialize(serialize(__import__('types').SimpleNamespace(val=-12, left=__import__('types').SimpleNamespace(val=345, left=None, right=None), right=None))))",
+      "expected": "(-12, 345)",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "from types import SimpleNamespace",
+        "",
+        "def serialize(root):",
+        "    out = []",
+        "",
+        "    def dfs(node):",
+        "        if not node:",
+        "            out.append(\"#\")",
+        "            return",
+        "        out.append(str(node.val))",
+        "        dfs(node.left)",
+        "        dfs(node.right)",
+        "",
+        "    dfs(root)",
+        "    return \",\".join(out)",
+        "",
+        "def deserialize(data):",
+        "    vals = iter(data.split(\",\"))",
+        "",
+        "    def build():",
+        "        v = next(vals)",
+        "        if v == \"#\":",
+        "            return None",
+        "        return SimpleNamespace(val=int(v), left=None, right=build())",
+        "",
+        "    return build()"
+      ],
+      "bug_line": 24,
+      "bug_type": "missing-child",
+      "note_vi": "Không dựng cây con trái nên phần còn lại của chuỗi bị đọc lệch.",
+      "note_en": "Never builds the left subtree, so the rest of the string is read out of place."
+    },
+    {
+      "code": [
+        "from types import SimpleNamespace",
+        "",
+        "def serialize(root):",
+        "    out = []",
+        "",
+        "    def dfs(node):",
+        "        if not node:",
+        "            out.append(\"#\")",
+        "            return",
+        "        out.append(str(node.val))",
+        "        dfs(node.left)",
+        "        dfs(node.right)",
+        "",
+        "    dfs(root)",
+        "    return \",\".join(out)",
+        "",
+        "def deserialize(data):",
+        "    vals = iter(data.split(\",\"))",
+        "",
+        "    def build():",
+        "        v = next(vals)",
+        "        if v == \"#\":",
+        "            return None",
+        "        return SimpleNamespace(val=v, left=build(), right=build())",
+        "",
+        "    return build()"
+      ],
+      "bug_line": 24,
+      "bug_type": "wrong-type",
+      "note_vi": "Giữ val dưới dạng chuỗi thay vì chuyển về số nguyên.",
+      "note_en": "Keeps val as a string instead of converting it back to an int."
+    },
+    {
+      "code": [
+        "from types import SimpleNamespace",
+        "",
+        "def serialize(root):",
+        "    out = []",
+        "",
+        "    def dfs(node):",
+        "        if not node:",
+        "            out.append(\"#\")",
+        "            return",
+        "        out.append(str(node.val))",
+        "        dfs(node.left)",
+        "        dfs(node.right)",
+        "",
+        "    dfs(root)",
+        "    return \" \".join(out)",
+        "",
+        "def deserialize(data):",
+        "    vals = iter(data.split(\",\"))",
+        "",
+        "    def build():",
+        "        v = next(vals)",
+        "        if v == \"#\":",
+        "            return None",
+        "        return SimpleNamespace(val=int(v), left=build(), right=build())",
+        "",
+        "    return build()"
+      ],
+      "bug_line": 15,
+      "bug_type": "wrong-separator",
+      "note_vi": "Nối bằng dấu cách trong khi deserialize tách theo dấu phẩy.",
+      "note_en": "Joins with spaces while deserialize splits on commas."
+    },
+    {
+      "code": [
+        "from types import SimpleNamespace",
+        "",
+        "def serialize(root):",
+        "    out = []",
+        "",
+        "    def dfs(node):",
+        "        if not node:",
+        "            out.append(\"#\")",
+        "            return",
+        "        out.append(str(node.val))",
+        "        dfs(node.left)",
+        "        dfs(node.right)",
+        "",
+        "    dfs(root)",
+        "    return \",\".join(out)",
+        "",
+        "def deserialize(data):",
+        "    vals = iter(data.split(\",\"))",
+        "",
+        "    def build():",
+        "        v = next(vals)",
+        "        if v == \"\":",
+        "            return None",
+        "        return SimpleNamespace(val=int(v), left=build(), right=build())",
+        "",
+        "    return build()"
+      ],
+      "bug_line": 22,
+      "bug_type": "wrong-marker",
+      "note_vi": "So sánh với chuỗi rỗng thay vì dấu # nên không nhận ra nút rỗng.",
+      "note_en": "Compares with the empty string instead of '#', so null markers are not recognised."
+    }
+  ],
+  "exercise": {
+    "summary": "Implement serialize(root) -> str and deserialize(data) -> root for a binary tree whose nodes have .val (an int), .left and .right. deserialize may return any node objects with those attributes (e.g. types.SimpleNamespace). deserialize(serialize(t)) must rebuild t's structure and values exactly. Explain how null markers let a single preorder walk be decoded unambiguously.",
+    "starter_code": [
+      "from types import SimpleNamespace",
+      "",
+      "def serialize(root):",
+      "    pass",
+      "",
+      "def deserialize(data):",
+      "    pass"
+    ]
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

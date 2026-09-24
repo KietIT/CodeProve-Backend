@@ -1,0 +1,219 @@
+{
+  "code": "CP-208",
+  "reference_solution": [
+    "import os",
+    "",
+    "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+    "MAX_BYTES = 1_000_000",
+    "",
+    "def save_upload(file, upload_dir):",
+    "    name = os.path.basename(file.filename)",
+    "    if not name or name in (\".\", \"..\"):",
+    "        raise ValueError(\"bad filename\")",
+    "    signature = ALLOWED_TYPES.get(file.content_type)",
+    "    data = file.read(MAX_BYTES + 1)",
+    "    if signature is None or not data.startswith(signature):",
+    "        raise ValueError(\"unsupported type\")",
+    "    if len(data) > MAX_BYTES:",
+    "        raise ValueError(\"file too large\")",
+    "    path = os.path.join(upload_dir, name)",
+    "    with open(path, \"wb\") as out:",
+    "        out.write(data)",
+    "    return path"
+  ],
+  "tests": [
+    {
+      "description": "a valid PNG is saved in the upload folder",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 100\\nf = types.SimpleNamespace(filename='photo.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d) and open(p, 'rb').read() == blob\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "a path traversal name stays inside the upload folder",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 100\\nf = types.SimpleNamespace(filename='../evil_cp208.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": false
+    },
+    {
+      "description": "a valid JPEG is saved",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\xff\\\\xd8\\\\xff' + b'0' * 100\\nf = types.SimpleNamespace(filename='cat.jpg', content_type='image/jpeg', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d) and open(p, 'rb').read() == blob\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "an absolute path name stays inside the upload folder",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 100\\nf = types.SimpleNamespace(filename='/etc/cp208_abs.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a spoofed content type is rejected",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'MZ' + b'0' * 100\\nf = types.SimpleNamespace(filename='x.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "'ValueError'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a type that is not allowed is rejected",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'<html></html>'\\nf = types.SimpleNamespace(filename='page.html', content_type='text/html', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "'ValueError'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a file over the size limit is rejected",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 1_000_000\\nf = types.SimpleNamespace(filename='big.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "'ValueError'",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "a file exactly at the size limit is accepted",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 999_996\\nf = types.SimpleNamespace(filename='max.png', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "an empty file name is rejected",
+      "input": "(lambda ns: (exec(\"import os, tempfile, types\\nd = tempfile.mkdtemp()\\nblob = b'\\\\x89PNG' + b'0' * 100\\nf = types.SimpleNamespace(filename='', content_type='image/png', read=lambda n=-1, _b=blob: _b if n < 0 else _b[:n])\\ntry:\\n    p = save_upload(f, d)\\n    r = os.path.dirname(os.path.abspath(p)) == os.path.abspath(d)\\nexcept ValueError:\\n    r = 'ValueError' if not os.listdir(d) else 'ValueError after writing'\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "'ValueError'",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "import os",
+        "",
+        "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+        "MAX_BYTES = 1_000_000",
+        "",
+        "def save_upload(file, upload_dir):",
+        "    name = file.filename",
+        "    if not name or name in (\".\", \"..\"):",
+        "        raise ValueError(\"bad filename\")",
+        "    signature = ALLOWED_TYPES.get(file.content_type)",
+        "    data = file.read(MAX_BYTES + 1)",
+        "    if signature is None or not data.startswith(signature):",
+        "        raise ValueError(\"unsupported type\")",
+        "    if len(data) > MAX_BYTES:",
+        "        raise ValueError(\"file too large\")",
+        "    path = os.path.join(upload_dir, name)",
+        "    with open(path, \"wb\") as out:",
+        "        out.write(data)",
+        "    return path"
+      ],
+      "bug_line": 7,
+      "bug_type": "path-traversal",
+      "note_vi": "Dùng thẳng tên file của client nên ../ có thể ghi ra ngoài thư mục upload.",
+      "note_en": "Uses the client's file name as is, so ../ can write outside the upload folder."
+    },
+    {
+      "code": [
+        "import os",
+        "",
+        "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+        "MAX_BYTES = 1_000_000",
+        "",
+        "def save_upload(file, upload_dir):",
+        "    name = os.path.basename(file.filename)",
+        "    if not name or name in (\".\", \"..\"):",
+        "        raise ValueError(\"bad filename\")",
+        "    signature = ALLOWED_TYPES.get(file.content_type)",
+        "    data = file.read(MAX_BYTES + 1)",
+        "    if signature is None:",
+        "        raise ValueError(\"unsupported type\")",
+        "    if len(data) > MAX_BYTES:",
+        "        raise ValueError(\"file too large\")",
+        "    path = os.path.join(upload_dir, name)",
+        "    with open(path, \"wb\") as out:",
+        "        out.write(data)",
+        "    return path"
+      ],
+      "bug_line": 12,
+      "bug_type": "type-spoofing",
+      "note_vi": "Chỉ tin content_type của client mà không kiểm tra byte đầu của file.",
+      "note_en": "Trusts the client's content_type without checking the file's first bytes."
+    },
+    {
+      "code": [
+        "import os",
+        "",
+        "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+        "MAX_BYTES = 1_000_000",
+        "",
+        "def save_upload(file, upload_dir):",
+        "    name = os.path.basename(file.filename)",
+        "    if not name or name in (\".\", \"..\"):",
+        "        raise ValueError(\"bad filename\")",
+        "    signature = ALLOWED_TYPES.get(file.content_type)",
+        "    data = file.read(MAX_BYTES + 1)",
+        "    if signature is None or not data.startswith(signature):",
+        "        raise ValueError(\"unsupported type\")",
+        "    if len(data) >= MAX_BYTES:",
+        "        raise ValueError(\"file too large\")",
+        "    path = os.path.join(upload_dir, name)",
+        "    with open(path, \"wb\") as out:",
+        "        out.write(data)",
+        "    return path"
+      ],
+      "bug_line": 14,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng >= nên từ chối nhầm file có kích thước đúng bằng giới hạn.",
+      "note_en": "Uses >=, so a file exactly at the limit is wrongly rejected."
+    },
+    {
+      "code": [
+        "import os",
+        "",
+        "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+        "MAX_BYTES = 1_000_000",
+        "",
+        "def save_upload(file, upload_dir):",
+        "    name = os.path.basename(file.filename)",
+        "    if not name or name in (\".\", \"..\"):",
+        "        raise ValueError(\"bad filename\")",
+        "    signature = ALLOWED_TYPES.get(file.content_type)",
+        "    data = file.read(MAX_BYTES)",
+        "    if signature is None or not data.startswith(signature):",
+        "        raise ValueError(\"unsupported type\")",
+        "    if len(data) > MAX_BYTES:",
+        "        raise ValueError(\"file too large\")",
+        "    path = os.path.join(upload_dir, name)",
+        "    with open(path, \"wb\") as out:",
+        "        out.write(data)",
+        "    return path"
+      ],
+      "bug_line": 11,
+      "bug_type": "truncation",
+      "note_vi": "Chỉ đọc đúng MAX_BYTES nên không bao giờ phát hiện file quá lớn.",
+      "note_en": "Reads exactly MAX_BYTES, so an oversized file is never detected."
+    }
+  ],
+  "exercise": {
+    "summary": "save_upload(file, upload_dir) stores an uploaded file (file has .filename, .content_type and .read(n=-1)) but trusts everything the client sends. Fix it so that: the file always lands directly inside upload_dir, whatever the file name; only PNG and JPEG are accepted, checked against the file's first bytes (ALLOWED_TYPES maps each type to its signature), not just content_type; and files larger than MAX_BYTES are rejected. A rejected upload raises ValueError and writes nothing.",
+    "starter_code": [
+      "import os",
+      "",
+      "ALLOWED_TYPES = {\"image/png\": b\"\\x89PNG\", \"image/jpeg\": b\"\\xff\\xd8\\xff\"}",
+      "MAX_BYTES = 1_000_000",
+      "",
+      "def save_upload(file, upload_dir):",
+      "    path = os.path.join(upload_dir, file.filename)",
+      "    with open(path, \"wb\") as out:",
+      "        out.write(file.read())",
+      "    return path"
+    ]
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
