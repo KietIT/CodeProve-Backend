@@ -8,7 +8,7 @@ from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.features.attempts import scoring_service, service
+from app.features.attempts import scoring_service, service, submit_tests
 from app.features.exercises.starters import is_untouched, student_starter
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
@@ -98,12 +98,17 @@ async def submit(
     user: User = Depends(get_current_user),
 ) -> dict:
     attempt = await service.require_attempt(db, attempt_id, user)
+    if attempt.status == "scored":
+        raise HTTPException(status_code=409, detail="Attempt already scored")
+    settings = get_settings()
+    rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
+    suite = await submit_tests.run_submit_suite(db, attempt)
     await service.add_event(db, attempt_id, "SUBMIT", {})
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now(timezone.utc)
     questions = await scoring_service.generate_questions(db, attempt, locale)
     await db.commit()
-    return {"questions": questions}
+    return {"questions": questions, "tests": submit_tests.public_summary(suite)}
 
 
 @router.post("/{attempt_id}/explain-back", response_model=ReportOut)

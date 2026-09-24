@@ -39,6 +39,8 @@ class AxisFeatures:
     final_pass_ratio: float = 0.0
     any_pass: bool = False
     real_fails_before_first_pass: int = 0
+    # Payload of the last SUBMIT_TESTS event (full suite at submit), if any.
+    submit_tests: dict | None = None
     paste_flags: int = 0
     focus_lost: int = 0
     tab_hidden: int = 0
@@ -187,6 +189,14 @@ def compute_features(events: list[dict], explain_score: float | None) -> AxisFea
             break
         if not e["payload"].get("isStarter"):
             f.real_fails_before_first_pass += 1
+
+    # Full suite (visible + hidden) run at submit. A submission that passes all
+    # of it is solved even if the student never pressed Run.
+    submits = [e for e in events if e["type"] == "SUBMIT_TESTS"]
+    if submits:
+        f.submit_tests = submits[-1]["payload"]
+        if f.submit_tests.get("total") and f.submit_tests.get("passRatio") == 1.0:
+            f.any_pass = True
 
     # Integrity raw signals. A PASTE_BLOCKED event means the student *tried* to
     # paste (e.g. an answer copied from another AI) and the editor prevented it -

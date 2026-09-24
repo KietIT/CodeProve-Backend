@@ -117,12 +117,13 @@ except Exception as e:  # noqa: BLE001
     runtime_error = f"{{type(e).__name__}}: {{e}}"
 if runtime_error is None:
     for c in CASES:
-        out = {{"name": c["description"], "passed": False, "stdout": "", "error": None}}
+        out = {{"name": c["description"], "passed": False, "stdout": "", "error": None, "actual": None}}
         try:
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
                 value = eval(c["input_data"], ns)
             got = repr(value)
+            out["actual"] = got[:500]
             out["stdout"] = buf.getvalue()[:2000]
             out["passed"] = (got == c["expected_output"]) or (buf.getvalue().strip() == c["expected_output"].strip())
         except Exception as e:  # noqa: BLE001
@@ -275,7 +276,8 @@ def _run_trace(script: Path, payload: Path, timeout: int) -> subprocess.Complete
 def _result(cases: list[dict], runtime_error: str | None, test_cases: list[dict]) -> dict:
     total = len(test_cases)
     if not cases:
-        cases = [{"name": c["description"], "passed": False, "stdout": "", "error": runtime_error} for c in test_cases]
+        cases = [{"name": c["description"], "passed": False, "stdout": "", "error": runtime_error, "actual": None}
+                 for c in test_cases]
     passed = sum(1 for c in cases if c["passed"])
     coverage = round(passed / total, 3) if total else 0.0
     return {"passed": passed, "total": total, "coverage": coverage, "cases": cases, "runtime_error": runtime_error}
