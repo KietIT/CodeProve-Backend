@@ -24,6 +24,11 @@
 | [1] Remove the UI label that reveals the trapped reply | 8, 12 |
 | [1] Remove unused YAML rules | 6 |
 | [1] Rescore existing reports | 10 |
+| [2] Mark the axis weights as provisional | 5 (comment on `WEIGHTS`) |
+
+Frontend items (N/A display, generic verify note) live in the frontend plan:
+`codeprove-web` → `docs/superpowers/plans/2026-09-24-p0-scoring-fixes-frontend.md`
+(branch `feat/p0-scoring-na`), tasks F1–F3.
 
 Deviations from the roadmap, stated explicitly:
 
@@ -53,7 +58,7 @@ Implement-kind Debugging tops out at 16 so that, other things equal, needing fix
 ## Repos and branches
 
 - Backend: `codeprove-backend`, worktree `.claude/worktrees/ai-scoring-feedback-issues-f1bc15`, branch `claude/ai-scoring-feedback-issues-f1bc15` (already fast-forwarded to `origin/main`).
-- Frontend: `codeprove-web`. Create a fresh worktree from `origin/main` (Task 11). Do **not** reuse other sessions' worktrees.
+- Frontend: `codeprove-web`, separate session and plan (see Tasks 11–13 below).
 - Backend test command (the venv lives in the main checkout): `../../../.venv/Scripts/python.exe -m pytest -q` from the worktree root. Baseline: **122 passed, 2 skipped**.
 
 ---
@@ -757,6 +762,9 @@ Expected: FAIL (e.g. `KeyError: 'not_applicable'`, `TypeError: unexpected keywor
 ```python
 from app.features.scoring.features import AxisFeatures, compute_features
 
+# PROVISIONAL: chosen by the team, not derived. P1 replaces them with AHP
+# weights benchmarked against equal weights, then validates on the golden set
+# (docs/superpowers/specs/2026-09-24-scoring-roadmap.md, "Axis weights").
 WEIGHTS = {"understanding": 0.25, "hypothesis": 0.22, "prompting": 0.18,
            "verification": 0.15, "testing": 0.10, "debugging": 0.10}
 
@@ -1363,146 +1371,17 @@ git commit -m "feat(scoring): add rescore command for existing reports"
 
 ---
 
-### Task 11: Frontend — set up the branch
+### Tasks 11–13: Frontend (moved)
 
-**Step 1:** From `D:/FPT_University/Ki_7/EXE101/Product/codeprove-web`:
-
-```bash
-git fetch origin && git worktree add .claude/worktrees/p0-scoring-na -b feat/p0-scoring-na origin/main
-```
-
-**Step 2:** In the new worktree: `npm ci`, then `npm test` and `npm run build`. Record the baseline (both must pass before changes).
-
-All frontend paths below are relative to that worktree.
-
----
-
-### Task 12: Frontend — generic "AI can be wrong" hint on every code reply
-
-**Files:**
-- Create: `lib/chat.ts`
-- Modify: `components/workspace/PromptLog.tsx`, `components/app/SolveWorkspace.tsx:652`, `lib/types/session.ts`, `lib/types/ciel.ts`, `lib/api/ciel.ts` (doc comment), `lib/appContent.ts` (`verifyHint` vi/en)
-- Test: `tests/ui.test.cjs`
-
-**Step 1: Write the failing test** (append to `tests/ui.test.cjs`)
-
-```js
-const { hasCodeBlock } = require('../lib/chat.ts');
-
-test('hasCodeBlock detects fenced code only', () => {
-  assert.equal(hasCodeBlock('Try this:\n```python\nx = 1\n```'), true);
-  assert.equal(hasCodeBlock('Think about the loop bounds.'), false);
-  assert.equal(hasCodeBlock('Use `range(n)` inline'), false);
-});
-```
-
-**Step 2: Run to verify it fails**
-
-Run: `npm test`
-Expected: FAIL (`Cannot find module '../lib/chat.ts'`)
-
-**Step 3: Implement**
-
-`lib/chat.ts`:
-
-```ts
-/** True when a chat reply contains a fenced code block (```...```). */
-export const hasCodeBlock = (text: string): boolean => /```[\s\S]*?```/.test(text);
-```
-
-`components/workspace/PromptLog.tsx`: import `hasCodeBlock` from `@/lib/chat`, update the `verifyHint` label doc comment to "Footnote under every reply that contains code (AI code can be wrong).", and replace the `{m.verifyHint && (...)}` block with:
-
-```tsx
-          {m.role === "assistant" && hasCodeBlock(m.text) && (
-            <p className="mt-1 text-xs italic text-on-surface-variant/60">{labels.verifyHint}</p>
-          )}
-```
-
-`components/app/SolveWorkspace.tsx:652`: `addPromptEntry({ role: "assistant", text: res.reply });`
-
-`lib/types/session.ts`: delete the `verifyHint?: boolean;` field and its doc line. `lib/types/ciel.ts`: delete `injected_error: boolean;` and fix the doc comment. `lib/api/ciel.ts`: doc comment says the response is `{ reply }`.
-
-`lib/appContent.ts`: `verifyHint` → vi `"AI có thể sai — hãy chạy thử và kiểm chứng trước khi dùng."`, en `"AI can be wrong — run and verify it before you use it."`
-
-**Step 4: Verify**
-
-Run: `npm test && npm run build`
-Expected: PASS; build has no type errors (a leftover `verifyHint`/`injected_error` reference would fail here).
-
-**Step 5: Commit**
-
-```bash
-git add lib/chat.ts components/workspace/PromptLog.tsx components/app/SolveWorkspace.tsx lib/types/session.ts lib/types/ciel.ts lib/api/ciel.ts lib/appContent.ts tests/ui.test.cjs
-git commit -m "fix(ciel): show the verify reminder on every code reply, not just the trap"
-```
-
----
-
-### Task 13: Frontend — show N/A axes with their reason
-
-**Files:**
-- Modify: `lib/types/report.ts`, `lib/types/dashboard.ts`, `components/report/RadarChart.tsx`, `app/(app)/feedback/FeedbackContent.tsx`, `app/(app)/dashboard/page.tsx`, `components/app/WorkspaceLanding.tsx`, `lib/appContent.ts`
-- Test: `tests/ui.test.cjs`
-
-**Step 1: Write the failing test** (append to `tests/ui.test.cjs`)
-
-```js
-const { RadarChart } = require('../components/report/RadarChart.tsx');
-
-test('RadarChart marks not-applicable axes instead of plotting them as a score', () => {
-  const html = render(h(RadarChart, { data: [
-    { label: 'Understanding', value: 90 },
-    { label: 'Hypothesis', value: 85 },
-    { label: 'Debugging', value: null },
-  ] }));
-  assert.match(html, /Debugging —/);
-  assert.doesNotMatch(html, /Understanding —/);
-});
-```
-
-**Step 2: Run to verify it fails**
-
-Run: `npm test`
-Expected: FAIL (no `Debugging —` in the markup)
-
-**Step 3: Implement**
-
-- `lib/types/report.ts`: add to `feedback`: `not_applicable?: Record<string, "no_failure" | "no_ai_use" | "no_ai_code">;`
-- `lib/types/dashboard.ts`: `radar: { name: string; value: number | null }[];`
-- `components/report/RadarChart.tsx` label `<text>`: add `opacity={d.value === null ? 0.45 : 1}` and render `{d.value === null ? `${d.label} —` : d.label}`. Update the header comment: "null = not applicable (drawn at the centre, label dimmed)".
-- `lib/appContent.ts`, in both `feedback` blocks, add:
-  - vi: `naLabel: "Không áp dụng"`, `naReasons: { no_failure: "Code của bạn không phát sinh lỗi nên không có gì để debug.", no_ai_use: "Bạn không dùng Ciel trong lượt này.", no_ai_code: "Ciel không đưa code nào để bạn kiểm chứng." }`
-  - en: `naLabel: "Not applicable"`, `naReasons: { no_failure: "Your code never failed, so there was nothing to debug.", no_ai_use: "You didn't use Ciel in this attempt.", no_ai_code: "Ciel gave you no code to verify." }`
-- `app/(app)/feedback/FeedbackContent.tsx`, axis bars: when `isNull`, show `tf.naLabel` instead of `-` on the right, and under the dimmed bar add
-  ```tsx
-  {isNull && report.feedback.not_applicable?.[key] && (
-    <p className="mt-1 text-xs text-on-surface-variant/60">{tf.naReasons[report.feedback.not_applicable[key]]}</p>
-  )}
-  ```
-- `app/(app)/dashboard/page.tsx`: `computeRadarPoints(values: (number | null)[])` with `const r = (Math.min(Math.max(v ?? 0, 0), 100) / 100) * maxR;`; in the labels map, look up the axis value (`const v = data?.radar.find((r) => r.name === l.name)?.value;`) and dim + suffix `—` when `v === null`, same as the RadarChart.
-- `components/app/WorkspaceLanding.tsx`: pick the weakest axis only among observed ones:
-  ```tsx
-  const radar = (dashQuery.data?.radar ?? []).filter((r): r is { name: string; value: number } => r.value !== null);
-  ```
-
-**Step 4: Verify**
-
-Run: `npm test && npm run build`
-Expected: PASS
-
-**Step 5: Manual check** (`npm run dev` against a backend running this branch): a first-try solve without Ciel shows Prompting / Verification / Debugging as "Không áp dụng" with their reason on the Feedback page, dimmed on both radars, and the Workspace "weakest axis" tip ignores them.
-
-**Step 6: Commit**
-
-```bash
-git add lib/types/report.ts lib/types/dashboard.ts components/report/RadarChart.tsx "app/(app)/feedback/FeedbackContent.tsx" "app/(app)/dashboard/page.tsx" components/app/WorkspaceLanding.tsx lib/appContent.ts tests/ui.test.cjs
-git commit -m "feat(feedback): show not-applicable axes with their reason"
-```
+Frontend work runs in its own session in the `codeprove-web` repo (GitHub
+`KietIT/CodeProve-UI`), branch `feat/p0-scoring-na`, following
+`docs/superpowers/plans/2026-09-24-p0-scoring-fixes-frontend.md` in that repo.
+It can run in parallel: the API contract it depends on is spelled out there.
 
 ---
 
 ### Task 14: Wrap-up
 
 1. Backend: `../../../.venv/Scripts/python.exe -m pytest -q` → all pass; re-run the persona simulation (first-try solve > needs-fixes > farming does not help) and paste the numbers in the PR.
-2. Push both branches; open PRs (backend first, it is backward compatible: old frontend simply stops showing the trap label because `injected_error` is gone).
+2. Push and open the backend PR (backward compatible: the old frontend simply stops showing the trap label because `injected_error` is gone). The frontend PR comes from its own session.
 3. Deploy order on EC2: backup → pull backend → `docker compose up -d --build` (runs the migration) → rescore dry run → `--apply` → deploy frontend.

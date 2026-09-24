@@ -39,6 +39,26 @@ Source tags: **[1]** initial analysis · **[2]** product owner's review ·
 - [1] Remove the UI label that reveals the trapped Ciel reply
 - [1] Remove the unused YAML rule files
 - [1] Rescore existing reports
+- [2] Keep the current axis weights (25/22/18/15/10/10) but mark them as provisional in code and docs: they were chosen by the team, not derived
+
+## Axis weights: how they get a real basis
+
+There is no mathematical proof for the weights of a composite score; they come
+either from structured expert judgement or from data. The plan uses both, in
+this order, always benchmarked against equal weights (with small samples, unit
+weights routinely match regression weights: Dawes 1979, "The robust beauty of
+improper linear models").
+
+- P1: weights v1 from AHP (Saaty): 3–5 experts give pairwise comparisons,
+  priorities from the principal eigenvector, consistency ratio < 0.1 required.
+  AHP priorities are ratio-scale, so renormalising over non-N/A axes preserves
+  the experts' ratios. Publish the method on the scoring explainer page.
+- End of P1 / P2: once the golden set has 30–50 sessions, pick between AHP,
+  equal and constrained-regression weights by agreement with the human
+  holistic ratings (Spearman / ICC); prefer the simpler one when the difference
+  is small. Axes measured less reliably (e.g. the LLM-judged explain-back vs
+  humans) get less weight.
+- P3: periodic recalibration as data grows.
 
 ## P1 — Exercise data + evidence-based scoring and feedback
 
@@ -48,6 +68,8 @@ Source tags: **[1]** initial analysis · **[2]** product owner's review ·
 - [2] Show levels instead of decimal scores
 - [2] Hidden-test display policy: failing category on submit, full input on the Feedback page
 - [2] Start a golden set of 30–50 sessions rated by 2–3 humans to validate the rubric and the explain-back LLM judge
+- [2] Axis weights v1 via AHP (3–5 experts, consistency ratio < 0.1), benchmarked against equal weights; method published
+- [2] (end of P1 / P2) Choose AHP vs equal vs constrained-regression weights by agreement with the golden set
 
 ## P2 — New exercise mechanics
 
@@ -66,5 +88,5 @@ Source tags: **[1]** initial analysis · **[2]** product owner's review ·
 - [2] Privacy: PII scrubbing, pseudonymisation, `store=false`, privacy policy + consent + opt-out of AI personalisation, PDPL legal review
 - [2] Move the DB to RDS
 - [2] `events` partitioning, data retention policy, account deletion API
-- [2] Calibrate weights on the golden set
+- [2] Periodically recalibrate weights as data grows (refinement of the P1 choice)
 - [1] (later) AI-generated exercise variants
