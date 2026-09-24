@@ -1,0 +1,120 @@
+{
+  "code": "CP-201",
+  "reference_solution": [
+    "def is_allowed(redis, key, limit, window):",
+    "    redis.set(key, 0, ex=window, nx=True)",
+    "    return redis.incr(key) <= limit"
+  ],
+  "tests": [
+    {
+      "description": "test_first_request_allowed",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nr = is_allowed(redis, 'k', 5, 60)\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_over_limit_blocked",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\n[is_allowed(redis, 'k', 5, 60) for _ in range(5)]\\nr = is_allowed(redis, 'k', 5, 60)\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "five allowed, the sixth blocked",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nr = [is_allowed(redis, 'k', 5, 60) for _ in range(6)]\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "[True, True, True, True, True, False]",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "keys are limited independently",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nr = [is_allowed(redis, 'a', 1, 60), is_allowed(redis, 'b', 1, 60), is_allowed(redis, 'a', 1, 60)]\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "[True, True, False]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the key expires after the window",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nis_allowed(redis, 'k', 5, 60)\\nr = redis.ttl('k')\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "60",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "the window is fixed, not extended by later requests",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nis_allowed(redis, 'k', 5, 60)\\nredis.now = 30\\nis_allowed(redis, 'k', 5, 60)\\nr = redis.ttl('k')\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "30",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a new window starts after expiry",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\n[is_allowed(redis, 'k', 2, 60) for _ in range(3)]\\nredis.now = 61\\nr = is_allowed(redis, 'k', 2, 60)\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "limit of zero blocks everything",
+      "input": "(lambda ns: (exec(\"class FakeRedis:\\n    def __init__(self):\\n        self.now = 0.0\\n        self.data = {}\\n    def _alive(self, k):\\n        item = self.data.get(k)\\n        if item and item[1] is not None and item[1] <= self.now:\\n            del self.data[k]\\n            return None\\n        return self.data.get(k)\\n    def incr(self, k):\\n        item = self._alive(k)\\n        value = (item[0] if item else 0) + 1\\n        self.data[k] = (value, item[1] if item else None)\\n        return value\\n    def expire(self, k, seconds):\\n        item = self._alive(k)\\n        if item is None:\\n            return False\\n        self.data[k] = (item[0], self.now + seconds)\\n        return True\\n    def set(self, k, v, ex=None, nx=False):\\n        if nx and self._alive(k) is not None:\\n            return None\\n        self.data[k] = (int(v), self.now + ex if ex else None)\\n        return True\\n    def get(self, k):\\n        item = self._alive(k)\\n        return None if item is None else item[0]\\n    def ttl(self, k):\\n        item = self._alive(k)\\n        if item is None:\\n            return -2\\n        return -1 if item[1] is None else int(item[1] - self.now)\\nredis = FakeRedis()\\nr = is_allowed(redis, 'k', 0, 60)\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def is_allowed(redis, key, limit, window):",
+        "    redis.set(key, 0, ex=window, nx=True)",
+        "    return redis.incr(key) < limit"
+      ],
+      "bug_line": 3,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng < nên request thứ limit bị chặn nhầm.",
+      "note_en": "Uses <, so the request that reaches the limit is wrongly blocked."
+    },
+    {
+      "code": [
+        "def is_allowed(redis, key, limit, window):",
+        "    redis.set(key, 0, ex=window)",
+        "    return redis.incr(key) <= limit"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-nx",
+      "note_vi": "Thiếu nx=True nên mỗi request đặt lại bộ đếm về 0, không bao giờ chặn.",
+      "note_en": "Without nx=True every request resets the counter to 0, so nothing is ever blocked."
+    },
+    {
+      "code": [
+        "def is_allowed(redis, key, limit, window):",
+        "    redis.set(key, 0, nx=True)",
+        "    return redis.incr(key) <= limit"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-expiry",
+      "note_vi": "Không đặt thời hạn nên khoá không bao giờ hết hạn và client bị chặn mãi.",
+      "note_en": "Sets no expiry, so the key never expires and the client stays blocked forever."
+    },
+    {
+      "code": [
+        "def is_allowed(redis, key, limit, window):",
+        "    redis.set(key, 0, ex=limit, nx=True)",
+        "    return redis.incr(key) <= limit"
+      ],
+      "bug_line": 2,
+      "bug_type": "wrong-argument",
+      "note_vi": "Truyền nhầm limit làm thời hạn thay vì window.",
+      "note_en": "Passes limit as the expiry instead of window."
+    }
+  ],
+  "exercise": {
+    "summary": "Implement is_allowed(redis, key, limit, window): a fixed-window rate limiter shared by every app server through Redis. Allow at most `limit` requests per key in each `window` seconds; the window starts at the key's first request and is not extended by later ones. The `redis` client supports incr(key), expire(key, seconds), set(key, value, ex=None, nx=False), get(key) and ttl(key). Discuss the consistency vs latency trade-off, and the race between INCR and EXPIRE."
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

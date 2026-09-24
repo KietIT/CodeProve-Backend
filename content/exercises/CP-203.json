@@ -1,0 +1,178 @@
+{
+  "code": "CP-203",
+  "reference_solution": [
+    "VALID_TOKENS = {\"valid-token\"}",
+    "",
+    "def deny():",
+    "    return \"401 Unauthorized\"",
+    "",
+    "def verify(token):",
+    "    return token in VALID_TOKENS",
+    "",
+    "def require_auth(request, handler):",
+    "    token = request.headers.get(\"Authorization\")",
+    "    if token and verify(token):",
+    "        return handler(request)",
+    "    return deny()"
+  ],
+  "tests": [
+    {
+      "description": "test_valid_token_runs_handler",
+      "input": "require_auth(type('Req', (), {'headers': {'Authorization': 'valid-token'}})(),lambda req: 'OK')",
+      "expected": "'OK'",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_forged_token_rejected",
+      "input": "require_auth(type('Req', (), {'headers': {'Authorization': 'forged'}})(),lambda req: 'HANDLER_RAN') != 'HANDLER_RAN'",
+      "expected": "True",
+      "category": "edge",
+      "hidden": false
+    },
+    {
+      "description": "forged token gets the deny response",
+      "input": "require_auth(type('Req', (), {'headers': {'Authorization': 'forged'}})(), lambda req: 'OK')",
+      "expected": "'401 Unauthorized'",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the handler never runs for a forged token",
+      "input": "(lambda calls: (require_auth(type('Req', (), {'headers': {'Authorization': 'nope'}})(), lambda req: calls.append(1)), len(calls))[-1])([])",
+      "expected": "0",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "missing header is denied",
+      "input": "require_auth(type('Req', (), {'headers': {}})(), lambda req: 'OK')",
+      "expected": "'401 Unauthorized'",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "empty token is denied",
+      "input": "require_auth(type('Req', (), {'headers': {'Authorization': ''}})(), lambda req: 'OK')",
+      "expected": "'401 Unauthorized'",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "the handler receives the request",
+      "input": "require_auth(type('Req', (), {'headers': {'Authorization': 'valid-token'}})(), lambda req: req.headers['Authorization'])",
+      "expected": "'valid-token'",
+      "category": "happy",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "VALID_TOKENS = {\"valid-token\"}",
+        "",
+        "def deny():",
+        "    return \"401 Unauthorized\"",
+        "",
+        "def verify(token):",
+        "    return token in VALID_TOKENS",
+        "",
+        "def require_auth(request, handler):",
+        "    token = request.headers.get(\"Authorization\")",
+        "    if token or verify(token):",
+        "        return handler(request)",
+        "    return deny()"
+      ],
+      "bug_line": 11,
+      "bug_type": "wrong-operator",
+      "note_vi": "Dùng or nên chỉ cần có token là được cho qua.",
+      "note_en": "Uses or, so any present token is let through."
+    },
+    {
+      "code": [
+        "VALID_TOKENS = {\"valid-token\"}",
+        "",
+        "def deny():",
+        "    return \"401 Unauthorized\"",
+        "",
+        "def verify(token):",
+        "    return token in VALID_TOKENS",
+        "",
+        "def require_auth(request, handler):",
+        "    token = request.headers.get(\"Authorization\")",
+        "    if token and verify:",
+        "        return handler(request)",
+        "    return deny()"
+      ],
+      "bug_line": 11,
+      "bug_type": "missing-call",
+      "note_vi": "Quên gọi verify(token): bản thân hàm luôn là True nên token giả vẫn qua.",
+      "note_en": "Forgets to call verify(token): the function object is always truthy, so forged tokens pass."
+    },
+    {
+      "code": [
+        "VALID_TOKENS = {\"valid-token\"}",
+        "",
+        "def deny():",
+        "    return \"401 Unauthorized\"",
+        "",
+        "def verify(token):",
+        "    return token in VALID_TOKENS",
+        "",
+        "def require_auth(request, handler):",
+        "    token = request.headers.get(\"Authorization\")",
+        "    if token and verify(token):",
+        "        return handler(request)",
+        "    return handler(request)"
+      ],
+      "bug_line": 13,
+      "bug_type": "fail-open",
+      "note_vi": "Nhánh từ chối vẫn gọi handler nên mọi request đều được xử lý.",
+      "note_en": "The rejection branch still calls the handler, so every request is served."
+    },
+    {
+      "code": [
+        "VALID_TOKENS = {\"valid-token\"}",
+        "",
+        "def deny():",
+        "    return \"401 Unauthorized\"",
+        "",
+        "def verify(token):",
+        "    return token in VALID_TOKENS",
+        "",
+        "def require_auth(request, handler):",
+        "    token = request.headers.get(\"Authorization\", \"valid-token\")",
+        "    if token and verify(token):",
+        "        return handler(request)",
+        "    return deny()"
+      ],
+      "bug_line": 10,
+      "bug_type": "insecure-default",
+      "note_vi": "Giá trị mặc định là token hợp lệ nên request không có header vẫn qua.",
+      "note_en": "The default is a valid token, so a request without the header gets through."
+    }
+  ],
+  "exercise": {
+    "summary": "require_auth(request, handler) lets some unauthenticated requests through. verify(token) says whether a token is valid and deny() builds the rejection response. Find the logic gap and close it: the handler may only run for a request whose Authorization header holds a valid token.",
+    "starter_code": [
+      "VALID_TOKENS = {\"valid-token\"}",
+      "",
+      "def deny():",
+      "    return \"401 Unauthorized\"",
+      "",
+      "def verify(token):",
+      "    return token in VALID_TOKENS",
+      "",
+      "def require_auth(request, handler):",
+      "    token = request.headers.get(\"Authorization\")",
+      "    if token:",
+      "        return handler(request)",
+      "    return deny()"
+    ]
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

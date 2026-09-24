@@ -1,0 +1,214 @@
+{
+  "code": "CP-202",
+  "reference_solution": [
+    "def find_median(a, b):",
+    "    if len(a) > len(b):",
+    "        a, b = b, a",
+    "    m, n = len(a), len(b)",
+    "    half = (m + n + 1) // 2",
+    "    lo, hi = 0, m",
+    "    while lo <= hi:",
+    "        i = (lo + hi) // 2",
+    "        j = half - i",
+    "        a_left = a[i - 1] if i > 0 else float(\"-inf\")",
+    "        a_right = a[i] if i < m else float(\"inf\")",
+    "        b_left = b[j - 1] if j > 0 else float(\"-inf\")",
+    "        b_right = b[j] if j < n else float(\"inf\")",
+    "        if a_left <= b_right and b_left <= a_right:",
+    "            if (m + n) % 2:",
+    "                return float(max(a_left, b_left))",
+    "            return (max(a_left, b_left) + min(a_right, b_right)) / 2",
+    "        if a_left > b_right:",
+    "            hi = i - 1",
+    "        else:",
+    "            lo = i + 1"
+  ],
+  "tests": [
+    {
+      "description": "test_odd_total",
+      "input": "find_median([1, 3], [2])",
+      "expected": "2.0",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_even_total",
+      "input": "find_median([1, 2], [3, 4])",
+      "expected": "2.5",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "first array empty, odd total",
+      "input": "find_median([], [1])",
+      "expected": "1.0",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "first array empty, even total",
+      "input": "find_median([], [2, 3])",
+      "expected": "2.5",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "second array empty",
+      "input": "find_median([4, 5, 6], [])",
+      "expected": "5.0",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "interleaved values",
+      "input": "find_median([1, 3, 5, 7], [2, 4, 6])",
+      "expected": "4.0",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "all values equal",
+      "input": "find_median([1, 1], [1, 1])",
+      "expected": "1.0",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "negative values",
+      "input": "find_median([-5, -3, -1], [-2, 0])",
+      "expected": "-2.0",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "very different lengths",
+      "input": "find_median([1, 2], [3, 4, 5, 6, 7])",
+      "expected": "4.0",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def find_median(a, b):",
+        "    if len(a) > len(b):",
+        "        a, b = b, a",
+        "    m, n = len(a), len(b)",
+        "    half = (m + n) // 2",
+        "    lo, hi = 0, m",
+        "    while lo <= hi:",
+        "        i = (lo + hi) // 2",
+        "        j = half - i",
+        "        a_left = a[i - 1] if i > 0 else float(\"-inf\")",
+        "        a_right = a[i] if i < m else float(\"inf\")",
+        "        b_left = b[j - 1] if j > 0 else float(\"-inf\")",
+        "        b_right = b[j] if j < n else float(\"inf\")",
+        "        if a_left <= b_right and b_left <= a_right:",
+        "            if (m + n) % 2:",
+        "                return float(max(a_left, b_left))",
+        "            return (max(a_left, b_left) + min(a_right, b_right)) / 2",
+        "        if a_left > b_right:",
+        "            hi = i - 1",
+        "        else:",
+        "            lo = i + 1"
+      ],
+      "bug_line": 5,
+      "bug_type": "off-by-one",
+      "note_vi": "Nửa trái thiếu một phần tử khi tổng lẻ nên trung vị sai.",
+      "note_en": "The left half is one short when the total is odd, so the median is wrong."
+    },
+    {
+      "code": [
+        "def find_median(a, b):",
+        "    if len(a) > len(b):",
+        "        a, b = b, a",
+        "    m, n = len(a), len(b)",
+        "    half = (m + n + 1) // 2",
+        "    lo, hi = 0, m",
+        "    while lo <= hi:",
+        "        i = (lo + hi) // 2",
+        "        j = half - i",
+        "        a_left = a[i - 1] if i > 0 else float(\"-inf\")",
+        "        a_right = a[i] if i < m else float(\"inf\")",
+        "        b_left = b[j - 1] if j > 0 else float(\"-inf\")",
+        "        b_right = b[j] if j < n else float(\"inf\")",
+        "        if a_left <= b_right and b_left <= a_right:",
+        "            if (m + n) % 2:",
+        "                return float(max(a_left, b_left))",
+        "            return (max(a_left, b_left) + min(a_right, b_right)) // 2",
+        "        if a_left > b_right:",
+        "            hi = i - 1",
+        "        else:",
+        "            lo = i + 1"
+      ],
+      "bug_line": 17,
+      "bug_type": "integer-division",
+      "note_vi": "Chia lấy phần nguyên nên mất phần .5 khi tổng chẵn.",
+      "note_en": "Integer division drops the .5 when the total is even."
+    },
+    {
+      "code": [
+        "def find_median(a, b):",
+        "    if len(a) > len(b):",
+        "        a, b = b, a",
+        "    m, n = len(a), len(b)",
+        "    half = (m + n + 1) // 2",
+        "    lo, hi = 0, m",
+        "    while lo <= hi:",
+        "        i = (lo + hi) // 2",
+        "        j = half - i",
+        "        a_left = a[i - 1] if i > 0 else float(\"-inf\")",
+        "        a_right = a[i] if i < m else float(\"inf\")",
+        "        b_left = b[j - 1] if j > 0 else float(\"-inf\")",
+        "        b_right = b[j] if j < n else float(\"inf\")",
+        "        if a_left <= b_right and b_left <= a_right:",
+        "            if (m + n) % 2:",
+        "                return max(a_left, b_left)",
+        "            return (max(a_left, b_left) + min(a_right, b_right)) / 2",
+        "        if a_left > b_right:",
+        "            hi = i - 1",
+        "        else:",
+        "            lo = i + 1"
+      ],
+      "bug_line": 16,
+      "bug_type": "wrong-type",
+      "note_vi": "Trả về số nguyên thay vì số thực như đề yêu cầu.",
+      "note_en": "Returns an int instead of the expected float."
+    },
+    {
+      "code": [
+        "def find_median(a, b):",
+        "    if len(a) < len(b):",
+        "        a, b = b, a",
+        "    m, n = len(a), len(b)",
+        "    half = (m + n + 1) // 2",
+        "    lo, hi = 0, m",
+        "    while lo <= hi:",
+        "        i = (lo + hi) // 2",
+        "        j = half - i",
+        "        a_left = a[i - 1] if i > 0 else float(\"-inf\")",
+        "        a_right = a[i] if i < m else float(\"inf\")",
+        "        b_left = b[j - 1] if j > 0 else float(\"-inf\")",
+        "        b_right = b[j] if j < n else float(\"inf\")",
+        "        if a_left <= b_right and b_left <= a_right:",
+        "            if (m + n) % 2:",
+        "                return float(max(a_left, b_left))",
+        "            return (max(a_left, b_left) + min(a_right, b_right)) / 2",
+        "        if a_left > b_right:",
+        "            hi = i - 1",
+        "        else:",
+        "            lo = i + 1"
+      ],
+      "bug_line": 2,
+      "bug_type": "inverted-condition",
+      "note_vi": "Tìm kiếm nhị phân trên mảng dài hơn nên chỉ số của mảng kia bị âm.",
+      "note_en": "Binary-searches the longer array, so the other array's index can go negative."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

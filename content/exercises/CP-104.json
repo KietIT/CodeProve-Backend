@@ -1,0 +1,205 @@
+{
+  "code": "CP-104",
+  "reference_solution": [
+    "from queue import Queue",
+    "from threading import Thread",
+    "",
+    "def run_pipeline(items, worker, n_consumers=2, maxsize=4):",
+    "    q = Queue(maxsize=maxsize)",
+    "    results = [None] * len(items)",
+    "",
+    "    def consume():",
+    "        while True:",
+    "            job = q.get()",
+    "            if job is None:",
+    "                break",
+    "            i, item = job",
+    "            results[i] = worker(item)",
+    "",
+    "    threads = [Thread(target=consume) for _ in range(n_consumers)]",
+    "    for t in threads:",
+    "        t.start()",
+    "    for i, item in enumerate(items):",
+    "        q.put((i, item))",
+    "    for _ in threads:",
+    "        q.put(None)",
+    "    for t in threads:",
+    "        t.join()",
+    "    return results"
+  ],
+  "tests": [
+    {
+      "description": "doubles every item",
+      "input": "run_pipeline([1, 2, 3], lambda x: x * 2)",
+      "expected": "[2, 4, 6]",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "empty input",
+      "input": "run_pipeline([], lambda x: x)",
+      "expected": "[]",
+      "category": "boundary",
+      "hidden": false
+    },
+    {
+      "description": "results keep the input order",
+      "input": "run_pipeline([3, 2, 1, 0], lambda x: (__import__('time').sleep(x * 0.01), x)[1], n_consumers=4)",
+      "expected": "[3, 2, 1, 0]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "work is spread over several consumers",
+      "input": "(lambda seen: (run_pipeline(list(range(20)), lambda x: (seen.add(__import__('threading').get_ident()), __import__('time').sleep(0.01), x)[-1], n_consumers=4), len(seen) > 1)[-1])(set())",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "every thread stops when the work is done",
+      "input": "(lambda th: (lambda before: (run_pipeline([1, 2, 3], lambda x: x, n_consumers=3), th.active_count() == before)[-1])(th.active_count()))(__import__('threading'))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "a single consumer",
+      "input": "run_pipeline([1, 2, 3], str, n_consumers=1)",
+      "expected": "['1', '2', '3']",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "more consumers than items",
+      "input": "run_pipeline([5], str, n_consumers=4)",
+      "expected": "['5']",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "a queue that holds one item",
+      "input": "run_pipeline(list(range(10)), lambda x: x + 1, n_consumers=2, maxsize=1)",
+      "expected": "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "from queue import Queue",
+        "from threading import Thread",
+        "",
+        "def run_pipeline(items, worker, n_consumers=2, maxsize=4):",
+        "    q = Queue(maxsize=maxsize)",
+        "    results = [None] * len(items)",
+        "",
+        "    def consume():",
+        "        while True:",
+        "            job = q.get()",
+        "            if job is None:",
+        "                break",
+        "            i, item = job",
+        "            results.append(worker(item))",
+        "",
+        "    threads = [Thread(target=consume) for _ in range(n_consumers)]",
+        "    for t in threads:",
+        "        t.start()",
+        "    for i, item in enumerate(items):",
+        "        q.put((i, item))",
+        "    for _ in threads:",
+        "        q.put(None)",
+        "    for t in threads:",
+        "        t.join()",
+        "    return results"
+      ],
+      "bug_line": 14,
+      "bug_type": "wrong-index",
+      "note_vi": "append thêm vào cuối danh sách thay vì ghi đúng vị trí i nên sai thứ tự và thừa phần tử.",
+      "note_en": "append adds to the end instead of writing slot i, so order is lost and the list is too long."
+    },
+    {
+      "code": [
+        "from queue import Queue",
+        "from threading import Thread",
+        "",
+        "def run_pipeline(items, worker, n_consumers=2, maxsize=4):",
+        "    q = Queue(maxsize=maxsize)",
+        "    results = [None] * len(items)",
+        "",
+        "    def consume():",
+        "        while True:",
+        "            job = q.get()",
+        "            if job is None:",
+        "                break",
+        "            i, item = job",
+        "            results[i] = worker(item)",
+        "",
+        "    threads = [Thread(target=consume) for _ in range(1)]",
+        "    for t in threads:",
+        "        t.start()",
+        "    for i, item in enumerate(items):",
+        "        q.put((i, item))",
+        "    for _ in threads:",
+        "        q.put(None)",
+        "    for t in threads:",
+        "        t.join()",
+        "    return results"
+      ],
+      "bug_line": 16,
+      "bug_type": "ignored-argument",
+      "note_vi": "Bỏ qua n_consumers nên chỉ có một luồng tiêu thụ.",
+      "note_en": "Ignores n_consumers, so there is only one consumer thread."
+    },
+    {
+      "code": [
+        "from queue import Queue",
+        "from threading import Thread",
+        "",
+        "def run_pipeline(items, worker, n_consumers=2, maxsize=4):",
+        "    q = Queue(maxsize=maxsize)",
+        "    results = [None] * len(items)",
+        "",
+        "    def consume():",
+        "        while True:",
+        "            job = q.get()",
+        "            if job is None:",
+        "                break",
+        "            i, item = job",
+        "            results[i] = worker(item)",
+        "",
+        "    threads = [Thread(target=consume) for _ in range(n_consumers)]",
+        "    for t in threads:",
+        "        t.start()",
+        "    for i, item in enumerate(items):",
+        "        q.put((0, item))",
+        "    for _ in threads:",
+        "        q.put(None)",
+        "    for t in threads:",
+        "        t.join()",
+        "    return results"
+      ],
+      "bug_line": 20,
+      "bug_type": "wrong-index",
+      "note_vi": "Luôn gửi chỉ số 0 nên mọi kết quả ghi đè lên cùng một ô.",
+      "note_en": "Always sends index 0, so every result overwrites the same slot."
+    }
+  ],
+  "exercise": {
+    "summary": "Implement run_pipeline(items, worker, n_consumers=2, maxsize=4). Put the items on a bounded queue.Queue(maxsize=maxsize); n_consumers worker threads take items off the queue and apply worker(item). Return the list of results in the same order as items. Consumers must block on the queue (no busy-waiting), and every thread you start must have finished when the function returns. Explain how the consumers know that the work is done.",
+    "starter_code": [
+      "from queue import Queue",
+      "from threading import Thread",
+      "",
+      "def run_pipeline(items, worker, n_consumers=2, maxsize=4):",
+      "    pass"
+    ],
+    "hint": "Queue.get() blocks for you. Put (index, item) pairs so results can be placed back in order, and send one stop signal per consumer."
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

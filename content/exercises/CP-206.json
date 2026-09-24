@@ -1,0 +1,111 @@
+{
+  "code": "CP-206",
+  "reference_solution": [
+    "def transfer(a, b, amount):",
+    "    first, second = sorted((a, b), key=id)",
+    "    with first.lock:",
+    "        with second.lock:",
+    "            a.balance -= amount",
+    "            b.balance += amount"
+  ],
+  "tests": [
+    {
+      "description": "test_debit_correct",
+      "input": "(lambda a, b: (transfer(a, b, 50), a.balance)[-1])(type('Acc', (), {'balance': 100, 'lock': __import__('threading').Lock()})(), type('Acc', (), {'balance': 0,   'lock': __import__('threading').Lock()})())",
+      "expected": "50",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_credit_correct",
+      "input": "(lambda a, b: (transfer(a, b, 30), b.balance)[-1])(type('Acc', (), {'balance': 100, 'lock': __import__('threading').Lock()})(), type('Acc', (), {'balance': 20,  'lock': __import__('threading').Lock()})())",
+      "expected": "50",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "both directions take the locks in the same order",
+      "input": "(lambda ns: (exec(\"class RecLock:\\n    def __init__(self, name, log):\\n        self.name, self.log = name, log\\n        self._lock = __import__('threading').Lock()\\n    def acquire(self, *args, **kwargs):\\n        self.log.append(self.name)\\n        return self._lock.acquire(*args, **kwargs)\\n    def release(self):\\n        self._lock.release()\\n    def locked(self):\\n        return self._lock.locked()\\n    def __enter__(self):\\n        self.acquire()\\n        return self\\n    def __exit__(self, *exc):\\n        self.release()\\nclass Acc:\\n    def __init__(self, name, balance, log):\\n        self.balance = balance\\n        self.lock = RecLock(name, log)\\nlog = []\\na, b = Acc('A', 100, log), Acc('B', 100, log)\\ntransfer(a, b, 10)\\ntransfer(b, a, 10)\\nr = log[0] == log[2]\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "the lock order does not depend on balances",
+      "input": "(lambda ns: (exec(\"class RecLock:\\n    def __init__(self, name, log):\\n        self.name, self.log = name, log\\n        self._lock = __import__('threading').Lock()\\n    def acquire(self, *args, **kwargs):\\n        self.log.append(self.name)\\n        return self._lock.acquire(*args, **kwargs)\\n    def release(self):\\n        self._lock.release()\\n    def locked(self):\\n        return self._lock.locked()\\n    def __enter__(self):\\n        self.acquire()\\n        return self\\n    def __exit__(self, *exc):\\n        self.release()\\nclass Acc:\\n    def __init__(self, name, balance, log):\\n        self.balance = balance\\n        self.lock = RecLock(name, log)\\nlog = []\\na, b = Acc('A', 100, log), Acc('B', 0, log)\\ntransfer(a, b, 80)\\ntransfer(b, a, 10)\\nr = log[0] == log[2]\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "both locks are released afterwards",
+      "input": "(lambda ns: (exec(\"class RecLock:\\n    def __init__(self, name, log):\\n        self.name, self.log = name, log\\n        self._lock = __import__('threading').Lock()\\n    def acquire(self, *args, **kwargs):\\n        self.log.append(self.name)\\n        return self._lock.acquire(*args, **kwargs)\\n    def release(self):\\n        self._lock.release()\\n    def locked(self):\\n        return self._lock.locked()\\n    def __enter__(self):\\n        self.acquire()\\n        return self\\n    def __exit__(self, *exc):\\n        self.release()\\nclass Acc:\\n    def __init__(self, name, balance, log):\\n        self.balance = balance\\n        self.lock = RecLock(name, log)\\nlog = []\\na, b = Acc('A', 100, log), Acc('B', 0, log)\\ntransfer(a, b, 5)\\nr = (a.lock.locked(), b.lock.locked())\\n\", ns), ns['r'])[-1])(dict(globals()))",
+      "expected": "(False, False)",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "transfers back and forth",
+      "input": "(lambda a, b: (transfer(a, b, 10), transfer(b, a, 5), (a.balance, b.balance))[-1])(type('Acc', (), {'balance': 100, 'lock': __import__('threading').Lock()})(), type('Acc', (), {'balance': 0, 'lock': __import__('threading').Lock()})())",
+      "expected": "(95, 5)",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "a zero transfer changes nothing",
+      "input": "(lambda a, b: (transfer(a, b, 0), (a.balance, b.balance))[-1])(type('Acc', (), {'balance': 7, 'lock': __import__('threading').Lock()})(), type('Acc', (), {'balance': 3, 'lock': __import__('threading').Lock()})())",
+      "expected": "(7, 3)",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def transfer(a, b, amount):",
+        "    first, second = a, b",
+        "    with first.lock:",
+        "        with second.lock:",
+        "            a.balance -= amount",
+        "            b.balance += amount"
+      ],
+      "bug_line": 2,
+      "bug_type": "missing-ordering",
+      "note_vi": "Khoá theo thứ tự tham số nên hai lần chuyển ngược chiều vẫn có thể deadlock.",
+      "note_en": "Locks in argument order, so two opposite transfers can still deadlock."
+    },
+    {
+      "code": [
+        "def transfer(a, b, amount):",
+        "    first, second = sorted((a, b), key=lambda acc: acc.balance)",
+        "    with first.lock:",
+        "        with second.lock:",
+        "            a.balance -= amount",
+        "            b.balance += amount"
+      ],
+      "bug_line": 2,
+      "bug_type": "unstable-ordering",
+      "note_vi": "Sắp xếp theo số dư, mà số dư thay đổi, nên thứ tự khoá không cố định.",
+      "note_en": "Orders by balance, which changes over time, so the lock order is not stable."
+    },
+    {
+      "code": [
+        "def transfer(a, b, amount):",
+        "    first, second = sorted((a, b), key=id)",
+        "    with first.lock:",
+        "        with second.lock:",
+        "            a.balance -= amount",
+        "            b.balance = amount"
+      ],
+      "bug_line": 6,
+      "bug_type": "wrong-operator",
+      "note_vi": "Gán số dư thay vì cộng thêm nên tiền của b bị mất.",
+      "note_en": "Assigns the balance instead of adding to it, so b's money is lost."
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

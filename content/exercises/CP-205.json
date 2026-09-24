@@ -1,0 +1,183 @@
+{
+  "code": "CP-205",
+  "reference_solution": [
+    "def is_match(s, p):",
+    "    memo = {}",
+    "",
+    "    def dp(i, j):",
+    "        if (i, j) in memo:",
+    "            return memo[(i, j)]",
+    "        if j == len(p):",
+    "            ans = i == len(s)",
+    "        else:",
+    "            first = i < len(s) and p[j] in (s[i], \".\")",
+    "            if j + 1 < len(p) and p[j + 1] == \"*\":",
+    "                ans = dp(i, j + 2) or (first and dp(i + 1, j))",
+    "            else:",
+    "                ans = first and dp(i + 1, j + 1)",
+    "        memo[(i, j)] = ans",
+    "        return ans",
+    "",
+    "    return dp(0, 0)"
+  ],
+  "tests": [
+    {
+      "description": "test_star_matches_multiple",
+      "input": "is_match('aa', 'a*')",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_dot_star_matches_any",
+      "input": "is_match('ab', '.*')",
+      "expected": "True",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "dot matches exactly one character",
+      "input": "is_match('abc', 'a.c')",
+      "expected": "True",
+      "category": "happy",
+      "hidden": true
+    },
+    {
+      "description": "star can match zero characters",
+      "input": "is_match('aab', 'c*a*b')",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "longer pattern that must fail",
+      "input": "is_match('mississippi', 'mis*is*p*.')",
+      "expected": "False",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "dot-star cannot skip a required tail",
+      "input": "is_match('ab', '.*c')",
+      "expected": "False",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "star followed by the same character",
+      "input": "is_match('aaa', 'a*a')",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "both empty",
+      "input": "is_match('', '')",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "empty string, star pattern",
+      "input": "is_match('', 'a*')",
+      "expected": "True",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "text left over after the pattern",
+      "input": "is_match('a', '')",
+      "expected": "False",
+      "category": "boundary",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "def is_match(s, p):",
+        "    memo = {}",
+        "",
+        "    def dp(i, j):",
+        "        if (i, j) in memo:",
+        "            return memo[(i, j)]",
+        "        if j == len(p):",
+        "            ans = i == len(s)",
+        "        else:",
+        "            first = i < len(s) and p[j] in (s[i], \".\")",
+        "            if j + 1 < len(p) and p[j + 1] == \"*\":",
+        "                ans = first and dp(i + 1, j)",
+        "            else:",
+        "                ans = first and dp(i + 1, j + 1)",
+        "        memo[(i, j)] = ans",
+        "        return ans",
+        "",
+        "    return dp(0, 0)"
+      ],
+      "bug_line": 12,
+      "bug_type": "missing-case",
+      "note_vi": "Bỏ trường hợp * khớp 0 lần nên 'c*' không thể bị bỏ qua.",
+      "note_en": "Drops the zero-occurrence case of *, so 'c*' can never be skipped."
+    },
+    {
+      "code": [
+        "def is_match(s, p):",
+        "    memo = {}",
+        "",
+        "    def dp(i, j):",
+        "        if (i, j) in memo:",
+        "            return memo[(i, j)]",
+        "        if j == len(p):",
+        "            ans = i == len(s)",
+        "        else:",
+        "            first = i < len(s) and p[j] == s[i]",
+        "            if j + 1 < len(p) and p[j + 1] == \"*\":",
+        "                ans = dp(i, j + 2) or (first and dp(i + 1, j))",
+        "            else:",
+        "                ans = first and dp(i + 1, j + 1)",
+        "        memo[(i, j)] = ans",
+        "        return ans",
+        "",
+        "    return dp(0, 0)"
+      ],
+      "bug_line": 10,
+      "bug_type": "missing-case",
+      "note_vi": "Không xử lý dấu . nên '.' chỉ khớp đúng ký tự dấu chấm.",
+      "note_en": "Does not handle ., so '.' only matches a literal dot."
+    },
+    {
+      "code": [
+        "def is_match(s, p):",
+        "    memo = {}",
+        "",
+        "    def dp(i, j):",
+        "        if (i, j) in memo:",
+        "            return memo[(i, j)]",
+        "        if j == len(p):",
+        "            ans = True",
+        "        else:",
+        "            first = i < len(s) and p[j] in (s[i], \".\")",
+        "            if j + 1 < len(p) and p[j + 1] == \"*\":",
+        "                ans = dp(i, j + 2) or (first and dp(i + 1, j))",
+        "            else:",
+        "                ans = first and dp(i + 1, j + 1)",
+        "        memo[(i, j)] = ans",
+        "        return ans",
+        "",
+        "    return dp(0, 0)"
+      ],
+      "bug_line": 8,
+      "bug_type": "partial-match",
+      "note_vi": "Hết mẫu là coi như khớp nên chỉ cần khớp phần đầu chuỗi.",
+      "note_en": "Treats the end of the pattern as a match, so only a prefix of the text has to match."
+    }
+  ],
+  "exercise": {
+    "summary": "Implement is_match(s, p): '.' matches any single character and '*' matches zero or more of the preceding element. The pattern must match the entire string, not just part of it (like re.fullmatch). Explain your DP state definition."
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}

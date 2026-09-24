@@ -1,0 +1,173 @@
+{
+  "code": "CP-204",
+  "reference_solution": [
+    "class RingBuffer:",
+    "    def __init__(self, size):",
+    "        self.buf = [None] * size",
+    "        self.head = 0  # next read position, owned by the consumer",
+    "        self.tail = 0  # next write position, owned by the producer",
+    "",
+    "    def push(self, item):",
+    "        if self.tail - self.head == len(self.buf):",
+    "            return False",
+    "        self.buf[self.tail % len(self.buf)] = item",
+    "        self.tail += 1",
+    "        return True",
+    "",
+    "    def pop(self):",
+    "        if self.head == self.tail:",
+    "            return None",
+    "        item = self.buf[self.head % len(self.buf)]",
+    "        self.head += 1",
+    "        return item"
+  ],
+  "tests": [
+    {
+      "description": "test_push_then_pop",
+      "input": "(lambda rb: (rb.push(10), rb.pop())[-1])(RingBuffer(4))",
+      "expected": "10",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "test_fifo_order",
+      "input": "(lambda rb: (rb.push(1), rb.push(2), rb.pop(), rb.pop())[-1])(RingBuffer(4))",
+      "expected": "2",
+      "category": "happy",
+      "hidden": false
+    },
+    {
+      "description": "pop on an empty buffer",
+      "input": "RingBuffer(3).pop()",
+      "expected": "None",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "a full buffer rejects the push",
+      "input": "(lambda rb: [rb.push(1), rb.push(2), rb.push(3)])(RingBuffer(2))",
+      "expected": "[True, True, False]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "holds exactly size items",
+      "input": "(lambda rb: [rb.push(i) for i in range(4)])(RingBuffer(4))",
+      "expected": "[True, True, True, True]",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "wraps around the end of the array",
+      "input": "(lambda rb: (rb.push(1), rb.push(2), rb.push(3), rb.pop(), rb.pop(), rb.push(4), rb.push(5), [rb.pop(), rb.pop(), rb.pop()])[-1])(RingBuffer(3))",
+      "expected": "[3, 4, 5]",
+      "category": "edge",
+      "hidden": true
+    },
+    {
+      "description": "empty again after draining",
+      "input": "(lambda rb: (rb.push(1), rb.pop(), rb.pop())[-1])(RingBuffer(2))",
+      "expected": "None",
+      "category": "boundary",
+      "hidden": true
+    },
+    {
+      "description": "no locks are used",
+      "input": "not any(hasattr(v, 'acquire') for v in vars(RingBuffer(4)).values())",
+      "expected": "True",
+      "category": "edge",
+      "hidden": true
+    }
+  ],
+  "mutants": [
+    {
+      "code": [
+        "class RingBuffer:",
+        "    def __init__(self, size):",
+        "        self.buf = [None] * size",
+        "        self.head = 0  # next read position, owned by the consumer",
+        "        self.tail = 0  # next write position, owned by the producer",
+        "",
+        "    def push(self, item):",
+        "        if self.tail - self.head > len(self.buf):",
+        "            return False",
+        "        self.buf[self.tail % len(self.buf)] = item",
+        "        self.tail += 1",
+        "        return True",
+        "",
+        "    def pop(self):",
+        "        if self.head == self.tail:",
+        "            return None",
+        "        item = self.buf[self.head % len(self.buf)]",
+        "        self.head += 1",
+        "        return item"
+      ],
+      "bug_line": 8,
+      "bug_type": "off-by-one",
+      "note_vi": "Dùng > nên cho ghi thêm khi đã đầy và đè lên phần tử chưa đọc.",
+      "note_en": "Uses >, so a push on a full buffer overwrites an unread item."
+    },
+    {
+      "code": [
+        "class RingBuffer:",
+        "    def __init__(self, size):",
+        "        self.buf = [None] * size",
+        "        self.head = 0  # next read position, owned by the consumer",
+        "        self.tail = 0  # next write position, owned by the producer",
+        "",
+        "    def push(self, item):",
+        "        if self.tail - self.head == len(self.buf):",
+        "            return False",
+        "        self.buf[self.tail % len(self.buf)] = item",
+        "        self.tail += 1",
+        "        return True",
+        "",
+        "    def pop(self):",
+        "        if self.head == self.tail:",
+        "            return None",
+        "        item = self.buf[self.head]",
+        "        self.head += 1",
+        "        return item"
+      ],
+      "bug_line": 17,
+      "bug_type": "missing-modulo",
+      "note_vi": "Quên lấy phần dư nên đọc ra ngoài mảng khi vòng lại đầu.",
+      "note_en": "Forgets the modulo, so reading past the end of the array fails after wrapping."
+    },
+    {
+      "code": [
+        "class RingBuffer:",
+        "    def __init__(self, size):",
+        "        self.buf = [None] * size",
+        "        self.head = 0  # next read position, owned by the consumer",
+        "        self.tail = 0  # next write position, owned by the producer",
+        "",
+        "    def push(self, item):",
+        "        if self.tail - self.head == len(self.buf):",
+        "            return False",
+        "        self.buf[self.head % len(self.buf)] = item",
+        "        self.tail += 1",
+        "        return True",
+        "",
+        "    def pop(self):",
+        "        if self.head == self.tail:",
+        "            return None",
+        "        item = self.buf[self.head % len(self.buf)]",
+        "        self.head += 1",
+        "        return item"
+      ],
+      "bug_line": 10,
+      "bug_type": "wrong-variable",
+      "note_vi": "Ghi vào vị trí head của bên đọc thay vì vị trí tail của bên ghi.",
+      "note_en": "Writes at the consumer's head position instead of the producer's tail."
+    }
+  ],
+  "exercise": {
+    "summary": "Implement a fixed-capacity single-producer single-consumer ring buffer without locks. RingBuffer(size) holds at most `size` items. push(item) stores the item and returns True, or returns False (dropping the item) when the buffer is full. pop() returns the oldest item, or None when the buffer is empty. Explain which index each side owns and why that makes locks unnecessary."
+  },
+  "review": {
+    "status": "draft",
+    "author": "claude",
+    "reviewer": null
+  }
+}
