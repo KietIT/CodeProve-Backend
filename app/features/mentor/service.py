@@ -115,8 +115,12 @@ async def judge_hypothesis(db: AsyncSession, attempt: Attempt, text: str) -> dic
         HYPOTHESIS_JUDGE_SYSTEM, f"Problem: {ex.summary}\nStudent hypothesis: {text}"
     )
     correct = bool(verdict.get("correct", False))
+    note = verdict.get("note", "")
+    # Keep the text itself (capped): human raters and later rubric judges need to
+    # read the hypothesis, not just the verdict.
     await attempts_service.add_event(
-        db, attempt.id, "HYPOTHESIS", {"proposedBy": "user", "correct": correct}
+        db, attempt.id, "HYPOTHESIS",
+        {"proposedBy": "user", "correct": correct, "text": text[:2000], "note": note},
     )
     await db.commit()
-    return {"correct": correct, "note": verdict.get("note", "")}
+    return {"correct": correct, "note": note}

@@ -108,7 +108,9 @@ async def test_hypothesis_records_event(client, db_session, auth_headers):
 
     events = await _events(db_session, aid)
     hyp = next(e for e in events if e.type == "HYPOTHESIS")
-    assert hyp.payload == {"proposedBy": "user", "correct": True}
+    # The text is kept so human raters (golden set) can judge the hypothesis itself.
+    assert hyp.payload == {"proposedBy": "user", "correct": True, "text": "use a hash map",
+                           "note": "hash map approach is right"}
 
 
 async def test_exercise_context_includes_problem_and_code():
