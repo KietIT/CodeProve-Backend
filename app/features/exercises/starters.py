@@ -1,6 +1,8 @@
 """Helpers for turning reference-like seed code into student-facing starters."""
 
+import io
 import re
+import tokenize
 
 _DEF_RE = re.compile(r"^(?P<indent>\s*)def\s+.+:\s*$")
 _CLASS_RE = re.compile(r"^(?P<indent>\s*)class\s+.+:\s*$")
@@ -59,3 +61,46 @@ def student_safe_starter(source: str) -> str:
     if not saw_callable:
         return source
     return "\n".join(out).strip()
+
+
+def strip_comments(source: str) -> str:
+    """Remove `#` comments so a starter cannot leak the bug it contains.
+
+    Uses the tokenizer, so a '#' inside a string literal is kept. A line that
+    held only a comment is dropped. Source that cannot be tokenized is
+    returned unchanged rather than half-stripped.
+    """
+    source = source.replace("\r\n", "\n")
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return source
+    comment_col = {t.start[0]: t.start[1] for t in tokens if t.type == tokenize.COMMENT}
+    if not comment_col:
+        return source
+    out: list[str] = []
+    for lineno, line in enumerate(source.split("\n"), start=1):
+        col = comment_col.get(lineno)
+        if col is None:
+            out.append(line)
+            continue
+        kept = line[:col].rstrip()
+        if kept:
+            out.append(kept)
+    return "\n".join(out)
+
+
+def student_starter(starter_code: str, kind: str) -> str:
+    """The starter exactly as the student sees it in the editor."""
+    return strip_comments(starter_code) if kind == "debug" else student_safe_starter(starter_code)
+
+
+def normalize_code(source: str) -> str:
+    lines = (line.rstrip() for line in source.replace("\r\n", "\n").split("\n"))
+    return "\n".join(line for line in lines if line)
+
+
+def is_untouched(source: str, starter: str) -> bool:
+    """True for an empty editor or the unmodified starter (whitespace-insensitive)."""
+    code = normalize_code(source)
+    return code == "" or code == normalize_code(starter)
