@@ -23,6 +23,9 @@ from app.models import Exercise, ExerciseMutant, TestCase
 
 async def _write(db: AsyncSession, ex: Exercise, content: ExerciseContent) -> None:
     ex.reference_solution = content.reference_solution
+    if content.exercise:
+        for field in content.exercise.fields_set():
+            setattr(ex, field, getattr(content.exercise, field))
     await db.execute(delete(TestCase).where(TestCase.exercise_id == ex.id))
     await db.execute(delete(ExerciseMutant).where(ExerciseMutant.exercise_id == ex.id))
     for i, t in enumerate(content.tests, start=1):
@@ -51,13 +54,14 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
             results.append({"code": content.code, "status": "skipped",
                             "reason": "not approved by a reviewer other than the author"})
             continue
-        errors = await validate_content(content, ex.kind, ex.starter_code)
+        errors = await validate_content(content, ex.kind, content.starter_for(ex.starter_code))
         if errors:
             results.append({"code": content.code, "status": "invalid", "errors": errors})
             continue
         results.append({"code": content.code, "status": "ok", "tests": len(content.tests),
                         "hidden": sum(t.hidden for t in content.tests), "mutants": len(content.mutants),
-                        "reviewer": content.review.reviewer})
+                        "reviewer": content.review.reviewer,
+                        "overrides": content.exercise.fields_set() if content.exercise else []})
         if apply:
             await _write(db, ex, content)
     if apply:
@@ -77,6 +81,9 @@ async def _main(codes: list[str], apply: bool) -> int:
         if r["status"] == "ok":
             print(f"{r['code']}  ok       tests={r['tests']} hidden={r['hidden']} mutants={r['mutants']}"
                   f"  reviewer={r['reviewer']}")
+            if r["overrides"]:
+                # Student-facing text/code changes: make them impossible to miss in the dry run.
+                print(f"    ! overrides the exercise's {', '.join(r['overrides'])}")
         elif r["status"] == "skipped":
             print(f"{r['code']}  skipped  {r['reason']}")
         else:

@@ -18,5 +18,6 @@ async def test_content_file_is_valid(path):
     content = load_content_file(path)
     assert content.code in SEED, f"{content.code} is not a known exercise"
     seed = SEED[content.code]
-    errors = await validate_content(content, seed.get("kind", "implement"), seed["starter_code"])
+    starter = content.starter_for(seed["starter_code"])
+    errors = await validate_content(content, seed.get("kind", "implement"), starter)
     assert errors == [], "\n".join(errors)

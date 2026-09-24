@@ -53,3 +53,20 @@ def test_load_content_file_checks_the_file_name(tmp_path):
     p.write_text(json.dumps(_raw()), encoding="utf-8")
     with pytest.raises(ValueError, match="CP-005"):
         load_content_file(p)
+
+
+def test_exercise_overrides_are_optional_and_join_starter_lines():
+    assert ExerciseContent.model_validate(_raw()).exercise is None
+    c = ExerciseContent.model_validate(_raw(exercise={
+        "summary": "Implement f(n) that returns n + 1.",
+        "starter_code": ["def f(n):", "    pass"],
+    }))
+    assert c.exercise.starter_code == "def f(n):\n    pass"
+    assert c.exercise.hint is None
+    assert c.starter_for("old starter") == "def f(n):\n    pass"
+    assert ExerciseContent.model_validate(_raw()).starter_for("old starter") == "old starter"
+
+
+def test_exercise_overrides_reject_empty_fields():
+    with pytest.raises(ValidationError):
+        ExerciseContent.model_validate(_raw(exercise={"summary": ""}))
