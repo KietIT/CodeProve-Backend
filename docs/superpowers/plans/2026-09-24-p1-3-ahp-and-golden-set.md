@@ -99,10 +99,12 @@ Built with the Artifact tool (quickstart first, then the `artifact-design` skill
 
 1. **Giới thiệu**: why the team is doing this, what each person does, time needed, deadlines, privacy.
 2. **AHP**: 15 pairwise questions (A ⟷ B on a 17-step slider from "B tuyệt đối" through "ngang nhau" to "A tuyệt đối"), live CR computed in the page (same maths as Task 2); when CR ≥ 0.1 it highlights the 3 most inconsistent pairs; saving writes `ahp/<viewer id>`.
-3. **Chấm bộ mẫu**: the session list (seeded by Claude into `sessions/*`), a session view (exercise, timeline of hypotheses / prompts / runs, final code, submit result, explain-back), and the rating form (6 axes × {0,1,2,3,N/A} with the descriptors inline, overall level, optional note). Progress per rater; ratings write `ratings/<viewer id>__<session id>`. A rater only sees their own ratings in the UI.
+3. **Chấm bộ mẫu**: the session list (seeded by Claude into `sessions/*`), a session view (exercise, timeline of hypotheses / prompts / runs, final code, submit result, explain-back), and the rating form (6 axes × {0,1,2,3,N/A} with the descriptors inline, overall level, optional note). Progress per rater; ratings write `ratings/<viewer id>/items/<session id>` plus a `ratings/<viewer id>` progress summary (`count`). A rater only sees their own ratings, enforced by the store (`{self}` rules), not just the UI; a rated session is locked (rule 3).
 4. **Hướng dẫn chấm**: the Task 5 guide.
 
-Database rules: `sessions` admin-only writes (Claude seeds with `ArtifactData`), `ahp` and `ratings` writable by interacting viewers. After the first publish: one `ArtifactData` list of each collection, and a read as an interact-level viewer to confirm `sessions` cannot be written by them.
+Database rules: root and `sessions`/`meta` (deadlines, owner-edited) admin-only writes (Claude seeds with `ArtifactData`); `ahp/{self}` and `ratings/{self}` writable by interacting viewers, with `ahp` and `ratings` readable only by the owner (for analysis). After the first publish: one `ArtifactData` list of each collection, and a read as an interact-level viewer to confirm `sessions` cannot be written by them.
+
+Published: https://claude.ai/artifact/FnXX2K8TtLoXvboNcHy21t (source kept in `docs/calibration/trang-hieu-chuan.html`). Verified: interact cannot write `sessions` nor another viewer's `ahp` doc; owner writes `sessions` and interact reads it.
 
 ### Task 7: Seed, collect, analyse
 
