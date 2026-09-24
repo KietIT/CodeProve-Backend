@@ -106,3 +106,10 @@ async def test_child_cannot_read_backend_process_environ():
     cases = [{"input_data": "(READ, UID != 0)", "expected_output": "('denied', True)", "description": "proc", "weight": 1.0}]
     res = await run_tests(src, cases, timeout=5)
     assert res["cases"][0]["passed"] is True, res
+
+
+async def test_run_tests_reports_the_actual_value():
+    cases = [{"input_data": "f()", "expected_output": "42", "description": "answer", "weight": 1.0}]
+    res = await run_tests("def f():\n    return 41", cases, timeout=5)
+    assert res["cases"][0]["passed"] is False
+    assert res["cases"][0]["actual"] == "41"
