@@ -168,3 +168,14 @@ def test_text_only_ciel_use_makes_verification_na_but_scores_prompting():
     res = score_attempt(events, 0.0)
     assert res["axes"]["prompting"] is not None
     assert res["axes"]["verification"] is None
+
+
+def test_testing_uses_the_full_suite_at_submit_over_runs():
+    events = [_ev("RUN", 100, {"passed": True, "passRatio": 1.0}),   # visible tests only
+              _ev("SUBMIT_TESTS", 200, {"passRatio": 0.5, "passed": 4, "total": 8})]
+    assert score_attempt(events, 0.0)["axes"]["testing"] == 10.0
+
+
+def test_testing_falls_back_to_the_last_run_without_a_submit_suite():
+    events = [_ev("RUN", 100, {"passed": True, "passRatio": 1.0})]
+    assert score_attempt(events, 0.0)["axes"]["testing"] == 20.0

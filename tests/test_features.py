@@ -191,3 +191,13 @@ def test_legacy_run_takes_pass_ratio_from_its_twin_test_run():
 def test_legacy_run_without_twin_falls_back_to_pass_fail():
     events = [_ev("RUN", 1000, {"passed": False})]
     assert compute_features(events, explain_score=0.0).final_pass_ratio == 0.0
+
+
+def test_last_submit_suite_is_kept_and_a_full_pass_counts_as_solved():
+    events = [
+        _ev("SUBMIT_TESTS", 100, {"passRatio": 0.5, "passed": 1, "total": 2}),
+        _ev("SUBMIT_TESTS", 200, {"passRatio": 1.0, "passed": 2, "total": 2}),
+    ]
+    f = compute_features(events, explain_score=0.0)
+    assert f.submit_tests["passRatio"] == 1.0
+    assert f.any_pass is True   # never pressed Run, but the submission passes everything
