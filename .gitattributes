@@ -1,0 +1,2 @@
+# Shell scripts run on the Linux EC2 host: CRLF would break them ("bad interpreter").
+*.sh text eol=lf
