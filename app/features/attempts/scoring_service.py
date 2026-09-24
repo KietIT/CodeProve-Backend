@@ -36,7 +36,7 @@ def integrity_from_features(f: AxisFeatures) -> str:
     return "green"
 
 
-def build_feedback(axes: dict, f: AxisFeatures) -> dict:
+def build_feedback(axes: dict, f: AxisFeatures, not_applicable: dict[str, str] | None = None) -> dict:
     # Each entry carries a stable machine-readable `code` so the frontend can
     # localise the message; `note` stays as the English fallback for old clients.
     strengths, risks, per_axis = [], [], {}
@@ -59,7 +59,8 @@ def build_feedback(axes: dict, f: AxisFeatures) -> dict:
     if f.p1_hits:
         risks.append({"axis": "Prompting", "code": "short_prompts",
                       "note": "Some prompts were too short to be effective."})
-    return {"strengths": strengths[:4], "risks": risks[:4], "per_axis": per_axis}
+    return {"strengths": strengths[:4], "risks": risks[:4], "per_axis": per_axis,
+            "not_applicable": dict(not_applicable or {})}
 
 
 def build_timeline(f: AxisFeatures) -> list[dict]:
@@ -94,6 +95,21 @@ def build_timeline(f: AxisFeatures) -> list[dict]:
             "active": f.explain_score >= 10,
         },
     ]
+
+
+def report_columns(result: dict) -> dict:
+    """FluencyReport column values for a score_attempt() result."""
+    axes, f = result["axes"], result["features"]
+    return {
+        "understanding_score": axes["understanding"],
+        "hypothesis_score": axes["hypothesis"],
+        "prompt_score": axes["prompting"],
+        "verification_score": axes["verification"],
+        "testing_score": axes["testing"],
+        "debugging_score": axes["debugging"],
+        "overall_score": result["overall"],
+        "feedback": {**build_feedback(axes, f, result["not_applicable"]), "timeline": build_timeline(f)},
+    }
 
 
 async def _events_as_dicts(db: AsyncSession, attempt_id: int) -> list[dict]:
@@ -160,43 +176,31 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     explain_score = sum(scores) / len(scores) if scores else 0.0
     await attempts_service.add_event(db, attempt.id, "EXPLAIN_BACK", {"explainScore": explain_score})
 
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     events = await _events_as_dicts(db, attempt.id)
-    result = score_attempt(events, explain_score=explain_score)
-    axes = result["axes"]
+    result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)
     f = result["features"]
     integrity = integrity_from_features(f)
 
-    feedback_with_timeline = {**build_feedback(axes, f), "timeline": build_timeline(f)}
-
-    report = FluencyReport(
-        attempt_id=attempt.id,
-        understanding_score=axes["understanding"],
-        hypothesis_score=axes["hypothesis"],
-        prompt_score=axes["prompting"],
-        verification_score=axes["verification"],
-        testing_score=axes["testing"],
-        debugging_score=axes["debugging"],
-        explanation_score=explain_score,
-        overall_score=result["overall"],
-        feedback=feedback_with_timeline,
-    )
-    db.add(report)
+    db.add(FluencyReport(attempt_id=attempt.id, explanation_score=explain_score, **report_columns(result)))
     attempt.score = result["overall"]
     attempt.status = "scored"
     attempt.integrity_status = integrity
     await db.commit()
 
-    return _report_payload(axes, result["overall"], f, integrity)
+    return _report_payload(result["axes"], result["overall"], f, integrity, result["not_applicable"])
 
 
-def _report_payload(axes: dict, overall: float, f: AxisFeatures, integrity: str) -> dict:
+def _report_payload(
+    axes: dict, overall: float, f: AxisFeatures, integrity: str, not_applicable: dict[str, str]
+) -> dict:
     axes_pct = {a: (v * 5 if v is not None else None) for a, v in axes.items()}
     return {
         "overall": overall,
         "tier": tier_for(overall),
         "axes": axes,
         "axes_pct": axes_pct,
-        "feedback": build_feedback(axes, f),
+        "feedback": build_feedback(axes, f, not_applicable),
         "integrity_status": integrity,
         "timeline": build_timeline(f),
     }
