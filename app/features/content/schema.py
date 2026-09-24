@@ -59,6 +59,15 @@ class ExerciseContent(BaseModel):
 
     @property
     def is_approved(self) -> bool:
+        """Workflow marker, NOT an authorization control.
+
+        Anyone who can push can write these strings. The real review gate is
+        GitHub: content only reaches the deployed `main` through a PR that
+        needs an approving review from a CODEOWNER of content/ (branch
+        protection), and only people with EC2 access can run the sync. This
+        check just stops drafts from being synced by accident. Content code
+        runs in the same hardened sandbox as student code.
+        """
         r = self.review
         return r.status == "approved" and bool(r.reviewer) and r.reviewer != r.author
 

@@ -5,6 +5,21 @@ its reference solution, its tests (visible + hidden) and its mutant bank.
 Files are drafted by Claude and reviewed by the team before they can reach the
 database. Design: `docs/superpowers/specs/2026-09-24-p1-design.md` (P1.1).
 
+## Trust model
+
+The `review` block inside a content file is a **workflow marker**, not proof
+of review: anyone who can push can write any name there. The actual controls
+are:
+
+1. **GitHub branch protection on `main`**: changes only land through a pull
+   request with at least one approving review.
+2. **`.github/CODEOWNERS`**: pull requests touching `content/` need an
+   approval from a team member listed there.
+3. **EC2 access**: only people who can SSH into the server can run the sync.
+
+Content code (reference solutions, mutants) is executed by the validator in
+the same hardened sandbox as student code, never in the backend process.
+
 ## Workflow
 
 1. **Draft.** Claude writes the file with `"review": {"status": "draft", "author": "claude", "reviewer": null}`.
@@ -14,7 +29,8 @@ database. Design: `docs/superpowers/specs/2026-09-24-p1-design.md` (P1.1).
    checklist, edits it if needed, re-runs the validator, then sets
    `"status": "approved", "reviewer": "<your name as in the table>"`.
    The reviewer must not be the author.
-4. **Merge** the PR.
+4. **Approve the pull request on GitHub** (this is the approval that counts,
+   see Trust model), then **merge**.
 5. **Load into production** (EC2):
    ```bash
    docker exec codeprove_db pg_dump -U codeprove -d codeprove -Fc > ~/pre_content_$(date +%Y%m%d%H%M%S).dump
