@@ -198,8 +198,8 @@
     "hint": "Queue.get() blocks for you. Put (index, item) pairs so results can be placed back in order, and send one stop signal per consumer."
   },
   "review": {
-    "status": "draft",
+    "status": "approved",
     "author": "claude",
-    "reviewer": null
+    "reviewer": "Trung"
   }
 }

@@ -166,8 +166,8 @@
     "summary": "Implement a fixed-capacity single-producer single-consumer ring buffer without locks. RingBuffer(size) holds at most `size` items. push(item) stores the item and returns True, or returns False (dropping the item) when the buffer is full. pop() returns the oldest item, or None when the buffer is empty. Explain which index each side owns and why that makes locks unnecessary."
   },
   "review": {
-    "status": "draft",
+    "status": "approved",
     "author": "claude",
-    "reviewer": null
+    "reviewer": "Phát"
   }
 }
