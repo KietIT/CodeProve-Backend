@@ -42,8 +42,9 @@ trap cleanup EXIT
 
 main() {
   load_config
+  require_s3
   HEALTHCHECK_URL="${BACKUP_HEALTHCHECK_URL:-$(env_get BACKUP_HEALTHCHECK_URL)}"
-  require_cmds docker aws sha256sum
+  require_cmds docker sha256sum
   [[ -z "$HEALTHCHECK_URL" ]] || require_cmds curl
 
   # Never let two runs (e.g. cron + a manual run) write at the same time.

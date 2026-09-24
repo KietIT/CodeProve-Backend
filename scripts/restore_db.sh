@@ -62,6 +62,7 @@ list_keys() {
 
 # resolve_key KEY|latest -> sets KEY (validated S3 object name).
 resolve_key() {
+  require_s3
   KEY="${1:-latest}"
   if [[ "$KEY" == "latest" ]]; then
     KEY="$(list_keys | tail -n 1)"
@@ -73,6 +74,7 @@ resolve_key() {
 # fetch KEY -> sets ARCHIVE to a local copy in $WORK_DIR, checked against the
 # sha256 recorded at upload.
 fetch() {
+  require_s3
   local key="$1" expected actual
   ARCHIVE="$WORK_DIR/$key"
   log "downloading $(s3_uri "$key")"
@@ -160,9 +162,10 @@ main() {
   shift
   [[ "$cmd" == "-h" || "$cmd" == "--help" ]] && usage 0
   load_config
-  require_cmds docker aws sha256sum join
+  require_cmds docker sha256sum join
   case "$cmd" in
     list)
+      require_s3
       list_keys | tail -n 20
       ;;
     verify | restore)
