@@ -64,6 +64,7 @@ improper linear models").
 
 - [2] Reference solution, 5–8 categorised hidden tests and a mutant bank for all 30 exercises
 - [2] Rewrite each axis as an evidence-centred rubric (ECD)
+- [+] The Prompting rubric must not make skipping Ciel advantageous. P0 finding: with Prompting N/A when Ciel is unused, a first-try solve without Ciel scores 90.26 while the same solve plus one good prompt scores 84.2 (the interim formula gives that prompt 13/20). Good prompts must be able to reach 16–20; if that is not enough, reconsider making Ciel use required on selected exercises
 - [1] Evidence-based diagnosis layer + LLM-written actionable feedback (what happened / why it matters / how to improve / what to do next) + template fallback; frontend stops regex-matching English notes
 - [2] Show levels instead of decimal scores
 - [2] Hidden-test display policy: failing category on submit, full input on the Feedback page
