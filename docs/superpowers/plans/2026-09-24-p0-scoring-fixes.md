@@ -12,6 +12,24 @@
 
 ---
 
+## Roadmap traceability (P0 items → tasks)
+
+| Roadmap P0 item | Task(s) |
+|---|---|
+| [1] Axes without opportunity → N/A, overall renormalises | 4, 5, 7, 9, 13 |
+| [1] Debugging anti-farm | 3, 4, 5 |
+| [1] Interim Testing independent of case count | 3, 4, 5 |
+| [1] Right axis enable/applicability passed to the engine | 5, 7 (the unused `testing_enabled` / `debugging_enabled` flags are replaced by evidence-based applicability + `exercise_kind`) |
+| [1] Remove answer-leaking comments from debug starters | 1, 2 (7 starters affected, stripped at serve time because the seed is insert-only) |
+| [1] Remove the UI label that reveals the trapped reply | 8, 12 |
+| [1] Remove unused YAML rules | 6 |
+| [1] Rescore existing reports | 10 |
+
+Deviations from the roadmap, stated explicitly:
+
+- **Pulled forward from P2:** the generic "AI can be wrong" note on every code reply (Task 12). Removing the trap label needs a replacement, otherwise students get no verify reminder at all. The rest of the P2 trap redesign stays in P2.
+- **Added, required by the N/A change:** `/mentor` stops returning `injected_error` (Task 8), the dashboard radar returns `null` for never-observed axes (Task 9), and a migration makes the Prompting / Verification columns nullable (Task 7).
+
 ## Decisions (agreed with the product owner)
 
 1. **Prompting** is N/A when the student never prompted Ciel. **Verification** is N/A when no Ciel reply contained code and no trap was injected (nothing to verify).

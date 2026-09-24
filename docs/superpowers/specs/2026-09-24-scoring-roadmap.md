@@ -1,7 +1,12 @@
 # Scoring, Feedback & AI Tutor Roadmap (P−1 → P3)
 
-Agreed 2026-09-24 after a review of the scoring engine, the practice room and
-user testing feedback. Each phase gets its own plan in `docs/superpowers/plans/`.
+Agreed 2026-09-24. This is the **merged roadmap**: the initial analysis plus
+the product owner's review of it. Every phase plan in `docs/superpowers/plans/`
+MUST be built from this list and MUST contain a traceability table mapping each
+item of its phase to the task(s) that implement it (or state why it moved).
+
+Source tags: **[1]** initial analysis · **[2]** product owner's review ·
+**[+]** found during research.
 
 ## Problems found (evidence)
 
@@ -18,12 +23,48 @@ user testing feedback. Each phase gets its own plan in `docs/superpowers/plans/`
 - "Phòng luyện" personalisation is a static heuristic; Ciel has no memory.
 - Formulas are ad-hoc, unvalidated; YAML rules are loaded but unused.
 
-## Phases
+## P−1 — Security & data safety (done: PR #8, #9)
 
-| Phase | Scope |
-|---|---|
-| **P−1** (done: #8, #9) | Sandbox secret leak fixed, sandbox auth + rate limit, secrets rotated, DB/backend ports loopback-only, DB password rotated, S3 backup + verified restore |
-| **P0** | Axes with no opportunity become N/A (Debugging; Prompting/Verification when Ciel unused); Debugging anti-farm; interim Testing independent of case count; strip answer-leaking comments from debug starters; stop exposing / labelling the trap; delete dead YAML rules; rescore existing reports |
-| **P1** | Reference solutions, 5–8 categorised hidden tests and a mutant bank for all 30 exercises; rewrite axes as evidence-centred rubrics; evidence-based diagnosis + LLM-written actionable feedback with template fallback; show levels instead of decimals; hidden-test result display policy; start a 30–50 session golden set rated by humans |
-| **P2** | "Tests" tab (guidance, structured form, checklist, live validity check, mutation score, learning mode for fresher); "Review AI code" mode for debug exercises (pick the line, fix, reveal); new Ciel trap (mutant bank, pick line, outcome-based, random 40–70% rate, Youden H − F, generic "AI can be wrong" on all code); proper Debugging for debug exercises |
-| **P3** | Skill tags; Elo learner model + compact learner brief for the LLM; algorithmic next-exercise recommendation; Ciel memory and scaffolded hints; progress reports; cost controls (prompt caching layout, model tiering, quotas); privacy (PII scrubbing, pseudonymisation, `store=false`, policy + consent + opt-out, PDPL review); RDS migration, `events` partitioning, retention, account deletion; calibrate weights on the golden set; later AI-generated exercise variants |
+- [+] Sandbox no longer leaks backend secrets; `/practice/trace` requires login; sandbox rate limit; all secrets rotated
+- [2] DB and backend ports bound to loopback; DB password rotated on the existing volume
+- [2] Daily `pg_dump` to S3 + verified restore tooling (`scripts/backup_db.sh`, `scripts/restore_db.sh`)
+
+## P0 — Quick scoring fixes
+
+- [1] Axes with no opportunity become N/A instead of 0 (Debugging; Prompting / Verification when Ciel is not used), overall renormalises
+- [1] Debugging anti-farm (only real failures of the student's own code count; nothing after the first pass counts)
+- [1] Interim Testing score independent of how many cases the author wrote
+- [1] Pass the right axis enable/applicability to the engine (replaced by evidence-based applicability + exercise kind)
+- [1] Remove answer-leaking comments from debug starters
+- [1] Remove the UI label that reveals the trapped Ciel reply
+- [1] Remove the unused YAML rule files
+- [1] Rescore existing reports
+
+## P1 — Exercise data + evidence-based scoring and feedback
+
+- [2] Reference solution, 5–8 categorised hidden tests and a mutant bank for all 30 exercises
+- [2] Rewrite each axis as an evidence-centred rubric (ECD)
+- [1] Evidence-based diagnosis layer + LLM-written actionable feedback (what happened / why it matters / how to improve / what to do next) + template fallback; frontend stops regex-matching English notes
+- [2] Show levels instead of decimal scores
+- [2] Hidden-test display policy: failing category on submit, full input on the Feedback page
+- [2] Start a golden set of 30–50 sessions rated by 2–3 humans to validate the rubric and the explain-back LLM judge
+
+## P2 — New exercise mechanics
+
+- [2] "Tests" tab: short explainer, structured form (type / input / expected / why), checklist, live validity check against the reference solution, mutation-score grading shown after submit, learning mode for fresher
+- [1] "Review AI code" mode for debug exercises: pick the buggy line, fix it, see the answer after submit
+- [2] New Ciel trap: served from the mutant bank, student must pick the line, outcome-based scoring, random 40–70% bug rate, Youden H − F, generic "AI can be wrong" note on every code reply, reveal after submit
+- [1] Proper Debugging scoring for debug exercises
+
+## P3 — AI Tutor + infrastructure
+
+- [1] Skill tags per exercise
+- [2] Elo learner model + a compact learner brief (~150–300 tokens) for the LLM, never the full history
+- [1] Algorithmic next-exercise recommendation
+- [1] Ciel with memory, scaffolded hints by level, progress reports
+- [2] Cost controls: prompt layout for caching, model tiering, per-user quotas
+- [2] Privacy: PII scrubbing, pseudonymisation, `store=false`, privacy policy + consent + opt-out of AI personalisation, PDPL legal review
+- [2] Move the DB to RDS
+- [2] `events` partitioning, data retention policy, account deletion API
+- [2] Calibrate weights on the golden set
+- [1] (later) AI-generated exercise variants
