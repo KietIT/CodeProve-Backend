@@ -1,0 +1,1129 @@
+<title>Hiệu chuẩn CodeProve</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f4ef;
+  --surface: #fffdf8;
+  --surface-2: #f0ede6;
+  --ink: #1d232b;
+  --muted: #5d6673;
+  --line: #e3ded3;
+  --accent: #2c5d8f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e4ecf5;
+  --warn: #a8481a;
+  --warn-soft: #fbeadf;
+  --ok: #2f7a4f;
+  --ok-soft: #e3f1e8;
+  --code-bg: #f3f1ec;
+  --shadow: 0 1px 2px rgba(29, 35, 43, .06), 0 4px 16px rgba(29, 35, 43, .05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c;
+    --surface: #1b1f26;
+    --surface-2: #232830;
+    --ink: #e8e6e1;
+    --muted: #9aa3ae;
+    --line: #2c323b;
+    --accent: #7fb0e0;
+    --accent-ink: #10151b;
+    --accent-soft: #1f2d3d;
+    --warn: #f0955e;
+    --warn-soft: #3a2519;
+    --ok: #6cc794;
+    --ok-soft: #1b3326;
+    --code-bg: #161a20;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c;
+  --surface: #1b1f26;
+  --surface-2: #232830;
+  --ink: #e8e6e1;
+  --muted: #9aa3ae;
+  --line: #2c323b;
+  --accent: #7fb0e0;
+  --accent-ink: #10151b;
+  --accent-soft: #1f2d3d;
+  --warn: #f0955e;
+  --warn-soft: #3a2519;
+  --ok: #6cc794;
+  --ok-soft: #1b3326;
+  --code-bg: #161a20;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.6 "Be Vietnam Pro", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+header.top { padding: 28px 0 8px; }
+header.top h1 { font-size: 26px; line-height: 1.25; margin: 0 0 4px; letter-spacing: -.01em; }
+header.top p { margin: 0; color: var(--muted); }
+.account { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.account img { width: 22px; height: 22px; border-radius: 50%; }
+nav.tabs {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  margin-top: 16px;
+}
+nav.tabs .row { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs .row::-webkit-scrollbar { display: none; }
+nav.tabs button {
+  flex: 0 0 auto;
+  font: inherit; font-weight: 500; font-size: 14px;
+  color: var(--muted); background: none; border: 0;
+  padding: 12px 12px 10px; border-bottom: 2px solid transparent; cursor: pointer;
+}
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+main { padding: 24px 0 64px; }
+section[hidden] { display: none; }
+h2 { font-size: 19px; margin: 28px 0 8px; letter-spacing: -.005em; }
+h2:first-child { margin-top: 0; }
+h3 { font-size: 16px; margin: 20px 0 6px; }
+p { margin: 0 0 10px; }
+ul, ol { margin: 0 0 10px; padding-left: 22px; }
+li { margin: 3px 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px; box-shadow: var(--shadow); margin: 12px 0;
+}
+.banner { border-radius: 10px; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+.banner.warn { background: var(--warn-soft); color: var(--warn); }
+.banner.ok { background: var(--ok-soft); color: var(--ok); }
+.banner.info { background: var(--accent-soft); color: var(--ink); }
+.steps { list-style: none; padding: 0; counter-reset: step; }
+.steps li {
+  counter-increment: step; position: relative; padding: 12px 14px 12px 50px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin: 8px 0;
+}
+.steps li::before {
+  content: counter(step); position: absolute; left: 14px; top: 12px;
+  width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  font-weight: 600; font-size: 13px; display: grid; place-items: center;
+}
+.steps .time { font-size: 13px; color: var(--muted); }
+.btn {
+  font: inherit; font-weight: 600; font-size: 14px;
+  border-radius: 9px; padding: 9px 16px; cursor: pointer;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+}
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.chip {
+  display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px;
+  background: var(--surface-2); color: var(--muted); white-space: nowrap;
+}
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.accent { background: var(--accent-soft); color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; color: var(--muted); font-size: 13px; }
+.table-scroll { overflow-x: auto; }
+code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; }
+pre {
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px; overflow-x: auto; margin: 6px 0; white-space: pre;
+}
+.pre-wrap { white-space: pre-wrap; word-break: break-word; }
+input[type="date"], textarea {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+textarea { width: 100%; min-height: 72px; resize: vertical; }
+
+/* AHP */
+.ahp-head { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.axis-legend { display: grid; gap: 6px 16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); font-size: 13px; }
+.axis-legend b { color: var(--ink); }
+.pair { transition: border-color .15s; }
+.pair.flag { border-color: var(--warn); }
+.pair .names { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
+.pair .names span:last-child { text-align: right; }
+.pair input[type="range"] { width: 100%; margin: 10px 0 2px; accent-color: var(--accent); }
+.ticks { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 0 4px; font-variant-numeric: tabular-nums; }
+.pair .verdict { margin-top: 6px; font-size: 14px; }
+.pair .verdict.untouched { color: var(--muted); font-style: italic; }
+.pair .hint { margin-top: 6px; font-size: 13px; color: var(--warn); }
+.summary { position: sticky; top: 46px; z-index: 4; }
+.bars { display: grid; gap: 6px; margin-top: 8px; }
+.bar { display: grid; grid-template-columns: 110px 1fr 44px; gap: 8px; align-items: center; font-size: 13px; }
+.bar .track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .2s; }
+.bar .pct { text-align: right; font-variant-numeric: tabular-nums; }
+.cr-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 14px; }
+
+/* Rating */
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin: 6px 0 12px; }
+.progress div { height: 100%; background: var(--ok); }
+.session-list { display: grid; gap: 8px; }
+.session-item {
+  display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; width: 100%;
+  font: inherit; text-align: left; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer;
+}
+.session-item:hover { border-color: var(--accent); }
+.session-item .title { flex: 1 1 200px; font-weight: 500; }
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.timeline li:last-child { border-bottom: 0; }
+.at { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 6px; }
+.qa { margin: 8px 0; }
+.qa .q { font-weight: 600; }
+.bubble { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
+fieldset.axis { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 12px 0; background: var(--surface); }
+fieldset.axis legend { font-weight: 600; padding: 0 6px; }
+.basis { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+.opt {
+  display: grid; grid-template-columns: 20px 34px 1fr; gap: 6px; align-items: start;
+  padding: 7px 8px; border-radius: 8px; cursor: pointer;
+}
+.opt:hover { background: var(--surface-2); }
+.opt input { margin: 4px 0 0; accent-color: var(--accent); }
+.opt .lv { font-weight: 700; font-variant-numeric: tabular-nums; }
+.opt .ex { display: block; font-size: 12px; color: var(--muted); }
+.opt.checked { background: var(--accent-soft); }
+.opt.na .lv { font-size: 11px; line-height: 1.9; }
+fieldset:disabled .opt { cursor: default; }
+.rubric td:first-child { width: 48px; font-weight: 700; }
+.rules li { margin: 6px 0; }
+@media (max-width: 560px) {
+  header.top h1 { font-size: 22px; }
+  .bar { grid-template-columns: 86px 1fr 40px; }
+  .summary { position: static; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Hiệu chuẩn chấm điểm CodeProve</h1>
+    <p>Trang làm việc của nhóm Kiệt, Trung, Minh, Phát: chọn trọng số cho 6 trục và chấm tay bộ mẫu chuẩn.</p>
+    <div class="account" id="account">Đang kết nối…</div>
+  </header>
+  <nav class="tabs" aria-label="Các phần">
+    <div class="row" role="tablist">
+      <button role="tab" data-tab="intro">Giới thiệu</button>
+      <button role="tab" data-tab="ahp">So sánh trục (AHP)</button>
+      <button role="tab" data-tab="rate">Chấm bộ mẫu</button>
+      <button role="tab" data-tab="guide">Hướng dẫn chấm</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Intro -->
+    <section id="tab-intro" hidden>
+      <div id="connection"></div>
+      <h2>Vì sao cần trang này</h2>
+      <p>CodeProve tự chấm mỗi lượt làm bài theo 6 trục: Thấu hiểu, Giả thuyết, Prompting, Kiểm chứng, Testing và Debug. Hiện nhóm tự đặt trọng số cho từng trục, và chưa ai kiểm tra điểm máy chấm có khớp với đánh giá của con người không. Trang này thu hai thứ để trả lời hai câu hỏi đó:</p>
+      <ul>
+        <li><b>Ý kiến của từng người về tầm quan trọng của các trục</b> (phương pháp AHP). Từ đó tính ra trọng số có căn cứ, thay cho con số tự đặt.</li>
+        <li><b>Điểm chấm tay độc lập của 4 người trên khoảng 40 lượt làm bài thật</b> (bộ mẫu chuẩn). Từ đó biết 4 người có chấm giống nhau không (bảng mức điểm có rõ không), và máy chấm lệch ở trục nào.</li>
+      </ul>
+
+      <h2>Bạn cần làm gì</h2>
+      <ol class="steps">
+        <li><b>Đọc tab “Hướng dẫn chấm”.</b> <span class="time">Khoảng 15 phút.</span><br>Nhất là 4 quy tắc bắt buộc và khi nào chọn “Không áp dụng”.</li>
+        <li><b>Trả lời 15 câu so sánh ở tab “So sánh trục (AHP)”.</b> <span class="time">10–15 phút, làm được ngay.</span><br>Mỗi câu hỏi trục nào quan trọng hơn và hơn bao nhiêu. Trang tự kiểm tra các câu trả lời có mâu thuẫn nhau không.</li>
+        <li><b>Làm khoảng 5 bài trên CodeProve như người dùng bình thường.</b> <span class="time">Khoảng 1 giờ.</span><br>Nhớ Submit và trả lời câu hỏi giải thích ở cuối. Các lượt này góp vào bộ mẫu cùng với bài của các bạn cùng lớp.</li>
+        <li><b>Chấm tay từng lượt ở tab “Chấm bộ mẫu”</b> khi Kiệt báo đã đủ dữ liệu. <span class="time">4–6 phút mỗi lượt, chia 4–5 buổi.</span><br>Chấm một mình, không bàn với ai cho tới khi cả nhóm chấm xong.</li>
+      </ol>
+
+      <h2>Thời hạn</h2>
+      <div class="card" id="deadlines"><span class="muted">Đang tải…</span></div>
+
+      <h2>Dữ liệu và quyền riêng tư</h2>
+      <ul>
+        <li>Lượt làm bài đã được ẩn danh trước khi đưa lên đây: không có tên, email hay thời điểm làm bài; email và số điện thoại lỡ gõ vào bài đã bị xoá. Nếu vẫn thấy thông tin cá nhân lọt vào, báo Kiệt để xoá lượt đó.</li>
+        <li>Điểm của máy chấm <b>không</b> hiển thị ở đây, để bạn chấm mà không bị ảnh hưởng.</li>
+        <li>Câu trả lời AHP và điểm bạn chấm: các thành viên khác không xem được. Chỉ Kiệt (chủ trang) đọc được, và chỉ đọc để phân tích (bằng Claude) sau khi cả nhóm đã xong.</li>
+        <li>Đây là trang riêng tư trên claude.ai; chỉ người được Kiệt chia sẻ mới mở được.</li>
+      </ul>
+
+      <div id="owner-panel"></div>
+    </section>
+
+    <!-- AHP -->
+    <section id="tab-ahp" hidden>
+      <h2>So sánh từng cặp trục</h2>
+      <p>Câu hỏi chung cho cả 15 cặp: <b>khi đánh giá một người lập trình cùng trợ lý AI, trục nào nói lên năng lực của họ nhiều hơn, và nhiều hơn bao nhiêu?</b> Kéo thanh trượt về phía trục quan trọng hơn; càng xa giữa càng chênh lệch. Không có đáp án đúng, hãy trả lời theo quan điểm của bạn.</p>
+      <div class="card small">
+        <div class="axis-legend" id="axis-legend"></div>
+      </div>
+      <p class="small muted">Thang đo (Saaty): 1 ngang nhau · 3 hơi quan trọng hơn · 5 quan trọng hơn nhiều · 7 rất quan trọng hơn · 9 quan trọng hơn tuyệt đối. Các số chẵn nằm giữa hai mức.</p>
+
+      <div class="card summary" id="ahp-summary"></div>
+      <div id="pairs"></div>
+      <div class="card">
+        <div id="ahp-save-note" class="small muted"></div>
+        <div class="btn-row">
+          <button class="btn" id="ahp-save">Lưu câu trả lời</button>
+          <span id="ahp-status" class="small"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rating -->
+    <section id="tab-rate" hidden>
+      <div id="rate-root"></div>
+    </section>
+
+    <!-- Guide -->
+    <section id="tab-guide" hidden>
+      <h2>Mình đang làm gì và để làm gì?</h2>
+      <p>Bộ mẫu chuẩn là khoảng 40 lượt làm bài thật, được <b>4 người chấm tay độc lập</b>. Sau đó so sánh:</p>
+      <ol>
+        <li><b>4 người có chấm giống nhau không?</b> Nếu không, bảng mô tả mức điểm bên dưới đang mơ hồ, phải sửa.</li>
+        <li><b>Máy chấm có giống người không?</b> Nếu không, trục nào lệch thì sửa cách máy chấm trục đó.</li>
+      </ol>
+      <p>Kết quả này quyết định cách CodeProve chấm điểm sau này, nên hãy chấm cẩn thận và <b>trung thực với những gì bạn thấy</b>.</p>
+
+      <h2>4 quy tắc bắt buộc</h2>
+      <ol class="rules">
+        <li><b>Chấm một mình.</b> Không bàn với ai, không xem người khác chấm gì, <b>cho tới khi cả nhóm chấm xong</b>. Nếu bàn trước, kết quả “4 người đồng thuận” sẽ vô nghĩa.</li>
+        <li><b>Chấm những gì lượt làm bài thể hiện</b>, không đoán người đó giỏi hay dở. Ví dụ: code đúng nhưng câu giải thích sai thì trục Thấu hiểu vẫn thấp.</li>
+        <li><b>Mỗi lượt chỉ chấm một lần</b>, không quay lại sửa sau khi đã chấm các lượt khác. Trang sẽ khoá lượt đã lưu.</li>
+        <li><b>Chọn “Không áp dụng” khi lượt làm bài không có cơ hội thể hiện trục đó</b>, theo đúng quy định của từng trục bên dưới. Không cho 0 thay cho “Không áp dụng”, và ngược lại.</li>
+      </ol>
+
+      <h2>Cách đọc một lượt làm bài</h2>
+      <p>Mỗi lượt hiện theo thứ tự:</p>
+      <ul>
+        <li><b>Đề bài</b> (mã bài, bài implement hay debug).</li>
+        <li><b>Giả thuyết</b> user ghi (nếu có), kèm phút ghi.</li>
+        <li><b>Các câu hỏi gửi Ciel và câu trả lời của Ciel.</b> Câu trả lời nào có <b>lỗi cài sẵn</b> (Ciel cố ý đưa code sai để thử người học) sẽ được đánh dấu.</li>
+        <li><b>Các lần chạy test</b> (phút, tỉ lệ pass, có phải chạy code khởi đầu chưa sửa không).</li>
+        <li><b>Kết quả Submit</b> (pass bao nhiêu test, kể cả test ẩn).</li>
+        <li><b>Code cuối cùng.</b></li>
+        <li><b>Câu hỏi và câu trả lời explain-back.</b></li>
+      </ul>
+
+      <h2>Bảng mức điểm cho từng trục</h2>
+      <p>Mỗi trục chọn <b>0, 1, 2, 3</b> hoặc <b>Không áp dụng</b> (chỉ những trục có quy định).</p>
+      <div id="guide-rubrics"></div>
+
+      <h2>Mức tổng thể</h2>
+      <p>Sau 6 trục, chọn <b>một mức tổng thể</b> theo ấn tượng chung. Không cần cộng điểm các trục.</p>
+      <div id="guide-overall"></div>
+
+      <h2>Mẹo khi chấm</h2>
+      <ul>
+        <li>Mỗi lượt mất khoảng <b>4–6 phút</b>. 40 lượt nên chia thành <b>4–5 buổi</b>, mỗi buổi khoảng 45 phút; chấm liền mạch lâu quá dễ mệt và chấm ẩu.</li>
+        <li>Phân vân giữa hai mức thì <b>chọn mức thấp hơn</b>, và ghi lý do vào ô ghi chú.</li>
+        <li>Thấy dữ liệu lạ (lượt làm bài trống, code không liên quan đề) thì vẫn chấm, và ghi chú lại.</li>
+        <li>Thấy <b>thông tin cá nhân</b> lọt vào (tên, trường, mạng xã hội) thì báo Kiệt để xoá lượt đó.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Rubric (mirrors docs/calibration/huong-dan-cham.md) ----------
+  const AXES = [
+    {
+      key: "understanding", name: "Thấu hiểu", short: "Hiểu lời giải của chính mình",
+      basis: "Dựa chủ yếu vào câu trả lời explain-back: người đó có hiểu lời giải của chính mình không.",
+      na: null,
+      levels: [
+        ["Không trả lời, trả lời lạc đề hoặc sai", "“không biết”, “vì code chạy được”"],
+        ["Mơ hồ hoặc đúng một phần", "“vì cần cộng các số”"],
+        ["Đúng nhưng chỉ nói làm gì, chưa nói vì sao", "“vòng lặp chạy từ 1 tới n rồi cộng dồn”"],
+        ["Đúng và giải thích được vì sao, kể cả trường hợp đặc biệt", "“range(1, n + 1) vì range dừng trước số cuối; n = 0 thì vòng lặp không chạy nên trả 0”"],
+      ],
+      note: "Không có “Không áp dụng” cho trục này.",
+    },
+    {
+      key: "hypothesis", name: "Giả thuyết", short: "Lập hướng giải trước khi code",
+      basis: "Dựa vào giả thuyết ghi trước khi code.",
+      na: null,
+      levels: [
+        ["Không ghi giả thuyết", ""],
+        ["Chung chung, không định hướng được lời giải", "“dùng vòng lặp”"],
+        ["Nêu đúng hướng giải", "“dùng dict lưu số đã gặp để tra phần bù”"],
+        ["Đúng hướng và nêu được trường hợp đặc biệt hoặc độ phức tạp, ghi trước khi code", "“dict lưu số đã gặp, O(n); cẩn thận hai số bằng nhau như [3, 3]”"],
+      ],
+      note: "Không có “Không áp dụng”: ô giả thuyết luôn có sẵn. Nếu lượt làm bài cũ hiện “(không lưu nội dung)”, dựa vào đánh giá đúng/sai đi kèm và cho tối đa mức 2.",
+    },
+    {
+      key: "prompting", name: "Prompting", short: "Cách đặt câu hỏi cho trợ lý Ciel",
+      basis: "Cách hỏi Ciel. Nếu có nhiều câu hỏi, chấm theo mức đại diện cho đa số, không theo câu hay nhất hay câu tệ nhất.",
+      na: "Người đó không hỏi Ciel lần nào.",
+      levels: [
+        ["Xin thẳng lời giải, hoặc hỏi lạc đề", "“viết code cho tôi”, “cho đáp án”"],
+        ["Câu hỏi ngắn, mơ hồ", "“sửa giúp”, “sai chỗ nào?”"],
+        ["Câu hỏi cụ thể, có ngữ cảnh", "“Vì sao test với n = 0 fail?”"],
+        ["Cụ thể, nói rõ đã thử gì và sai ở đâu, xin hướng dẫn chứ không xin đáp án", "“Mình dùng range(1, n) thì n = 3 ra 3 thay vì 6, mình đoán vòng lặp thiếu một số, đúng không?”"],
+      ],
+      note: "",
+    },
+    {
+      key: "verification", name: "Kiểm chứng", short: "Kiểm tra code do AI đưa ra",
+      basis: "Cách người đó xử lý code do Ciel đưa ra.",
+      na: "Ciel không đưa đoạn code nào.",
+      levels: [
+        ["Dùng code AI mà không kiểm tra; nếu có lỗi cài sẵn thì lỗi đó vẫn còn trong code cuối", ""],
+        ["Có dùng code AI, kiểm tra qua loa", ""],
+        ["Chạy test sau khi nhận code AI", ""],
+        ["Phát hiện và sửa lỗi trong code AI, hoặc đặt câu hỏi nghi ngờ đoạn code đó", ""],
+      ],
+      note: "",
+    },
+    {
+      key: "testing", name: "Testing", short: "Chạy test, pass cả test ẩn",
+      basis: "Dựa vào các lần chạy test và kết quả Submit.",
+      na: null,
+      levels: [
+        ["Không chạy test lần nào, hoặc Submit khi còn fail gần hết", ""],
+        ["Có chạy nhưng bỏ qua test fail rồi Submit", ""],
+        ["Test hiển thị pass hết, nhưng còn fail test ẩn khi Submit", ""],
+        ["Pass toàn bộ, kể cả test ẩn", ""],
+      ],
+      note: "Không có “Không áp dụng” cho trục này.",
+    },
+    {
+      key: "debugging", name: "Debug", short: "Tìm và sửa lỗi có định hướng",
+      basis: "Bài debug (có sẵn code lỗi): luôn chấm. Bài implement: chỉ chấm khi code từng chạy fail.",
+      na: "Bài implement và code chưa từng chạy fail. Chạy code khởi đầu chưa sửa thì không tính là fail.",
+      levels: [
+        ["Không sửa được lỗi", ""],
+        ["Sửa được bằng cách thử-sai: chạy rất nhiều lần, thay đổi lung tung", ""],
+        ["Sửa được sau vài lần thử có định hướng", ""],
+        ["Tìm đúng chỗ và sửa nhanh, có lý do rõ ràng (thể hiện qua giả thuyết, câu hỏi Ciel hoặc explain-back)", ""],
+      ],
+      note: "",
+    },
+  ];
+  const OVERALL = [
+    ["emerging", "Emerging", "Chưa giải được, hoặc giải được mà không hiểu mình làm gì"],
+    ["developing", "Developing", "Giải được một phần, hiểu một phần, còn phụ thuộc AI hoặc thử-sai"],
+    ["strong", "Strong", "Giải được, hiểu và giải thích được, làm việc với AI có kiểm soát"],
+    ["exceptional", "Exceptional", "Giải gọn, lập luận rõ từ đầu, xử lý cả trường hợp đặc biệt, dùng AI như người hỗ trợ chứ không dựa dẫm"],
+  ];
+  const INTEGRITY = {
+    paste_blocked: "Dán bị chặn", tab_hidden: "Ẩn tab", window_blur: "Rời cửa sổ",
+    fullscreen_exit: "Thoát toàn màn hình", focus_lost: "Mất focus",
+  };
+  const GUIDE_VERSION = 1;
+
+  // ---------- AHP maths (mirrors app/features/calibration/ahp.py) ----------
+  const N = AXES.length;
+  const PAIRS = [];
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) PAIRS.push([i, j]);
+  const RANDOM_INDEX = 1.24; // Saaty RI for n = 6
+  const CR_THRESHOLD = 0.1;
+  const STRENGTH = {
+    2: "nhỉnh hơn một chút", 3: "hơi quan trọng hơn", 4: "khá quan trọng hơn",
+    5: "quan trọng hơn nhiều", 6: "quan trọng hơn rất nhiều", 7: "rất quan trọng hơn",
+    8: "quan trọng hơn gần như tuyệt đối", 9: "quan trọng hơn tuyệt đối",
+  };
+  const pairKey = ([i, j]) => AXES[i].key + "|" + AXES[j].key;
+
+  // Slider position -8..8: negative leans to A (left), positive to B (right).
+  const saaty = (pos) => (pos <= 0 ? 1 - pos : 1 / (1 + pos));
+  const positionOf = (value) => (value >= 1 ? -Math.round(value - 1) : Math.round(1 / value - 1));
+
+  function buildMatrix(positions) {
+    const m = Array.from({ length: N }, () => Array(N).fill(1));
+    for (const p of PAIRS) {
+      const v = saaty(positions[pairKey(p)] || 0);
+      m[p[0]][p[1]] = v;
+      m[p[1]][p[0]] = 1 / v;
+    }
+    return m;
+  }
+  const multiply = (m, w) => m.map((row) => row.reduce((s, x, j) => s + x * w[j], 0));
+  function priorities(m) {
+    let w = Array(N).fill(1 / N);
+    for (let it = 0; it < 1000; it++) {
+      let v = multiply(m, w);
+      const total = v.reduce((a, b) => a + b, 0);
+      v = v.map((x) => x / total);
+      if (Math.max(...v.map((x, k) => Math.abs(x - w[k]))) < 1e-12) return v;
+      w = v;
+    }
+    return w;
+  }
+  function consistencyRatio(m, w) {
+    const mw = multiply(m, w);
+    const lambdaMax = mw.reduce((s, x, k) => s + x / w[k], 0) / N;
+    return ((lambdaMax - N) / (N - 1)) / RANDOM_INDEX;
+  }
+  function worstPairs(m, w, k = 3) {
+    return PAIRS
+      .map((p) => ({ p, dev: Math.abs(Math.log(m[p[0]][p[1]] * w[p[1]] / w[p[0]])) }))
+      .sort((a, b) => b.dev - a.dev)
+      .slice(0, k)
+      .map((x) => x.p);
+  }
+
+  // ---------- Helpers ----------
+  function h(tag, props, ...kids) {
+    const el = document.createElement(tag);
+    if (props) {
+      for (const [k, v] of Object.entries(props)) {
+        if (v == null || v === false) continue;
+        if (k === "class") el.className = v;
+        else if (k === "text") el.textContent = v;
+        else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+        else if (k in el && typeof v !== "string") el[k] = v;
+        else el.setAttribute(k, v === true ? "" : v);
+      }
+    }
+    for (const kid of kids.flat()) {
+      if (kid == null || kid === false) continue;
+      el.append(kid instanceof Node ? kid : String(kid));
+    }
+    return el;
+  }
+  const $ = (id) => document.getElementById(id);
+  const local = {
+    get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+    del(k) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } },
+  };
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const fmtNum = (n, d = 1) => Number(n).toLocaleString("vi-VN", { maximumFractionDigits: d });
+  const fmtMin = (n) => (n == null ? "" : "phút " + fmtNum(n));
+  const fmtDate = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+  };
+  const fmtDay = (ymd) => {
+    if (!ymd) return "";
+    const [y, m, d] = ymd.split("-");
+    return d && m && y ? `${d}/${m}/${y}` : ymd;
+  };
+  function fnv(s) {
+    let x = 0x811c9dc5;
+    for (const ch of s) { x ^= ch.codePointAt(0); x = Math.imul(x, 0x01000193) >>> 0; }
+    return x;
+  }
+  async function write(ref, body) {
+    try {
+      await ref.set(body);
+    } catch (e) {
+      if (!e || e.code !== "unavailable") throw e;
+      await sleep(400 + Math.random() * 800);
+      await ref.set(body);
+    }
+  }
+  function explainError(e) {
+    switch (e && e.code) {
+      case "invalid_argument":
+        return "Tài khoản của bạn chưa có quyền lưu trên trang này. Nhờ Kiệt chia sẻ lại trang với quyền “Can interact”.";
+      case "quota_exceeded": return "Kho dữ liệu của trang đã đầy. Báo Kiệt.";
+      case "resource_exhausted": return "Thao tác hơi nhanh, đợi vài giây rồi lưu lại.";
+      case "revoked": return "Quyền truy cập trang vừa thay đổi. Tải lại trang.";
+      default: return "Không lưu được do lỗi tạm thời. Thử lại sau ít phút.";
+    }
+  }
+
+  // ---------- State ----------
+  const state = {
+    db: null, user: null, uid: null, isOwner: false, connected: false,
+    readOnly: false,
+    meta: {},
+    sessions: [], sessionsLoaded: false,
+    mine: new Map(), mineLoaded: false,
+    positions: {}, touched: new Set(), ahpSaved: null,
+    current: null, form: null, openedAt: 0,
+  };
+
+  // ---------- Tabs ----------
+  const TABS = ["intro", "ahp", "rate", "guide"];
+  function showTab(id) {
+    if (!TABS.includes(id)) id = "intro";
+    for (const t of TABS) $("tab-" + t).hidden = t !== id;
+    for (const b of document.querySelectorAll("nav.tabs button")) {
+      b.setAttribute("aria-selected", String(b.dataset.tab === id));
+    }
+    local.set("tab", id);
+  }
+  for (const b of document.querySelectorAll("nav.tabs button")) {
+    b.addEventListener("click", () => { showTab(b.dataset.tab); window.scrollTo(0, 0); });
+  }
+
+  // ---------- Guide ----------
+  function rubricTable(axis) {
+    return h("div", { class: "table-scroll" }, h("table", { class: "rubric" },
+      h("thead", null, h("tr", null, h("th", { text: "Mức" }), h("th", { text: "Mô tả" }), h("th", { text: "Ví dụ" }))),
+      h("tbody", null, axis.levels.map(([desc, ex], lv) =>
+        h("tr", null, h("td", { text: String(lv) }), h("td", { text: desc }), h("td", { class: "muted", text: ex || "—" }))))));
+  }
+  function renderGuide() {
+    const root = $("guide-rubrics");
+    for (const a of AXES) {
+      root.append(
+        h("h3", { text: a.name }),
+        h("p", null, a.basis),
+        a.na ? h("p", null, h("b", { text: "Không áp dụng" }), " khi: " + a.na) : null,
+        rubricTable(a),
+        a.note ? h("p", { class: "small muted" }, a.note) : null,
+      );
+    }
+    $("guide-overall").append(h("div", { class: "table-scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: "Mức" }), h("th", { text: "Mô tả" }))),
+      h("tbody", null, OVERALL.map(([, name, desc]) => h("tr", null, h("td", null, h("b", { text: name })), h("td", { text: desc })))))));
+  }
+
+  // ---------- Account and intro ----------
+  function renderAccount(me) {
+    const el = $("account");
+    el.textContent = "";
+    if (!state.connected) {
+      el.append(h("span", { class: "chip warn", text: "Chưa kết nối dữ liệu" }));
+      return;
+    }
+    if (me && me.avatarUrl) el.append(h("img", { src: me.avatarUrl, alt: "" }));
+    el.append(h("span", { text: me && me.name ? "Đang dùng tài khoản " + me.name : "Đã kết nối" }));
+    if (state.isOwner) el.append(h("span", { class: "chip accent", text: "Chủ trang" }));
+  }
+  function renderConnection() {
+    const el = $("connection");
+    el.textContent = "";
+    if (!state.connected) {
+      el.append(h("div", { class: "banner warn" },
+        "Trang chưa kết nối được kho dữ liệu nên chưa lưu được gì. Hãy mở trang từ đường link claude.ai Kiệt gửi và đăng nhập. Phần So sánh trục vẫn tính thử được."));
+    } else if (!state.uid) {
+      el.append(h("div", { class: "banner warn" },
+        "Không xác định được tài khoản của bạn nên chưa lưu được câu trả lời. Hãy đăng nhập claude.ai rồi mở lại trang."));
+    } else if (state.readOnly) {
+      el.append(h("div", { class: "banner warn" }, explainError({ code: "invalid_argument" })));
+    }
+  }
+  function renderDeadlines() {
+    const el = $("deadlines");
+    el.textContent = "";
+    const m = state.meta || {};
+    const row = (label, ymd) => h("div", null, h("b", { text: label + ": " }),
+      ymd ? h("span", { text: fmtDay(ymd) }) : h("span", { class: "muted", text: "Kiệt sẽ cập nhật" }));
+    el.append(row("So sánh trục (AHP)", m.ahp_deadline), row("Chấm bộ mẫu", m.rating_deadline));
+    if (m.note) el.append(h("p", { class: "small muted", style: "margin-top:8px", text: m.note }));
+    if (!state.isOwner || !state.db) return;
+
+    const ahpIn = h("input", { type: "date", value: m.ahp_deadline || "" });
+    const rateIn = h("input", { type: "date", value: m.rating_deadline || "" });
+    const status = h("span", { class: "small" });
+    const saveBtn = h("button", {
+      class: "btn ghost",
+      text: "Lưu thời hạn",
+      onclick: async () => {
+        saveBtn.disabled = true;
+        status.textContent = "Đang lưu…";
+        try {
+          await write(state.db.doc("meta/config"), {
+            ...m, ahp_deadline: ahpIn.value || null, rating_deadline: rateIn.value || null,
+          });
+          status.textContent = "Đã lưu.";
+        } catch (e) {
+          status.textContent = explainError(e);
+        } finally {
+          saveBtn.disabled = false;
+        }
+      },
+    });
+    el.append(h("div", { class: "btn-row small" },
+      h("label", null, "AHP ", ahpIn), h("label", null, "Chấm ", rateIn), saveBtn, status));
+  }
+
+  // Owner-only progress: counts and CR only, never other raters' answers.
+  const owner = { ahp: new Map(), ratings: new Map() };
+  async function renderOwnerPanel() {
+    const el = $("owner-panel");
+    if (!state.isOwner) { el.textContent = ""; return; }
+    const ids = [...new Set([...owner.ahp.keys(), ...owner.ratings.keys()])];
+    const profiles = ids.length && state.user ? await state.user.profiles(ids) : {};
+    el.textContent = "";
+    el.append(h("h2", { text: "Tiến độ nhóm" }),
+      h("p", { class: "small muted" },
+        "Chỉ chủ trang thấy phần này. Chỉ hiện số lượng và độ nhất quán, không hiện nội dung chấm để giữ tính độc lập."));
+    if (!ids.length) {
+      el.append(h("div", { class: "card muted", text: "Chưa ai lưu gì." }));
+      return;
+    }
+    const total = state.sessions.length;
+    el.append(h("div", { class: "card table-scroll" }, h("table", null,
+      h("thead", null, h("tr", null, h("th", { text: "Thành viên" }), h("th", { text: "AHP" }), h("th", { text: "Đã chấm" }))),
+      h("tbody", null, ids.map((id) => {
+        const a = owner.ahp.get(id);
+        const r = owner.ratings.get(id);
+        const p = profiles[id] || {};
+        const who = p.isMe ? (p.name || "Bạn") + " (bạn)" : p.name || "Thành viên chưa rõ tên";
+        return h("tr", null,
+          h("td", { text: who }),
+          h("td", null, a
+            ? h("span", { class: "chip " + (a.cr < CR_THRESHOLD ? "ok" : "warn"), text: "CR " + fmtNum(a.cr, 3) })
+            : h("span", { class: "muted", text: "chưa lưu" })),
+          h("td", { text: r ? `${r.count}${total ? " / " + total : ""}` : "0" }));
+      })))));
+  }
+
+  // ---------- AHP UI ----------
+  const pairEls = new Map();
+  function verdictText(p, pos) {
+    const [a, b] = [AXES[p[0]].name, AXES[p[1]].name];
+    if (pos === 0) return `${a} và ${b} quan trọng ngang nhau (1)`;
+    const n = Math.abs(pos) + 1;
+    const [win, lose] = pos < 0 ? [a, b] : [b, a];
+    return `${win} ${STRENGTH[n]} so với ${lose} (${n})`;
+  }
+  function renderAhpStatic() {
+    $("axis-legend").append(...AXES.map((a) => h("div", null, h("b", { text: a.name }), ": " + a.short)));
+    const root = $("pairs");
+    PAIRS.forEach((p, idx) => {
+      const key = pairKey(p);
+      const slider = h("input", {
+        type: "range", min: "-8", max: "8", step: "1", value: String(state.positions[key] || 0),
+        "aria-label": `${AXES[p[0]].name} so với ${AXES[p[1]].name}`,
+      });
+      const verdict = h("div", { class: "verdict" });
+      const hint = h("div", { class: "hint", hidden: true });
+      const card = h("div", { class: "card pair" },
+        h("div", { class: "small muted", text: `Câu ${idx + 1} / ${PAIRS.length}` }),
+        h("div", { class: "names" }, h("span", { text: "← " + AXES[p[0]].name }), h("span", { text: AXES[p[1]].name + " →" })),
+        slider,
+        h("div", { class: "ticks", "aria-hidden": "true" }, ["9", "7", "5", "3", "1", "3", "5", "7", "9"].map((t) => h("span", { text: t }))),
+        verdict, hint);
+      const touch = () => {
+        state.positions[key] = Number(slider.value);
+        state.touched.add(key);
+        local.set("ahp-draft", { positions: state.positions, touched: [...state.touched] });
+        updateAhp();
+      };
+      slider.addEventListener("input", touch);
+      slider.addEventListener("change", touch);
+      slider.addEventListener("pointerdown", () => { if (!state.touched.has(key)) touch(); });
+      root.append(card);
+      pairEls.set(key, { card, slider, verdict, hint, p });
+    });
+    $("ahp-save").addEventListener("click", saveAhp);
+  }
+  function computeAhp() {
+    const m = buildMatrix(state.positions);
+    const w = priorities(m);
+    return { m, w, cr: consistencyRatio(m, w) };
+  }
+  function updateAhp() {
+    const { m, w, cr } = computeAhp();
+    const done = state.touched.size;
+    const complete = done === PAIRS.length;
+    const inconsistent = complete && cr >= CR_THRESHOLD;
+    const flagged = new Set(inconsistent ? worstPairs(m, w).map(pairKey) : []);
+
+    for (const [key, el] of pairEls) {
+      const pos = state.positions[key] || 0;
+      if (Number(el.slider.value) !== pos) el.slider.value = String(pos);
+      const touched = state.touched.has(key);
+      el.verdict.className = "verdict" + (touched ? "" : " untouched");
+      el.verdict.textContent = touched ? verdictText(el.p, pos) : "Chưa trả lời: kéo hoặc chạm thanh trượt (kể cả khi bạn chọn ngang nhau).";
+      el.card.classList.toggle("flag", flagged.has(key));
+      el.hint.hidden = !flagged.has(key);
+      if (flagged.has(key)) {
+        const [i, j] = el.p;
+        const implied = Math.min(9, Math.max(1 / 9, w[i] / w[j]));
+        el.hint.textContent = "Câu này mâu thuẫn nhiều nhất với các câu còn lại. Theo các câu khác của bạn thì: "
+          + verdictText(el.p, positionOf(implied)) + ". Xem lại xem bạn thật sự nghĩ thế nào.";
+      }
+    }
+
+    const sum = $("ahp-summary");
+    sum.textContent = "";
+    const crChip = complete
+      ? h("span", { class: "chip " + (inconsistent ? "warn" : "ok"), text: "CR = " + fmtNum(cr, 3) + (inconsistent ? " (≥ 0,1: mâu thuẫn)" : " (< 0,1: nhất quán)") })
+      : h("span", { class: "chip", text: "CR tạm tính = " + fmtNum(cr, 3) });
+    sum.append(
+      h("div", { class: "cr-line" }, h("b", { text: `Đã trả lời ${done}/${PAIRS.length}` }), crChip),
+      h("div", { class: "bars" }, AXES.map((a, k) => h("div", { class: "bar" },
+        h("span", { text: a.name }),
+        h("div", { class: "track" }, h("div", { class: "fill", style: `width:${(w[k] * 100).toFixed(1)}%` })),
+        h("span", { class: "pct", text: fmtNum(w[k] * 100) + "%" })))),
+      h("p", { class: "small muted", style: "margin:8px 0 0" },
+        "Trọng số trên được tính từ câu trả lời của bạn (vector riêng chính của ma trận so sánh). CR đo mức mâu thuẫn giữa các câu: dưới 0,1 là chấp nhận được."));
+
+    const note = $("ahp-save-note");
+    const btn = $("ahp-save");
+    if (!complete) {
+      note.textContent = `Còn ${PAIRS.length - done} câu chưa trả lời.`;
+      btn.textContent = "Lưu câu trả lời";
+    } else if (inconsistent) {
+      note.textContent = "Các câu trả lời đang mâu thuẫn (CR ≥ 0,1). Nên xem lại 3 câu được đánh dấu cam trước khi lưu. Nếu đã cân nhắc kỹ, bạn vẫn có thể lưu.";
+      btn.textContent = "Vẫn lưu (CR ≥ 0,1)";
+    } else {
+      note.textContent = state.ahpSaved ? "Đã lưu lúc " + fmtDate(state.ahpSaved.saved_at) + ". Bạn có thể sửa và lưu lại trước hạn." : "Sẵn sàng lưu.";
+      btn.textContent = state.ahpSaved ? "Lưu lại" : "Lưu câu trả lời";
+    }
+    btn.disabled = !complete || !state.db || !state.uid || state.readOnly;
+  }
+  async function saveAhp() {
+    const status = $("ahp-status");
+    const btn = $("ahp-save");
+    const { w, cr } = computeAhp();
+    const body = {
+      answers: Object.fromEntries(PAIRS.map((p) => [pairKey(p), saaty(state.positions[pairKey(p)] || 0)])),
+      weights: Object.fromEntries(AXES.map((a, k) => [a.key, w[k]])),
+      cr,
+      saved_at: new Date().toISOString(),
+      version: 1,
+    };
+    btn.disabled = true;
+    status.textContent = "Đang lưu…";
+    try {
+      await write(state.db.doc("ahp/" + state.uid), body);
+      state.ahpSaved = body;
+      local.del("ahp-draft");
+      status.textContent = "Đã lưu. Cảm ơn bạn!";
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { state.readOnly = true; renderConnection(); }
+      status.textContent = explainError(e);
+    }
+    updateAhp();
+  }
+  function applyAhpDoc(doc) {
+    if (!doc || !doc.answers) return;
+    state.ahpSaved = doc;
+    for (const p of PAIRS) {
+      const v = doc.answers[pairKey(p)];
+      if (typeof v === "number" && v > 0) {
+        state.positions[pairKey(p)] = positionOf(v);
+        state.touched.add(pairKey(p));
+      }
+    }
+  }
+
+  // ---------- Rating ----------
+  function orderedSessions() {
+    const seed = state.uid || "";
+    return [...state.sessions].sort((a, b) => fnv(seed + a.id) - fnv(seed + b.id));
+  }
+  function renderRate() {
+    const root = $("rate-root");
+    root.textContent = "";
+    if (state.current) return renderSession(root);
+
+    root.append(h("h2", { text: "Chấm bộ mẫu" }));
+    if (!state.connected) {
+      root.append(h("div", { class: "banner warn", text: "Trang chưa kết nối được kho dữ liệu. Mở trang từ đường link claude.ai Kiệt gửi." }));
+      return;
+    }
+    if (!state.sessionsLoaded) {
+      root.append(h("p", { class: "muted", text: "Đang tải danh sách lượt làm bài…" }));
+      return;
+    }
+    if (!state.sessions.length) {
+      root.append(h("div", { class: "card" },
+        h("p", null, h("b", { text: "Chưa có dữ liệu, sẽ có khi đủ 40 lượt." })),
+        h("p", { class: "muted", style: "margin:0" },
+          "Trong lúc chờ, bạn có thể đọc tab Hướng dẫn chấm, trả lời phần So sánh trục, và làm khoảng 5 bài trên CodeProve để góp dữ liệu.")));
+      return;
+    }
+    const list = orderedSessions();
+    const done = list.filter((s) => state.mine.has(s.id)).length;
+    root.append(
+      h("p", null, `Bạn đã chấm ${done} / ${list.length} lượt. Thứ tự lượt được xáo trộn riêng cho từng người.`),
+      h("div", { class: "progress" }, h("div", { style: `width:${(done / list.length) * 100}%` })));
+    if (!state.uid) root.append(h("div", { class: "banner warn", text: "Không xác định được tài khoản của bạn nên chưa chấm được. Đăng nhập claude.ai rồi mở lại trang." }));
+    const next = list.find((s) => !state.mine.has(s.id));
+    root.append(h("div", { class: "btn-row", style: "margin:0 0 16px" }, next
+      ? h("button", { class: "btn", text: "Chấm lượt tiếp theo", disabled: !state.uid, onclick: () => openSession(next.id) })
+      : h("span", { class: "chip ok", text: "Bạn đã chấm xong tất cả. Cảm ơn bạn!" })));
+    root.append(h("div", { class: "session-list" }, list.map((s) => {
+      const rated = state.mine.has(s.id);
+      const ex = s.exercise || {};
+      return h("button", { class: "session-item", onclick: () => openSession(s.id) },
+        h("span", { class: "mono small muted", text: s.id }),
+        h("span", { class: "title", text: `${ex.code || ""} ${ex.title || ""}`.trim() || "(không rõ đề)" }),
+        h("span", { class: "chip", text: ex.kind === "debug" ? "debug" : "implement" }),
+        rated ? h("span", { class: "chip ok", text: "Đã chấm" }) : h("span", { class: "chip accent", text: "Chưa chấm" }));
+    })));
+  }
+  function openSession(id) {
+    state.current = id;
+    const saved = state.mine.get(id);
+    state.form = saved
+      ? { axes: Object.fromEntries(AXES.map((a) => [a.key, saved.axes && saved.axes[a.key] === null ? "na" : saved.axes && saved.axes[a.key]])), overall: saved.overall, note: saved.note || "" }
+      : local.get("draft:" + id) || { axes: {}, overall: null, note: "" };
+    state.openedAt = Date.now();
+    renderRate();
+    window.scrollTo(0, 0);
+  }
+  function closeSession() {
+    state.current = null;
+    state.form = null;
+    renderRate();
+    window.scrollTo(0, 0);
+  }
+
+  function block(title, ...kids) {
+    return h("div", { class: "card" }, h("h3", { style: "margin-top:0", text: title }), ...kids);
+  }
+  function renderSession(root) {
+    const s = state.sessions.find((x) => x.id === state.current);
+    if (!s) { state.current = null; return renderRate(); }
+    const ex = s.exercise || {};
+    const saved = state.mine.get(s.id);
+    const isDebug = ex.kind === "debug";
+
+    root.append(h("div", { class: "btn-row", style: "margin:0 0 8px" },
+      h("button", { class: "btn ghost", text: "← Danh sách", onclick: closeSession })));
+
+    const integrity = Object.entries(s.integrity || {}).filter(([, n]) => n > 0);
+    root.append(h("div", { class: "card" },
+      h("div", { class: "small muted mono", text: "Lượt " + s.id }),
+      h("h2", { style: "margin:4px 0 6px", text: `${ex.code || ""} ${ex.title || ""}`.trim() }),
+      h("div", { class: "btn-row", style: "margin:0 0 8px" },
+        h("span", { class: "chip accent", text: isDebug ? "Bài debug (có sẵn code lỗi)" : "Bài implement" }),
+        ex.level ? h("span", { class: "chip", text: "Cấp độ: " + ex.level }) : null,
+        s.duration_min != null ? h("span", { class: "chip", text: "Thời gian: " + fmtNum(s.duration_min) + " phút" }) : null,
+        integrity.map(([k, n]) => h("span", { class: "chip warn", text: `${INTEGRITY[k] || k}: ${n}` }))),
+      ex.summary ? h("p", { class: "pre-wrap", style: "margin:0", text: ex.summary }) : null));
+
+    const hyps = s.hypotheses || [];
+    root.append(block("Giả thuyết", hyps.length
+      ? h("ul", { class: "timeline" }, hyps.map((x) => h("li", null,
+          h("span", { class: "at", text: fmtMin(x.at_min) }),
+          x.text ? h("span", { class: "pre-wrap", text: x.text }) : h("i", { class: "muted", text: "(không lưu nội dung)" }),
+          " ",
+          x.correct === true ? h("span", { class: "chip ok", text: "hệ thống đánh giá: đúng" })
+            : x.correct === false ? h("span", { class: "chip warn", text: "hệ thống đánh giá: sai" }) : null)))
+      : h("p", { class: "muted", style: "margin:0", text: "Không ghi giả thuyết." })));
+
+    const prompts = s.prompts || [];
+    root.append(block("Hỏi Ciel", prompts.length
+      ? prompts.map((x, k) => h("div", { class: "qa" },
+          h("div", { class: "q" }, `Câu hỏi ${k + 1}: `, h("span", { class: "pre-wrap", style: "font-weight:400", text: x.prompt || "" })),
+          h("div", { class: "bubble" },
+            x.planted_bug ? h("div", { style: "margin-bottom:6px" }, h("span", { class: "chip warn", text: "Câu trả lời này có lỗi cài sẵn" })) : null,
+            h("div", { class: "pre-wrap small", text: x.reply || "" }))))
+      : h("p", { class: "muted", style: "margin:0", text: "Không hỏi Ciel lần nào (Prompting và Kiểm chứng: Không áp dụng)." })));
+
+    const runs = s.runs || [];
+    root.append(block("Chạy test", runs.length
+      ? h("ul", { class: "timeline" }, runs.map((x) => h("li", null,
+          h("span", { class: "at", text: fmtMin(x.at_min) }),
+          x.pass_ratio == null ? h("span", { class: "muted", text: "không rõ tỉ lệ pass" })
+            : h("span", { text: "pass " + Math.round(x.pass_ratio * 100) + "%" }),
+          " ",
+          x.starter ? h("span", { class: "chip", text: "code khởi đầu chưa sửa" }) : null)))
+      : h("p", { class: "muted", style: "margin:0", text: "Không chạy test lần nào." })));
+
+    const st = s.submit_tests;
+    root.append(block("Kết quả Submit", st
+      ? h("div", null,
+          h("p", null, h("b", { text: `Pass ${st.passed} / ${st.total} test` }),
+            st.hidden_total ? ` (test ẩn: ${st.hidden_passed} / ${st.hidden_total})` : ""),
+          (st.failed_categories || []).length
+            ? h("p", { class: "small" }, "Nhóm test ẩn bị fail: ", st.failed_categories.map((c) => h("span", { class: "chip warn", style: "margin-right:4px", text: c })))
+            : null,
+          (st.failures || []).length
+            ? h("details", null, h("summary", { class: "small", text: `Xem ${st.failures.length} test fail` }),
+                st.failures.map((f) => h("div", { class: "bubble small" },
+                  h("div", null, h("b", { text: f.description || "(không mô tả)" }), " ",
+                    f.hidden ? h("span", { class: "chip", text: "ẩn" }) : null, " ",
+                    f.category ? h("span", { class: "chip", text: f.category }) : null),
+                  f.input != null ? h("div", { class: "mono pre-wrap", text: "input: " + f.input }) : null,
+                  f.expected != null ? h("div", { class: "mono pre-wrap", text: "mong đợi: " + f.expected }) : null,
+                  f.actual != null ? h("div", { class: "mono pre-wrap", text: "thực tế: " + f.actual }) : null,
+                  f.error ? h("div", { class: "mono pre-wrap", text: "lỗi: " + f.error }) : null)))
+            : null)
+      : h("p", { class: "muted", style: "margin:0", text: "Lượt cũ, chưa có kết quả chạy toàn bộ test khi Submit." })));
+
+    root.append(block("Code cuối cùng", h("pre", null, h("code", { text: s.final_code || "" }))));
+
+    const eb = s.explain_back || [];
+    root.append(block("Explain-back", eb.length
+      ? eb.map((x) => h("div", { class: "qa" },
+          h("div", { class: "q pre-wrap", text: x.question || "" }),
+          h("div", { class: "bubble pre-wrap", text: x.answer || "(bỏ trống)" })))
+      : h("p", { class: "muted", style: "margin:0", text: "Không có câu trả lời." })));
+
+    root.append(renderForm(s, saved));
+  }
+
+  function renderForm(s, saved) {
+    const locked = Boolean(saved);
+    const f = state.form;
+    const form = h("form", { onsubmit: (e) => { e.preventDefault(); saveRating(s.id); } });
+    const fs = h("fieldset", { disabled: locked, style: "border:0;padding:0;margin:0" });
+    form.append(h("h2", { text: locked ? "Điểm bạn đã chấm" : "Chấm lượt này" }));
+    if (locked) {
+      form.append(h("div", { class: "banner ok",
+        text: "Đã lưu lúc " + fmtDate(saved.rated_at) + ". Lượt này đã khoá theo quy tắc 3 (mỗi lượt chỉ chấm một lần)." }));
+    }
+
+    const persist = () => { if (!locked) local.set("draft:" + s.id, state.form); };
+    const option = (name, value, lv, desc, ex, extraClass) => {
+      const input = h("input", { type: "radio", name, value: String(value) });
+      const current = name === "overall" ? f.overall : f.axes[name.slice(3)];
+      input.checked = current === value;
+      const label = h("label", { class: "opt" + (extraClass ? " " + extraClass : "") + (input.checked ? " checked" : "") },
+        input, h("span", { class: "lv", text: lv }), h("span", null, desc, ex ? h("span", { class: "ex", text: "Ví dụ: " + ex }) : null));
+      input.addEventListener("change", () => {
+        if (name === "overall") f.overall = value; else f.axes[name.slice(3)] = value;
+        for (const l of label.parentElement.querySelectorAll(".opt")) l.classList.toggle("checked", l.querySelector("input").checked);
+        persist();
+        updateSubmit();
+      });
+      return label;
+    };
+
+    for (const a of AXES) {
+      fs.append(h("fieldset", { class: "axis" },
+        h("legend", { text: a.name }),
+        h("p", { class: "basis", text: a.basis }),
+        a.levels.map(([desc, ex], lv) => option("ax-" + a.key, lv, String(lv), desc, ex)),
+        a.na ? option("ax-" + a.key, "na", "N/A", "Không áp dụng: " + a.na, "", "na") : null,
+        a.note ? h("p", { class: "small muted", style: "margin:6px 0 0", text: a.note }) : null));
+    }
+    fs.append(h("fieldset", { class: "axis" },
+      h("legend", { text: "Mức tổng thể" }),
+      h("p", { class: "basis", text: "Theo ấn tượng chung, không cần cộng điểm các trục." }),
+      OVERALL.map(([key, name, desc]) => option("overall", key, "", h("span", null, h("b", { text: name }), " · " + desc), ""))));
+
+    const note = h("textarea", { placeholder: "Ghi chú (không bắt buộc): lý do khi phân vân, dữ liệu lạ…" });
+    note.value = f.note || "";
+    note.addEventListener("input", () => { f.note = note.value; persist(); });
+    fs.append(h("fieldset", { class: "axis" }, h("legend", { text: "Ghi chú" }), note));
+    form.append(fs);
+
+    const status = h("span", { class: "small", id: "rate-status" });
+    const submit = h("button", { class: "btn", type: "submit", id: "rate-submit", text: "Lưu và khoá lượt này" });
+    const missing = h("span", { class: "small muted", id: "rate-missing" });
+    function updateSubmit() {
+      const left = AXES.filter((a) => f.axes[a.key] === undefined || f.axes[a.key] === null).map((a) => a.name);
+      if (!f.overall) left.push("Mức tổng thể");
+      submit.disabled = locked || left.length > 0 || !state.uid || state.readOnly;
+      missing.textContent = locked ? "" : left.length ? "Còn thiếu: " + left.join(", ") + "." : "Kiểm tra lại một lượt rồi lưu. Sau khi lưu sẽ không sửa được.";
+    }
+    const next = orderedSessions().find((x) => !state.mine.has(x.id) && x.id !== s.id);
+    form.append(h("div", { class: "btn-row" },
+      locked ? null : submit,
+      locked && next ? h("button", { class: "btn", type: "button", text: "Lượt tiếp theo", onclick: () => openSession(next.id) }) : null,
+      h("button", { class: "btn ghost", type: "button", text: "← Danh sách", onclick: closeSession }),
+      status));
+    form.append(h("p", { style: "margin-top:8px" }, missing));
+    updateSubmit();
+    return form;
+  }
+
+  async function saveRating(sid) {
+    const f = state.form;
+    const submit = $("rate-submit");
+    const status = $("rate-status");
+    if (state.mine.has(sid)) return;
+    const body = {
+      session_id: sid,
+      axes: Object.fromEntries(AXES.map((a) => [a.key, f.axes[a.key] === "na" ? null : f.axes[a.key]])),
+      overall: f.overall,
+      note: (f.note || "").trim(),
+      seconds: Math.round((Date.now() - state.openedAt) / 1000),
+      rated_at: new Date().toISOString(),
+      guide_version: GUIDE_VERSION,
+    };
+    submit.disabled = true;
+    status.textContent = "Đang lưu…";
+    try {
+      await write(state.db.doc(`ratings/${state.uid}/items/${sid}`), body);
+      state.mine.set(sid, body);
+      local.del("draft:" + sid);
+      try {
+        await write(state.db.doc("ratings/" + state.uid), { count: state.mine.size, updated_at: body.rated_at });
+      } catch { /* progress summary only; the rating itself is saved */ }
+      renderRate();
+      window.scrollTo(0, 0);
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { state.readOnly = true; renderConnection(); }
+      status.textContent = explainError(e);
+      submit.disabled = false;
+    }
+  }
+
+  // ---------- Data wiring ----------
+  function subscribe(query, onData, label) {
+    return query.onSnapshot(onData, (e) => {
+      console.warn("subscription failed", label, e && e.code);
+      if (e && e.code === "unavailable") setTimeout(() => subscribe(query, onData, label), 3000);
+    });
+  }
+
+  async function init() {
+    renderGuide();
+    const draft = local.get("ahp-draft");
+    if (draft && draft.positions) {
+      state.positions = draft.positions;
+      state.touched = new Set(draft.touched || []);
+    }
+    renderAhpStatic();
+    updateAhp();
+    renderDeadlines();
+    renderRate();
+    showTab(local.get("tab") || "intro");
+
+    const use = (name) => (window.claude && typeof window.claude.use === "function"
+      ? window.claude.use(name).catch(() => null) : Promise.resolve(null));
+    const [db, user] = await Promise.all([use("db"), use("user")]);
+    state.db = db;
+    state.user = user;
+    state.connected = Boolean(db);
+    const me = user ? await user.me() : null;
+    state.uid = me ? me.id : null;
+    state.isOwner = Boolean(me && me.isOwner);
+    renderAccount(me);
+    renderConnection();
+    if (!db) { updateAhp(); renderRate(); return; }
+
+    subscribe(db.doc("meta/config"), (snap) => { state.meta = snap.exists ? snap.data() : {}; renderDeadlines(); }, "meta");
+    subscribe(db.collection("sessions").limit(1000), (snap) => {
+      state.sessions = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      state.sessionsLoaded = true;
+      if (!state.current) renderRate();
+      if (state.isOwner) renderOwnerPanel();
+    }, "sessions");
+
+    if (state.uid) {
+      try {
+        const snap = await db.doc("ahp/" + state.uid).get();
+        if (snap.exists) applyAhpDoc(snap.data());
+      } catch (e) {
+        console.warn("ahp load failed", e && e.code);
+      }
+      subscribe(db.collection(`ratings/${state.uid}/items`).limit(1000), (snap) => {
+        state.mine = new Map(snap.docs.map((d) => [d.id, d.data()]));
+        state.mineLoaded = true;
+        if (!state.current) renderRate();
+      }, "ratings");
+    }
+    updateAhp();
+
+    if (state.isOwner) {
+      subscribe(db.collection("ahp").limit(100), (snap) => {
+        owner.ahp = new Map(snap.docs.map((d) => [d.id, d.data()]));
+        renderOwnerPanel();
+      }, "owner-ahp");
+      subscribe(db.collection("ratings").limit(100), (snap) => {
+        owner.ratings = new Map(snap.docs.map((d) => [d.id, d.data()]));
+        renderOwnerPanel();
+      }, "owner-ratings");
+      renderOwnerPanel();
+    }
+  }
+
+  init();
+})();
+</script>
