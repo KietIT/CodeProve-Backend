@@ -240,6 +240,7 @@ class Player:
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep
     now_ms: Callable[[], int] = lambda: int(time.time() * 1000)
     monotonic: Callable[[], float] = time.monotonic
+    token: str | None = None  # signed in beforehand when several scripts share a student
 
     code: str = ""
     snapshots: int = 0  # mirrors the server's snapshot count, so versions stay in order
@@ -250,7 +251,7 @@ class Player:
         record = self.state.session(self.script.id)
         if record["status"] in ("submitted", "scored"):
             return
-        token = await self.api.token_for(self.state.student(self.script.student))
+        token = self.token or await self.api.token_for(self.state.student(self.script.student))
         attempt = await self.api.call("POST", "/attempts", token, {"exercise_code": self.script.exercise})
         attempt_id = attempt["attempt_id"]
         record.update(status="in_progress", attempt_id=attempt_id, student=self.script.student,
@@ -384,14 +385,18 @@ def _jsonl_logger(directory: Path, script_id: str) -> Callable[[dict], None]:
 
 
 async def _run(api_url: str, scripts: list[Script], state: State, logs: Path, speed: float) -> list[str]:
-    for s in scripts:
-        state.student(s.student)  # create each password once, before concurrent sign-ups
     async with httpx.AsyncClient(base_url=api_url, timeout=120) as client:
         api = Api(client)
+        # Sign each student in once, one at a time: two scripts of one student signing up
+        # concurrently race on the unique email (the server answers 500, not 409).
+        tokens = {}
+        for n in sorted({s.student for s in scripts}):
+            tokens[n] = await api.token_for(state.student(n))
 
         async def one(script: Script) -> str | None:
             log = _jsonl_logger(logs, script.id)
-            player = Player(script, load_material(script.exercise), api, state, log, speed)
+            player = Player(script, load_material(script.exercise), api, state, log, speed,
+                            token=tokens[script.student])
             try:
                 await player.play()
             except Exception as exc:  # one broken session must not stop the others

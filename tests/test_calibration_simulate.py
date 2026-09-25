@@ -156,6 +156,16 @@ async def test_use_ai_code_adopts_only_a_reply_that_defines_the_entry_point(tmp_
     assert logs[1] == {"step": 2, "do": "use_ai_code", "adopted": False}
 
 
+async def test_a_signed_in_player_does_not_sign_up_again(tmp_path):
+    fake = FakeApi()
+    script = Script.model_validate({"id": "sim-01", "student": 3, "exercise": "CP-001",
+                                    "steps": [{"at": 1, "do": "submit"}]})
+    async with httpx.AsyncClient(transport=httpx.MockTransport(fake), base_url="http://api") as client:
+        await Player(script, load_material("CP-001"), Api(client, _nosleep), State(tmp_path / "s.json"),
+                     lambda _: None, speed=float("inf"), sleep=_nosleep, token="pre").play()
+    assert fake.calls[0][1] == "/api/attempts"
+
+
 async def test_a_submitted_script_is_not_replayed(tmp_path):
     steps = [{"at": 1, "do": "submit"}]
     await _play(tmp_path, steps)
