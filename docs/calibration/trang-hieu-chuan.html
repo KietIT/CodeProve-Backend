@@ -231,15 +231,14 @@ fieldset:disabled .opt { cursor: default; }
       <p>CodeProve tự chấm mỗi lượt làm bài theo 6 trục: Thấu hiểu, Giả thuyết, Prompting, Kiểm chứng, Testing và Debug. Hiện nhóm tự đặt trọng số cho từng trục, và chưa ai kiểm tra điểm máy chấm có khớp với đánh giá của con người không. Trang này thu hai thứ để trả lời hai câu hỏi đó:</p>
       <ul>
         <li><b>Ý kiến của từng người về tầm quan trọng của các trục</b> (phương pháp AHP). Từ đó tính ra trọng số có căn cứ, thay cho con số tự đặt.</li>
-        <li><b>Điểm chấm tay độc lập của 4 người trên khoảng 40 lượt làm bài thật</b> (bộ mẫu chuẩn). Từ đó biết 4 người có chấm giống nhau không (bảng mức điểm có rõ không), và máy chấm lệch ở trục nào.</li>
+        <li><b>Điểm chấm tay độc lập của 4 người trên 40 lượt làm bài mô phỏng</b> (bộ mẫu chuẩn). Từ đó biết 4 người có chấm giống nhau không (bảng mức điểm có rõ không), và máy chấm lệch ở trục nào.</li>
       </ul>
 
       <h2>Bạn cần làm gì</h2>
       <ol class="steps">
         <li><b>Đọc tab “Hướng dẫn chấm”.</b> <span class="time">Khoảng 15 phút.</span><br>Nhất là 4 quy tắc bắt buộc và khi nào chọn “Không áp dụng”.</li>
         <li><b>Trả lời 15 câu so sánh ở tab “So sánh trục (AHP)”.</b> <span class="time">10–15 phút, làm được ngay.</span><br>Mỗi câu hỏi trục nào quan trọng hơn và hơn bao nhiêu. Trang tự kiểm tra các câu trả lời có mâu thuẫn nhau không.</li>
-        <li><b>Làm khoảng 5 bài trên CodeProve như người dùng bình thường.</b> <span class="time">Khoảng 1 giờ.</span><br>Nhớ Submit và trả lời câu hỏi giải thích ở cuối. Các lượt này góp vào bộ mẫu cùng với bài của các bạn cùng lớp.</li>
-        <li><b>Chấm tay từng lượt ở tab “Chấm bộ mẫu”</b> khi Kiệt báo đã đủ dữ liệu. <span class="time">4–6 phút mỗi lượt, chia 4–5 buổi.</span><br>Chấm một mình, không bàn với ai cho tới khi cả nhóm chấm xong.</li>
+        <li><b>Chấm tay từng lượt ở tab “Chấm bộ mẫu”</b> khi 40 lượt đã có trên trang. <span class="time">4–6 phút mỗi lượt, chia 4–5 buổi.</span><br>Chấm một mình, không bàn với ai cho tới khi cả nhóm chấm xong.</li>
       </ol>
 
       <h2>Thời hạn</h2>
@@ -247,7 +246,7 @@ fieldset:disabled .opt { cursor: default; }
 
       <h2>Dữ liệu và quyền riêng tư</h2>
       <ul>
-        <li>Lượt làm bài đã được ẩn danh trước khi đưa lên đây: không có tên, email hay thời điểm làm bài; email và số điện thoại lỡ gõ vào bài đã bị xoá. Nếu vẫn thấy thông tin cá nhân lọt vào, báo Kiệt để xoá lượt đó.</li>
+        <li>Bộ mẫu gồm 40 lượt làm bài mô phỏng: Claude viết kịch bản cho 20 “học sinh” (mỗi bạn 2 bài, đủ mọi mức từ yếu tới rất tốt) và chạy chúng qua hệ thống thật, nên Ciel, test, câu hỏi explain-back và điểm máy chấm đều là kết quả thật. Bạn không được biết kịch bản dự kiến lượt nào ở mức nào: cứ chấm đúng những gì lượt làm bài thể hiện. Không có dữ liệu của người dùng thật.</li>
         <li>Điểm của máy chấm <b>không</b> hiển thị ở đây, để bạn chấm mà không bị ảnh hưởng.</li>
         <li>Câu trả lời AHP và điểm bạn chấm: các thành viên khác không xem được. Chỉ Kiệt (chủ trang) đọc được, và chỉ đọc để phân tích (bằng Claude) sau khi cả nhóm đã xong.</li>
         <li>Đây là trang riêng tư trên claude.ai; chỉ người được Kiệt chia sẻ mới mở được.</li>
@@ -284,7 +283,8 @@ fieldset:disabled .opt { cursor: default; }
     <!-- Guide -->
     <section id="tab-guide" hidden>
       <h2>Mình đang làm gì và để làm gì?</h2>
-      <p>Bộ mẫu chuẩn là khoảng 40 lượt làm bài thật, được <b>4 người chấm tay độc lập</b>. Sau đó so sánh:</p>
+      <p>Bộ mẫu chuẩn là 40 lượt làm bài mô phỏng: Claude viết kịch bản cho 20 “học sinh” (mỗi bạn 2 bài, đủ mọi mức từ yếu tới rất tốt) và chạy chúng qua hệ thống thật, nên Ciel, test, câu hỏi explain-back và điểm máy chấm đều là kết quả thật. Bạn không được biết kịch bản dự kiến lượt nào ở mức nào: cứ chấm đúng những gì lượt làm bài thể hiện.</p>
+      <p>Mỗi lượt được <b>4 người chấm tay độc lập</b>. Sau đó so sánh:</p>
       <ol>
         <li><b>4 người có chấm giống nhau không?</b> Nếu không, bảng mô tả mức điểm bên dưới đang mơ hồ, phải sửa.</li>
         <li><b>Máy chấm có giống người không?</b> Nếu không, trục nào lệch thì sửa cách máy chấm trục đó.</li>
@@ -324,7 +324,7 @@ fieldset:disabled .opt { cursor: default; }
         <li>Mỗi lượt mất khoảng <b>4–6 phút</b>. 40 lượt nên chia thành <b>4–5 buổi</b>, mỗi buổi khoảng 45 phút; chấm liền mạch lâu quá dễ mệt và chấm ẩu.</li>
         <li>Phân vân giữa hai mức thì <b>chọn mức thấp hơn</b>, và ghi lý do vào ô ghi chú.</li>
         <li>Thấy dữ liệu lạ (lượt làm bài trống, code không liên quan đề) thì vẫn chấm, và ghi chú lại.</li>
-        <li>Thấy <b>thông tin cá nhân</b> lọt vào (tên, trường, mạng xã hội) thì báo Kiệt để xoá lượt đó.</li>
+        <li>Thấy lượt nào hiển thị lỗi (thiếu dữ liệu, chữ bị cắt) thì vẫn chấm và ghi chú lại.</li>
       </ul>
     </section>
   </main>
@@ -830,7 +830,7 @@ fieldset:disabled .opt { cursor: default; }
       root.append(h("div", { class: "card" },
         h("p", null, h("b", { text: "Chưa có dữ liệu, sẽ có khi đủ 40 lượt." })),
         h("p", { class: "muted", style: "margin:0" },
-          "Trong lúc chờ, bạn có thể đọc tab Hướng dẫn chấm, trả lời phần So sánh trục, và làm khoảng 5 bài trên CodeProve để góp dữ liệu.")));
+          "Trong lúc chờ, bạn có thể đọc tab Hướng dẫn chấm và trả lời phần So sánh trục.")));
       return;
     }
     const list = orderedSessions();

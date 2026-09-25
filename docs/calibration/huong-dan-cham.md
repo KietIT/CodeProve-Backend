@@ -6,7 +6,9 @@ Dành cho 4 thành viên: Kiệt, Trung, Minh, Phát. Đọc hết trang này tr
 
 CodeProve tự chấm mỗi lượt làm bài theo 6 trục (Thấu hiểu, Giả thuyết, Prompting, Kiểm chứng, Testing, Debug). Nhóm chưa từng kiểm tra xem **điểm máy chấm có khớp với đánh giá của con người không**.
 
-Bộ mẫu chuẩn là khoảng 40 lượt làm bài thật, được **4 người chấm tay độc lập**. Sau đó so sánh:
+Bộ mẫu chuẩn là 40 lượt làm bài mô phỏng: Claude viết kịch bản cho 20 "học sinh" (mỗi bạn 2 bài, đủ mọi mức từ yếu tới rất tốt) và chạy chúng qua hệ thống thật, nên Ciel, test, câu hỏi explain-back và điểm máy chấm đều là kết quả thật. Bạn không được biết kịch bản dự kiến lượt nào ở mức nào: cứ chấm đúng những gì lượt làm bài thể hiện.
+
+Mỗi lượt được **4 người chấm tay độc lập**. Sau đó so sánh:
 
 1. **4 người có chấm giống nhau không?** Nếu không, bảng mô tả mức điểm bên dưới đang mơ hồ, phải sửa.
 2. **Máy chấm có giống người không?** Nếu không, trục nào lệch thì sửa cách máy chấm trục đó.
@@ -127,4 +129,4 @@ Sau 6 trục, chọn **một mức tổng thể** theo ấn tượng chung. Khô
 - Mỗi lượt mất khoảng **4–6 phút**. 40 lượt nên chia thành **4–5 buổi**, mỗi buổi khoảng 45 phút; chấm liền mạch lâu quá dễ mệt và chấm ẩu.
 - Phân vân giữa hai mức thì **chọn mức thấp hơn**, và ghi lý do vào ô ghi chú.
 - Thấy dữ liệu lạ (lượt làm bài trống, code không liên quan đề) thì vẫn chấm, và ghi chú lại.
-- Thấy **thông tin cá nhân** lọt vào (tên, trường, mạng xã hội) thì báo Kiệt để xoá lượt đó.
+- Thấy lượt nào hiển thị lỗi (thiếu dữ liệu, chữ bị cắt) thì vẫn chấm và ghi chú lại.

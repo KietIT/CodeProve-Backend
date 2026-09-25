@@ -1,5 +1,7 @@
 # Mời bạn cùng lớp làm bài (tin nhắn + nội dung xin phép)
 
+> **Tạm hoãn (2026-09-25):** bộ mẫu đợt 1 dùng 40 lượt mô phỏng (xem `docs/superpowers/plans/2026-09-25-p1-3b-simulated-golden-set.md`). Dùng thư này cho đợt lượt làm bài thật trước P1.7.
+
 Kiệt gửi tin nhắn bên dưới (qua Messenger/Zalo/nhóm lớp). Thay `<link CodeProve>` bằng địa chỉ website thật. Chỉ bắt đầu mời **sau khi** bản cập nhật "lưu nội dung giả thuyết" đã được deploy.
 
 ---
