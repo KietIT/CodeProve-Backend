@@ -1,6 +1,8 @@
 import json
 import math
 
+import pytest
+
 from app.features.calibration.ahp import AXES, PAIRS
 from app.features.calibration.analyze import OVERALL_LEVELS, analyse, load_dump, render
 
@@ -77,6 +79,31 @@ def test_partial_ratings_are_reported_not_fatal(tmp_path):
     assert result["missing"] == {"u_c": 1}
     text = render(result)
     assert "u_c" in text and "ICC" in text and "AHP" in text
+
+
+def test_rating_page_exports_are_read_and_the_latest_one_wins(tmp_path):
+    w = _dump(tmp_path)
+    export_dir = tmp_path / "exports"
+    old = {"format": "codeprove-calibration/v1", "rater": "Trung", "exported_at": "2026-09-26T10:00:00Z",
+           "ahp": None, "ratings": {"S1": _rating("S1", 0, "emerging")}}
+    new = {**old, "exported_at": "2026-09-27T10:00:00Z", "ahp": _ahp_doc(w),
+           "ratings": {s: _rating(s, lv, OVERALL_LEVELS[lv]) for s, lv in (("S1", 0), ("S2", 1))}}
+    export_dir.mkdir()
+    (export_dir / "trung-1.txt").write_text(json.dumps(old), encoding="utf-8")
+    # Pasted from Zalo with stray text around the JSON.
+    (export_dir / "trung-2.txt").write_text("Trung gửi:\n" + json.dumps(new) + "\n", encoding="utf-8")
+    data = load_dump(tmp_path)
+    assert set(data.ratings["Trung"]) == {"S1", "S2"}
+    assert "Trung" in data.ahp
+    result = analyse(data)
+    assert result["missing"]["Trung"] == 2
+
+
+def test_a_file_that_is_not_an_export_is_rejected(tmp_path):
+    (tmp_path / "exports").mkdir()
+    (tmp_path / "exports" / "x.json").write_text('{"hello": 1}', encoding="utf-8")
+    with pytest.raises(ValueError, match="x.json"):
+        load_dump(tmp_path)
 
 
 def test_disagreement_flags_an_unclear_axis(tmp_path):
