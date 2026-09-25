@@ -2,8 +2,9 @@
 
     python -m app.features.calibration.analyze --data DIR --out FILE.md
 
-DIR holds the rating page's database dumped with ArtifactData (`out_dir`):
-`ahp/<rater>.json` and `ratings/<rater>/items/<session>.json`, plus the
+DIR holds the ratings, either as the offline rating page's exports pasted into
+`exports/*.txt|json` (latest per rater wins), or as the shared-database page
+dumped with ArtifactData (`ahp/<rater>.json`, `ratings/<rater>/items/<id>.json`); plus the
 private export files `engine.json` and `keys.json`. For the simulated set it
 may also hold `state.json` (script id -> attempt id) and `profiles.json`
 (intended levels per script), which adds an intended-vs-human check.
@@ -52,6 +53,7 @@ def load_dump(directory: Path) -> Dump:
         items = {p.stem: _read(p) for p in sorted((rater_dir / "items").glob("*.json"))}
         if items:
             dump.ratings[rater_dir.name] = items
+    _load_exports(directory / "exports", dump)
     if (directory / "engine.json").exists():
         dump.engine = _read(directory / "engine.json")
     needed = ("keys.json", "state.json", "profiles.json")
@@ -63,6 +65,31 @@ def load_dump(directory: Path) -> Dump:
             if script in profiles:
                 dump.intended[session_id] = profiles[script]
     return dump
+
+
+EXPORT_FORMAT = "codeprove-calibration/v1"
+
+
+def _load_exports(directory: Path, dump: Dump) -> None:
+    """Rater exports pasted from the offline rating page (one or more per rater,
+    any file name; the most recent export of each rater wins)."""
+    latest: dict[str, dict] = {}
+    for path in sorted(p for p in directory.glob("*") if p.suffix in (".json", ".txt")):
+        text = path.read_text(encoding="utf-8").strip()
+        try:
+            data = json.loads(text[text.index("{"):text.rindex("}") + 1])
+        except ValueError:
+            raise ValueError(f"{path.name}: not a rating-page export") from None
+        if data.get("format") != EXPORT_FORMAT or not data.get("rater"):
+            raise ValueError(f"{path.name}: not a rating-page export")
+        rater = data["rater"]
+        if rater not in latest or data.get("exported_at", "") > latest[rater].get("exported_at", ""):
+            latest[rater] = data
+    for rater, data in latest.items():
+        if isinstance(data.get("ahp"), dict) and isinstance(data["ahp"].get("answers"), dict):
+            dump.ahp[rater] = data["ahp"]["answers"]
+        if data.get("ratings"):
+            dump.ratings[rater] = data["ratings"]
 
 
 def _ahp_section(answers_by_rater: dict[str, dict]) -> dict:
