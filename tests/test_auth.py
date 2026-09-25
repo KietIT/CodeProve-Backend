@@ -1,6 +1,9 @@
 import pytest
+from sqlalchemy import select
 
-from app.core.security import create_access_token
+from app.core.security import create_access_token, hash_password
+from app.models import User
+from app.schemas.auth import SignupIn
 
 pytestmark = pytest.mark.asyncio
 
@@ -96,6 +99,48 @@ async def test_duplicate_email_conflict(client):
         json={"full_name": "Amy Two", "email": "amy@test.io", "password": "password456"},
     )
     assert second.status_code == 409
+
+
+def _commit_rival_after_existence_check(db_session, monkeypatch, email: str) -> None:
+    """Simulate a concurrent signup: let create_user's existence SELECT run (and
+    find nothing), then commit a rival row with the same email before its insert."""
+    original_execute = db_session.execute
+
+    async def racing_execute(*args, **kwargs):
+        result = await original_execute(*args, **kwargs)
+        monkeypatch.setattr(db_session, "execute", original_execute)
+        db_session.add(User(full_name="Rival", email=email, password_hash=hash_password("rival-pass-123")))
+        await db_session.commit()
+        return result
+
+    monkeypatch.setattr(db_session, "execute", racing_execute)
+
+
+async def test_create_user_race_raises_email_taken(db_session, monkeypatch):
+    from app.features.auth import service
+
+    _commit_rival_after_existence_check(db_session, monkeypatch, "race@test.io")
+    data = SignupIn(full_name="Racer", email="race@test.io", password="password123")
+    with pytest.raises(ValueError, match="email_taken"):
+        await service.create_user(db_session, data)
+
+    # The session was rolled back and stays usable; only the rival row exists.
+    rows = (await db_session.execute(select(User).where(User.email == "race@test.io"))).scalars().all()
+    assert [u.full_name for u in rows] == ["Rival"]
+
+
+async def test_concurrent_duplicate_signup_returns_409(client, db_session, monkeypatch):
+    _commit_rival_after_existence_check(db_session, monkeypatch, "race2@test.io")
+    r = await client.post(
+        "/api/auth/signup",
+        json={"full_name": "Racer", "email": "race2@test.io", "password": "password123"},
+    )
+    assert r.status_code == 409
+    assert r.json()["detail"] == "Email already registered"
+
+    # The winning signup is intact and can still log in.
+    login = await client.post("/api/auth/login", json={"email": "race2@test.io", "password": "rival-pass-123"})
+    assert login.status_code == 200
 
 
 async def test_non_integer_token_subject_returns_401(client):

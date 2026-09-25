@@ -4,6 +4,7 @@ import secrets
 import httpx
 from jose import JWTError, jwt
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -23,7 +24,13 @@ async def create_user(db: AsyncSession, data: SignupIn) -> User:
         raise ValueError("email_taken")
     user = User(full_name=data.full_name, email=data.email, password_hash=hash_password(data.password))
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        # A concurrent signup with the same email committed between our
+        # existence check and this insert; the unique constraint catches it.
+        await db.rollback()
+        raise ValueError("email_taken") from exc
     await db.refresh(user)
     return user
 
