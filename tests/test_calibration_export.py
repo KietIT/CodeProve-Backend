@@ -58,7 +58,7 @@ async def _session(db, user, ex, *, answered=True, overall=62.5):
 async def test_sessions_are_anonymised_and_engine_scores_kept_apart(db_session):
     user, ex = await _user(db_session), await _exercise(db_session)
     await _session(db_session, user, ex)
-    sessions, engine = await build_sessions(db_session, salt="fixed")
+    sessions, engine, _ = await build_sessions(db_session, salt="fixed")
 
     assert len(sessions) == 1
     s = sessions[0]
@@ -84,9 +84,9 @@ async def test_sessions_are_anonymised_and_engine_scores_kept_apart(db_session):
 async def test_ids_are_stable_for_one_salt_and_unlinkable_across_salts(db_session):
     user, ex = await _user(db_session), await _exercise(db_session)
     await _session(db_session, user, ex)
-    a, _ = await build_sessions(db_session, salt="one")
-    b, _ = await build_sessions(db_session, salt="one")
-    c, _ = await build_sessions(db_session, salt="two")
+    a, _, _ = await build_sessions(db_session, salt="one")
+    b, _, _ = await build_sessions(db_session, salt="one")
+    c, _, _ = await build_sessions(db_session, salt="two")
     assert a[0]["id"] == b[0]["id"] != c[0]["id"]
 
 
@@ -97,8 +97,34 @@ async def test_per_user_cap_and_unanswered_sessions_are_skipped(db_session):
     for _ in range(4):
         await _session(db_session, heavy, ex)
     await _session(db_session, other, ex, answered=False)   # no explain-back: not ratable
-    sessions, _ = await build_sessions(db_session, per_user=3, salt="s")
+    sessions, _, _ = await build_sessions(db_session, per_user=3, salt="s")
     assert len(sessions) == 3
+
+
+async def test_email_filter_keeps_only_matching_accounts(db_session):
+    ex = await _exercise(db_session)
+    sim = await _user(db_session, email="calib.sim01@example.com", name="Sim 01")
+    real = await _user(db_session, email="bob@example.com", name="Bob")
+    await _session(db_session, sim, ex)
+    await _session(db_session, real, ex)
+    sessions, engine, keys = await build_sessions(db_session, salt="s", email_like="calib.sim%@example.com")
+    assert len(sessions) == 1 and set(engine) == set(keys) == {sessions[0]["id"]}
+
+
+async def test_duration_stops_at_submit_and_keys_stay_out_of_sessions(db_session):
+    from app.models import Event
+
+    user, ex = await _user(db_session), await _exercise(db_session)
+    at = await _session(db_session, user, ex)
+    base = 1_700_000_000_000
+    db_session.add(Event(attempt_id=at.id, type="SUBMIT", ts=base + 300_000, payload={}, integrity_flags=[]))
+    # Explain-back answered two hours later must not count as time spent solving.
+    db_session.add(Event(attempt_id=at.id, type="EXPLAIN_BACK", ts=base + 7_500_000, payload={}, integrity_flags=[]))
+    await db_session.commit()
+    sessions, _, keys = await build_sessions(db_session, salt="s")
+    assert sessions[0]["duration_min"] == 5.0
+    assert keys == {sessions[0]["id"]: at.id}
+    assert "attempt" not in json.dumps(sessions)
 
 
 def test_scrub_removes_emails_and_vietnamese_phone_numbers():
