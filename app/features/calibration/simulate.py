@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.features.content.schema import CONTENT_DIR, load_content_file
 from app.features.exercises.starters import student_starter
+from app.features.scoring.evidence import code_blocks
 from app.seed.exercises_seed import EXERCISES
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,6 @@ logger = logging.getLogger(__name__)
 EMAIL = "calib.sim{:02d}@example.com"
 _MUTANT_REF = re.compile(r"^mutant:(\d+)$")
 _ENTRY = re.compile(r"^(?:def|class)\s+([A-Za-z_]\w*)", re.MULTILINE)
-_CODE_BLOCK = re.compile(r"```[\w+-]*\n(.*?)```", re.DOTALL)
 _RATE_LIMIT_RETRIES = 4
 
 
@@ -142,7 +142,7 @@ def load_scripts(directory: Path) -> list[Script]:
 
 def ai_code(reply: str, entry: str) -> str | None:
     """The largest code block of a Ciel reply that defines the exercise's entry point."""
-    blocks = [b.strip("\n") for b in _CODE_BLOCK.findall(reply or "")]
+    blocks = code_blocks(reply)
     usable = [b for b in blocks if entry and re.search(rf"^\s*(?:def|class)\s+{re.escape(entry)}\b", b, re.MULTILINE)]
     return max(usable, key=len) if usable else None
 
