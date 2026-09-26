@@ -88,6 +88,16 @@ def suite_passed(ev: Evidence) -> bool:
     return bool(suite and suite.get("total") and suite.get("passed") == suite.get("total"))
 
 
+def solved(ev: Evidence) -> bool:
+    """The whole suite passed at submit; sessions from before the suite ran at
+    submit (P1.2) fall back to the student's last run of their own code."""
+    suite = ev.submit_suite
+    if suite and suite.get("total"):
+        return suite_passed(ev)
+    runs = _real_runs(ev)
+    return bool(runs) and _run_ratio(runs[-1]) == 1.0
+
+
 def _pasted_lines(ev: Evidence, reply: Reply, block: str) -> set[str]:
     """The block's new lines that landed in the code after the reply (empty = not pasted)."""
     before = set(code_lines(ev.code_at(reply.at_ms) or ""))
@@ -116,7 +126,7 @@ def verification(ev: Evidence) -> Indicator:
         return Indicator(None, reason="no_ai_code")
     verdict = _latest_judge(ev, "prompts") or {}
     questioned = list(verdict.get("questions_ai_code") or [])
-    passed = suite_passed(ev)
+    passed = solved(ev)
     final = set(code_lines(ev.final_code))
     outcomes = []
     for i, reply in code_replies:
@@ -182,7 +192,7 @@ def debugging(ev: Evidence) -> Indicator:
     if ev.exercise_kind != "debug" and fails == 0:
         return Indicator(None, reason="no_failure")
     suite = ev.submit_suite
-    fixed = suite_passed(ev) if suite and suite.get("total") else any(_run_ratio(r) == 1.0 for r in _real_runs(ev))
+    fixed = solved(ev)
     quote = f"{fails} failing run(s)"
     if not fixed:
         visible_ok = bool(suite) and "visibleTotal" in suite and suite.get("visiblePassed") == suite.get("visibleTotal")
