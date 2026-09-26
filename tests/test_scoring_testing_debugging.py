@@ -82,6 +82,11 @@ def test_an_implement_failure_never_fixed_is_level_0():
     assert debugging(ev(run(2, 0.0), run(3, 0.0), run(4, 0.5), suite(1, 8, 0))).level == 0
 
 
+def test_without_a_submit_suite_the_last_run_decides_the_fix():
+    assert debugging(ev(run(2, 0.5), run(4, 1.0))).level == 3
+    assert debugging(ev(run(2, 0.5), run(3, 1.0), run(4, 0.5))).level == 0  # broke it again before submit
+
+
 def test_starter_runs_are_not_failures():
     out = debugging(ev(run(1, 0.0, starter=True), run(2, 0.0, starter=True), run(4, 1.0), suite(7, 7, 2),
                        kind="debug"))

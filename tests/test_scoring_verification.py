@@ -85,6 +85,18 @@ def test_lines_the_student_already_had_are_not_pasting():
     assert out.level == 2 and out.reason == "not_used"
 
 
+def test_sessions_without_a_submit_suite_use_the_last_run():
+    # Before P1.2 there was no full suite at submit (attempts 44 / 46 in the production dry run
+    # dropped to 0 because "no suite" was read as "failing").
+    ev = evidence([reply(1, AI_TWO_SUM)], [snap(0, STARTER, 1), snap(2, AI_TWO_SUM, 2)], passed=None)
+    ev.events.append({"type": "RUN", "ts": 3 * MIN, "integrity_flags": [],
+                      "payload": {"passed": True, "passRatio": 1.0, "isStarter": False}})
+    assert verification(ev).level == 1
+    ev.events.append({"type": "RUN", "ts": 4 * MIN, "integrity_flags": [],
+                      "payload": {"passed": False, "passRatio": 0.5, "isStarter": False}})
+    assert verification(ev).level == 0
+
+
 def test_the_worst_handled_reply_counts():
     own = "def two_sum(nums, target):\n    return []"
     snaps = [snap(0, STARTER, 1), snap(2, AI_TWO_SUM, 2)]
