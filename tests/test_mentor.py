@@ -18,7 +18,7 @@ class FakeClient:
             "code_loc": 2,
         }
 
-    async def judge(self, system, user):
+    async def judge(self, system, user, max_tokens=300):
         return {"correct": True, "note": "hash map approach is right"}
 
 
@@ -109,8 +109,9 @@ async def test_hypothesis_records_event(client, db_session, auth_headers):
     events = await _events(db_session, aid)
     hyp = next(e for e in events if e.type == "HYPOTHESIS")
     # The text is kept so human raters (golden set) can judge the hypothesis itself.
+    # The fake judge gives no rubric level, so the level stays unrated (None).
     assert hyp.payload == {"proposedBy": "user", "correct": True, "text": "use a hash map",
-                           "note": "hash map approach is right"}
+                           "note": "hash map approach is right", "level": None, "levelEvidence": ""}
 
 
 async def test_exercise_context_includes_problem_and_code():

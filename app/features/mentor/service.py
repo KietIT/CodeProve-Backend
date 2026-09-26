@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service as attempts_service
 from app.features.mentor.client import get_mentor_client
-from app.features.mentor.prompts import HYPOTHESIS_JUDGE_SYSTEM
+from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
 from app.models import Attempt, Event, Exercise, PromptLog
 
 _PRIMING = (
@@ -111,16 +111,13 @@ async def judge_hypothesis(db: AsyncSession, attempt: Attempt, text: str) -> dic
     ex = (
         await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))
     ).scalar_one()
-    verdict = await get_mentor_client().judge(
-        HYPOTHESIS_JUDGE_SYSTEM, f"Problem: {ex.summary}\nStudent hypothesis: {text}"
-    )
-    correct = bool(verdict.get("correct", False))
-    note = verdict.get("note", "")
-    # Keep the text itself (capped): human raters and later rubric judges need to
-    # read the hypothesis, not just the verdict.
+    verdict = await judge_hypothesis_text(get_mentor_client(), ex.summary, text)
+    # Keep the text itself (capped): human raters and the rubric read the
+    # hypothesis, not just the verdict. `level` feeds rubric v2 (None = unrated).
     await attempts_service.add_event(
         db, attempt.id, "HYPOTHESIS",
-        {"proposedBy": "user", "correct": correct, "text": text[:2000], "note": note},
+        {"proposedBy": "user", "correct": verdict["correct"], "text": text[:2000], "note": verdict["note"],
+         "level": verdict["level"], "levelEvidence": verdict["evidence"]},
     )
     await db.commit()
-    return {"correct": correct, "note": note}
+    return {"correct": verdict["correct"], "note": verdict["note"]}

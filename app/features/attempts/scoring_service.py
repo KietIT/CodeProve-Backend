@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service as attempts_service
 from app.features.mentor.client import get_mentor_client
-from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM, EXPLAIN_SCORE_SYSTEM
+from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
 from app.features.scoring.engine import score_attempt
 from app.features.scoring.features import AxisFeatures
-from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, VerificationAnswer
+from app.features.scoring.judges import judge_explain, judge_prompts
+from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, VerificationAnswer
 
 _AXIS_LABELS = {
     "understanding": "Understanding",
@@ -176,29 +177,41 @@ async def generate_questions(db: AsyncSession, attempt: Attempt, locale: str = "
     return questions[:2]
 
 
+async def _judge_prompts(db: AsyncSession, attempt: Attempt, problem: str, client) -> None:
+    """Rate every prompt sent to Ciel in one call and store the verdicts (rubric v2)."""
+    prompts = (await db.execute(
+        select(PromptLog.prompt).where(PromptLog.attempt_id == attempt.id).order_by(PromptLog.id))).scalars().all()
+    if not prompts:
+        return
+    verdicts = await judge_prompts(client, problem, list(prompts))
+    await attempts_service.add_event(db, attempt.id, "JUDGE", {
+        "kind": "prompts", "model": client._model,
+        "levels": [v["level"] for v in verdicts], "evidence": [v["evidence"] for v in verdicts],
+        "asks_for_solution": [v["asks_for_solution"] for v in verdicts],
+        "questions_ai_code": [v["questions_ai_code"] for v in verdicts],
+    })
+
+
 async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: list[dict]) -> dict:
     client = get_mentor_client()
-    scores = []
+    verdicts = []
     for a in answers:
-        answer_text = (a.get("answer") or "").strip()
-        # Guard against non-answers ("no", "idk", one word) earning credit from a
-        # lenient judge: a trivially short reply cannot demonstrate understanding.
-        if len(answer_text) < 15 or len(answer_text.split()) < 4:
-            s = 0.0
-        else:
-            verdict = await client.judge(
-                EXPLAIN_SCORE_SYSTEM,
-                f"Question: {a['question']}\nAnswer: {a['answer']}",
-            )
-            s = float(verdict.get("score", 0))
-        s = max(0.0, min(20.0, s))
-        scores.append(s)
-        db.add(VerificationAnswer(attempt_id=attempt.id, question=a["question"], answer=a["answer"], score=s))
+        # Non-answers ("no", "idk", one word) score 0 without asking the judge.
+        verdict = await judge_explain(client, a["question"], a.get("answer") or "")
+        verdicts.append(verdict)
+        db.add(VerificationAnswer(attempt_id=attempt.id, question=a["question"], answer=a["answer"],
+                                  score=verdict["score"]))
 
+    scores = [v["score"] for v in verdicts]
     explain_score = sum(scores) / len(scores) if scores else 0.0
     await attempts_service.add_event(db, attempt.id, "EXPLAIN_BACK", {"explainScore": explain_score})
+    await attempts_service.add_event(db, attempt.id, "JUDGE", {
+        "kind": "explain", "model": client._model,
+        "levels": [v["level"] for v in verdicts], "evidence": [v["evidence"] for v in verdicts],
+    })
 
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    await _judge_prompts(db, attempt, ex.summary, client)
     events = await _events_as_dicts(db, attempt.id)
     result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)
     f = result["features"]

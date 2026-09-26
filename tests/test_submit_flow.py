@@ -12,7 +12,7 @@ class FakeClient:
     async def chat(self, *a, **k):
         return {"text": "", "prompt_tokens": 0, "completion_tokens": 0, "code_loc": 0}
 
-    async def judge(self, system, user):
+    async def judge(self, system, user, max_tokens=300):
         if "explain-back questions" in system or "questions" in system:
             return {"questions": ["Why is your approach O(n)?"]}
         return {"score": 16, "reason": "solid"}
@@ -75,6 +75,38 @@ async def test_submit_then_explain_back_produces_report(client, db_session, auth
     assert "timeline" not in rep.json()["feedback"]
     assert len(rep.json()["timeline"]) == 3
     assert rep.json()["timeline"] == body["timeline"]
+
+
+async def test_explain_back_stores_the_judges_verdicts(client, db_session, auth_headers, monkeypatch):
+    from sqlalchemy import select
+
+    from app.models import Event, PromptLog
+
+    class Judging(FakeClient):
+        async def judge(self, system, user, max_tokens=300):
+            if "rate each message" in system:
+                return {"prompts": [{"i": 1, "level": 2, "evidence": "why does n = 0 fail"}]}
+            if "explain-back" in system:
+                return {"questions": ["Why?"]}
+            return {"score": 14, "level": 2, "evidence": "hash map"}
+
+    fake = Judging()
+    monkeypatch.setattr(client_mod, "get_mentor_client", lambda: fake)
+    monkeypatch.setattr(scoring_service, "get_mentor_client", lambda: fake)
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    db_session.add(PromptLog(attempt_id=aid, prompt="why does n = 0 fail?", response="Think about range."))
+    await db_session.commit()
+    await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
+    eb = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json={
+        "answers": [{"question": "Why?", "answer": "Because I use a hash map for O(1) lookups."}]})
+    assert eb.status_code == 200
+
+    events = (await db_session.execute(select(Event).where(Event.attempt_id == aid, Event.type == "JUDGE"))).scalars()
+    judged = {e.payload["kind"]: e.payload for e in events}
+    assert judged["explain"]["levels"] == [2] and judged["explain"]["evidence"] == ["hash map"]
+    assert judged["prompts"]["levels"] == [2] and judged["prompts"]["model"] == "fake"
+    # v1 still scores from the 0-20 explain score.
+    assert eb.json()["axes"]["understanding"] > 0
 
 
 async def test_explain_back_twice_returns_409(client, db_session, auth_headers):

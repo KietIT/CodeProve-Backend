@@ -56,7 +56,7 @@ Overall: current weights (P1.3 decision) over the applicable axes; tier from ove
 - `judge_prompts(problem, prompts)` → one call, per prompt `{level, evidence, questions_ai_code: bool, asks_for_solution: bool}`.
 - `judge_hypothesis(problem, text)` → extends the existing hypothesis call (same request) with `level` and `evidence`; `correct` and `note` stay for the UI.
 - `judge_explain(question, answer)` → `{level, evidence}`; the 0–20 `score` stays derived (`round(level × 20 / 3)`) so `VerificationAnswer.score` and old clients keep working. The short-answer guard stays (level 0 without a call).
-- Each verdict is written as a `JUDGE` event `{kind, level(s), evidence, model}`; invalid JSON or a timeout → the indicator is N/A, never an invented level.
+- Explain-back and prompt verdicts are written as `JUDGE` events `{kind, levels, evidence, model}`; a hypothesis verdict goes into its own `HYPOTHESIS` event (`level`, `levelEvidence`) so each level keeps the time it was logged (the "before code" rule needs it). A missing or invalid level → the indicator is N/A, never an invented level. As built: the hypothesis and explain-back levels come from their existing v1 calls (extra JSON fields), so v2 adds one call per attempt (the prompts); a failed prompt call leaves prompts unrated instead of blocking scoring.
 Anchors: 2 examples per level taken from the rating guide (not from the golden-set sessions, so validation stays fair). Tests with a fake client: parsing, clamping to 0–3, failure → N/A, events written. Commit `feat(scoring): anchored LLM judges with stored verdicts`.
 
 ### Task 3: Understanding, Hypothesis, Prompting indicators

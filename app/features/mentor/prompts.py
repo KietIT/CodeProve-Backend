@@ -19,7 +19,19 @@ The user is expected to spot and fix it. Keep it a partial snippet, never the fu
 HYPOTHESIS_JUDGE_SYSTEM = """You judge whether a student's hypothesis/approach for a coding
 problem is essentially correct. Write the "note" in the SAME language the student used in
 their hypothesis (if the hypothesis is in Vietnamese, the note must be in Vietnamese).
-Reply ONLY with compact JSON: {"correct": true|false, "note": "<one short sentence>"}."""
+Also rate the hypothesis on this rubric ("level"):
+- 0 = empty, off-topic, or wrong approach.
+  e.g. "không biết", "just code it"
+- 1 = generic, does not point to a solution.
+  e.g. "dùng vòng lặp", "use a loop and check"
+- 2 = names a correct approach.
+  e.g. "dùng dict lưu số đã gặp để tra phần bù", "two pointers from both ends"
+- 3 = correct approach AND an edge case or the complexity.
+  e.g. "dict of seen values, O(n); careful with equal numbers like [3, 3]",
+  "sliding window with a set; empty string returns 0"
+"evidence" = the few words of the hypothesis that justify the level, quoted exactly.
+Reply ONLY with compact JSON:
+{"correct": true|false, "note": "<one short sentence>", "level": 0-3, "evidence": "<quote>"}."""
 
 EXPLAIN_QUESTION_SYSTEM = """You are assessing understanding. Given a coding problem and the
 student's final code, produce 1-2 short "explain-back" questions that probe whether they truly
@@ -32,7 +44,35 @@ Be STRICT and evidence-based:
 - 1-7 = vague or partially wrong.
 - 8-14 = correct but shallow.
 - 15-20 = accurate, specific, and shows genuine reasoning about the approach.
-When in doubt, score LOW. Reply ONLY with JSON: {"score": <0-20 number>, "reason": "<one short sentence>"}."""
+When in doubt, score LOW.
+Also rate the same answer on this rubric ("level"):
+- 0 = no answer, off-topic or wrong. e.g. "không biết", "because the code runs"
+- 1 = vague or only partly right. e.g. "vì cần cộng các số", "it checks the numbers"
+- 2 = correct but only says WHAT the code does, not WHY.
+  e.g. "vòng lặp chạy từ 1 tới n rồi cộng dồn"
+- 3 = correct and explains WHY, including an edge case or limit.
+  e.g. "range(1, n + 1) because range stops before its end; n = 0 skips the loop so it returns 0"
+"evidence" = the few words of the answer that justify the level, quoted exactly.
+Reply ONLY with JSON:
+{"score": <0-20 number>, "reason": "<one short sentence>", "level": 0-3, "evidence": "<quote>"}."""
+
+PROMPT_JUDGE_SYSTEM = """You rate each message a student sent to an AI tutor while solving a
+coding exercise. Rate every message on its own ("level"):
+- 0 = asks for the solution or is off-topic.
+  e.g. "viết code cho tôi", "give me the full answer", "cho đáp án"
+- 1 = short and vague, no context.
+  e.g. "sửa giúp", "sai chỗ nào?", "why wrong?"
+- 2 = specific, with context about the problem or their code.
+  e.g. "Vì sao test với n = 0 fail?", "Is my window update right when a character repeats?"
+- 3 = specific, says what they tried and what went wrong, and asks for guidance, not the answer.
+  e.g. "Mình dùng range(1, n) thì n = 3 ra 3 thay vì 6, mình đoán vòng lặp thiếu một số, đúng không?"
+Also flag each message:
+- "asks_for_solution": true if it asks for code or the answer to be written for them.
+- "questions_ai_code": true if it doubts or challenges code the tutor gave earlier.
+"evidence" = the few words of the message that justify the level, quoted exactly.
+Reply ONLY with JSON:
+{"prompts": [{"i": <message number>, "level": 0-3, "evidence": "<quote>",
+"asks_for_solution": true|false, "questions_ai_code": true|false}]}"""
 
 DAILY_CHALLENGE_SYSTEM = """You are generating content for CodeProve's "Daily Bug Hunt" - a
 Wordle-style daily game where developers spot a bug in a short Python solution. This is a
