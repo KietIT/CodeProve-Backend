@@ -88,6 +88,8 @@ Nếu có nhiều câu hỏi, chấm theo **mức đại diện cho đa số**, 
 | 2 | Chạy test sau khi nhận code AI |
 | 3 | Phát hiện và sửa lỗi trong code AI, hoặc đặt câu hỏi nghi ngờ đoạn code đó |
 
+Ciel đưa code nhưng người học **không dùng** đoạn đó (tự viết, tự kiểm tra): chấm **mức 2**; nếu còn đặt câu hỏi nghi ngờ đoạn code đó thì **mức 3**.
+
 ### Testing
 
 Dựa vào **các lần chạy test và kết quả Submit**.

@@ -28,7 +28,7 @@
 
 ## Indicators (the team reviews this table before Task 3)
 
-Open question for the team: **Ciel gave code but the student did not use it** (sim-06, sim-16, sim-20). The rating guide does not cover it and raters split (0–1 on sim-06, 2–3 on sim-16/20). Proposed: level 2 (the student did not trust unverified code), 3 if they questioned it. The guide gets the same rule.
+Decided 2026-09-26 (owner): **Ciel gave code but the student did not use it** (sim-06, sim-16, sim-20; raters had split 0–1 vs 2–3) is level 2, or 3 if the student questioned that code. The rating guide carries the same rule.
 
 
 Level meanings follow the rating guide. "LLM" = anchored judge, JSON `{level, evidence}` with a quoted span.
