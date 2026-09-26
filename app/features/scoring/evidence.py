@@ -22,7 +22,8 @@ def code_blocks(text: str | None) -> list[str]:
     return [b.strip("\n") for b in _CODE_BLOCK.findall(text or "")]
 
 
-def _code_lines(code: str) -> list[str]:
+def code_lines(code: str) -> list[str]:
+    """Code lines compared by content: indentation, blank lines and comment lines dropped."""
     lines = (line.strip() for line in code.replace("\r\n", "\n").split("\n"))
     return [line for line in lines if line and not line.startswith("#")]
 
@@ -30,10 +31,10 @@ def _code_lines(code: str) -> list[str]:
 def adopted(block: str, code: str) -> float:
     """Share of the block's code lines that appear in `code` (0.0-1.0),
     ignoring indentation, blank lines and comments."""
-    wanted = _code_lines(block)
+    wanted = code_lines(block)
     if not wanted:
         return 0.0
-    present = set(_code_lines(code))
+    present = set(code_lines(code))
     return round(sum(line in present for line in wanted) / len(wanted), 3)
 
 

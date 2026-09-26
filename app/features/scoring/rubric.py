@@ -8,7 +8,13 @@ so the engine and the human raters use the same scale.
 import statistics
 from dataclasses import dataclass
 
-from app.features.scoring.evidence import Evidence
+from app.features.scoring.evidence import Evidence, Reply, code_lines
+
+# A reply's code counts as pasted when this share of its NEW lines (lines the
+# student did not already have) shows up in a later snapshot.
+PASTE_SHARE = 0.7
+# Fewer new lines than this cannot be told apart from coincidence.
+MIN_NEW_LINES = 2
 
 
 @dataclass(frozen=True)
@@ -71,3 +77,56 @@ def prompting(ev: Evidence) -> Indicator:
     median = statistics.median(level for level, _ in rated)
     closest = min(rated, key=lambda r: abs(r[0] - median))
     return Indicator(median, closest[1])
+
+
+def suite_passed(ev: Evidence) -> bool:
+    suite = ev.submit_suite
+    return bool(suite and suite.get("total") and suite.get("passed") == suite.get("total"))
+
+
+def _pasted_lines(ev: Evidence, reply: Reply, block: str) -> set[str]:
+    """The block's new lines that landed in the code after the reply (empty = not pasted)."""
+    before = set(code_lines(ev.code_at(reply.at_ms) or ""))
+    new = [line for line in code_lines(block) if line not in before]
+    if len(new) < MIN_NEW_LINES:
+        return set()
+    for snapshot in ev.snapshots:
+        if snapshot.at_ms <= reply.at_ms:
+            continue
+        present = set(code_lines(snapshot.code))
+        hit = {line for line in new if line in present}
+        if len(hit) >= PASTE_SHARE * len(new):
+            return hit
+    return set()
+
+
+def verification(ev: Evidence) -> Indicator:
+    """How the student handled code Ciel gave them; the worst-handled reply counts.
+
+    Pasted unchanged: 0 if the suite fails at submit, 1 if it passes. Pasted then
+    changed: 2, or 3 if the suite passes. Not used: 2, or 3 if a later prompt
+    questioned that code. N/A when no reply contained a code block.
+    """
+    code_replies = [(i, r) for i, r in enumerate(ev.replies) if r.blocks]
+    if not code_replies:
+        return Indicator(None, reason="no_ai_code")
+    verdict = _latest_judge(ev, "prompts") or {}
+    questioned = list(verdict.get("questions_ai_code") or [])
+    passed = suite_passed(ev)
+    final = set(code_lines(ev.final_code))
+    outcomes = []
+    for i, reply in code_replies:
+        pasted = next((lines for block in reply.blocks if (lines := _pasted_lines(ev, reply, block))), set())
+        if pasted:
+            quote = sorted(pasted)[0]
+            if pasted <= final:
+                outcomes.append(Indicator(1 if passed else 0, quote, "pasted_unchanged"))
+            else:
+                outcomes.append(Indicator(3 if passed else 2, quote, "pasted_changed"))
+        elif any(questioned[i + 1:]):
+            later = next(j for j in range(i + 1, len(questioned)) if questioned[j])
+            outcomes.append(Indicator(3, ev.replies[later].prompt[:160] if later < len(ev.replies) else "",
+                                      "questioned"))
+        else:
+            outcomes.append(Indicator(2, reason="not_used"))
+    return min(outcomes, key=lambda o: o.level)
