@@ -8,7 +8,7 @@ The finding codes are the contract with the frontend (docs/api/feedback.md).
 """
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.features.scoring import rubric
 from app.features.scoring.engine import WEIGHTS
@@ -16,6 +16,16 @@ from app.features.scoring.evidence import Evidence
 
 MAX_RISKS = 3
 MAX_STRENGTHS = 2
+# The catalog of the P1.5 plan; every code has templates in both locales.
+FINDING_CODES = (
+    "explain_missing", "explain_shallow", "explain_strong",
+    "no_hypothesis", "hypothesis_vague", "hypothesis_after_code", "hypothesis_strong",
+    "asked_for_solution", "prompts_vague", "prompts_strong",
+    "pasted_ai_failing", "pasted_ai_unchecked", "adapted_ai_code", "questioned_ai_code",
+    "never_ran_tests", "submitted_failing", "hidden_edge_failed", "all_tests_passed",
+    "bug_not_fixed", "partial_fix", "trial_and_error", "quick_fix",
+    "integrity_flags",
+)
 _SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 # Integrity problems are said first: they undermine every other axis.
 _AXIS_RANK = {**WEIGHTS, "overall": 1.0}
@@ -28,6 +38,13 @@ class Finding(BaseModel):
     severity: Literal["high", "medium", "low"] | None = None
     params: dict = Field(default_factory=dict)
     evidence: str = ""
+
+    @field_validator("code")
+    @classmethod
+    def _known(cls, code: str) -> str:
+        if code not in FINDING_CODES:
+            raise ValueError(f"unknown finding code {code!r}")
+        return code
 
 
 def _risk(code: str, axis: str, severity: str, evidence: str = "", **params) -> Finding:
