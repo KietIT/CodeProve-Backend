@@ -130,3 +130,54 @@ def verification(ev: Evidence) -> Indicator:
         else:
             outcomes.append(Indicator(2, reason="not_used"))
     return min(outcomes, key=lambda o: o.level)
+
+
+def _run_ratio(run: dict) -> float:
+    payload = run["payload"]
+    if "passRatio" in payload:
+        return float(payload["passRatio"])
+    return 1.0 if payload.get("passed") else 0.0
+
+
+def _real_runs(ev: Evidence) -> list[dict]:
+    """Runs of the student's own code: running the untouched starter proves nothing."""
+    return [r for r in ev.runs if not r["payload"].get("isStarter")]
+
+
+def testing(ev: Evidence) -> Indicator:
+    """0 never ran / submitted failing nearly all · 1 submitted with a visible test
+    failing · 2 visible pass, hidden fail · 3 the whole suite passes."""
+    suite = ev.submit_suite
+    ran = bool(ev.runs)
+    if suite and suite.get("total"):
+        passed, total = suite.get("passed", 0), suite["total"]
+        quote = f"{passed}/{total}"
+        if passed == total:
+            return Indicator(3, quote, "all_pass")
+        visible_ok = "visibleTotal" in suite and suite.get("visiblePassed") == suite.get("visibleTotal")
+        if not ran:
+            return Indicator(0, quote, "never_ran")
+        if visible_ok:
+            return Indicator(2, quote, "hidden_fail")
+        if passed / total < 0.5:
+            return Indicator(0, quote, "mostly_failing")
+        return Indicator(1, quote, "visible_fail")
+    # Before the full suite ran at submit (P1.2): only the visible tests are known.
+    if not ran:
+        return Indicator(0, reason="never_ran")
+    last = _run_ratio(ev.runs[-1])
+    return Indicator(2 if last == 1.0 else 1 if last > 0 else 0, f"last run {last:.0%}", "no_suite")
+
+
+def debugging(ev: Evidence) -> Indicator:
+    """Implement exercises: N/A without a real failing run. Debug exercises: always scored.
+    Not fixed at submit → 0; fixed after ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3."""
+    fails = sum(1 for r in _real_runs(ev) if _run_ratio(r) < 1.0)
+    if ev.exercise_kind != "debug" and fails == 0:
+        return Indicator(None, reason="no_failure")
+    suite = ev.submit_suite
+    fixed = suite_passed(ev) if suite and suite.get("total") else any(_run_ratio(r) == 1.0 for r in _real_runs(ev))
+    quote = f"{fails} failing run(s)"
+    if not fixed:
+        return Indicator(0, quote, "not_fixed")
+    return Indicator(3 if fails <= 1 else 2 if fails <= 3 else 1, quote, "fixed")
