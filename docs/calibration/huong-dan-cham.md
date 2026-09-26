@@ -110,9 +110,9 @@ Không có "Không áp dụng" cho trục này.
 
 | Mức | Mô tả |
 |---|---|
-| 0 | Không sửa được lỗi |
+| 0 | Không sửa được lỗi (còn test hiển thị fail khi Submit) |
 | 1 | Sửa được bằng cách thử-sai: chạy rất nhiều lần, thay đổi lung tung |
-| 2 | Sửa được sau vài lần thử có định hướng |
+| 2 | Sửa được sau vài lần thử có định hướng; **hoặc** sửa được lỗi thấy được (test hiển thị pass hết) nhưng còn sót trường hợp biên (test ẩn fail) |
 | 3 | Tìm đúng chỗ và sửa nhanh, có lý do rõ ràng (thể hiện qua giả thuyết, câu hỏi Ciel hoặc explain-back) |
 
 ## Mức tổng thể

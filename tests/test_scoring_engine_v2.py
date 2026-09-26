@@ -69,6 +69,6 @@ def test_debug_exercises_always_score_debugging():
     unfixed = session(kind="debug")
     for x in unfixed.events:
         if x["type"] == "SUBMIT_TESTS":
-            x["payload"] = {"passed": 4, "total": 7, "visiblePassed": 2, "visibleTotal": 2}
+            x["payload"] = {"passed": 3, "total": 7, "visiblePassed": 1, "visibleTotal": 2}
     result = score_attempt_v2(unfixed, explain_score=14)
     assert result["levels"]["debugging"] == 0 and result["axes"]["debugging"] == 0

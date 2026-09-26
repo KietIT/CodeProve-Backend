@@ -77,6 +77,8 @@ improper linear models").
 - [2] "Tests" tab: short explainer, structured form (type / input / expected / why), checklist, live validity check against the reference solution, mutation-score grading shown after submit, learning mode for fresher
 - [1] "Review AI code" mode for debug exercises: pick the buggy line, fix it, see the answer after submit. Detailed in "Debug exercise mode" below (the owner confirmed it on 2026-09-24 after testing showed debug exercises behave exactly like implement ones)
 - [2] New Ciel trap: served from the mutant bank, student must pick the line, outcome-based scoring, random 40–70% bug rate, Youden H − F, generic "AI can be wrong" note on every code reply, reveal after submit
+  - [+] Evidence from P1.3 (sim-02, `docs/calibration/results-2026-09-26.md`): today's planted bug is written by the LLM on the fly and can be harmless — the "trapped" reply's code passed every test. A trap must be a validated mutant (fails ≥ 1 test), so "caught it" is checkable.
+  - [+] Evidence from P1.3 (sim-02): asked point-blank, Ciel said it would not write the solution and then gave a nearly complete `two_sum`, which the student pasted and passed 8/8. The no-solution rule has to be enforced in code, not only in the prompt: e.g. withhold a reply whose code block defines the exercise's entry point and passes the visible tests, and replace it with guidance.
 - [1] Proper Debugging scoring for debug exercises (indicators below)
 
 ### Debug exercise mode (the 9 debug exercises: CP-004, 008, 012, 102, 106, 109, 203, 206, 208)

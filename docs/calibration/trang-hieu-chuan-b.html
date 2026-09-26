@@ -397,7 +397,7 @@ fieldset:disabled .opt { cursor: default; }
         ["Chạy test sau khi nhận code AI", ""],
         ["Phát hiện và sửa lỗi trong code AI, hoặc đặt câu hỏi nghi ngờ đoạn code đó", ""],
       ],
-      note: "",
+      note: "Ciel đưa code nhưng người học không dùng đoạn đó: mức 2; nếu còn đặt câu hỏi nghi ngờ đoạn code đó: mức 3.",
     },
     {
       key: "testing", name: "Testing", short: "Chạy test, pass cả test ẩn",
@@ -416,9 +416,9 @@ fieldset:disabled .opt { cursor: default; }
       basis: "Bài debug (có sẵn code lỗi): luôn chấm. Bài implement: chỉ chấm khi code từng chạy fail.",
       na: "Bài implement và code chưa từng chạy fail. Chạy code khởi đầu chưa sửa thì không tính là fail.",
       levels: [
-        ["Không sửa được lỗi", ""],
+        ["Không sửa được lỗi (còn test hiển thị fail khi Submit)", ""],
         ["Sửa được bằng cách thử-sai: chạy rất nhiều lần, thay đổi lung tung", ""],
-        ["Sửa được sau vài lần thử có định hướng", ""],
+        ["Sửa được sau vài lần thử có định hướng; hoặc sửa được lỗi thấy được (test hiển thị pass hết) nhưng còn sót trường hợp biên (test ẩn fail)", ""],
         ["Tìm đúng chỗ và sửa nhanh, có lý do rõ ràng (thể hiện qua giả thuyết, câu hỏi Ciel hoặc explain-back)", ""],
       ],
       note: "",
@@ -886,6 +886,21 @@ fieldset:disabled .opt { cursor: default; }
     root.append(renderForm(s, saved));
   }
 
+  // When "Không áp dụng" is allowed, following the rating guide (the same rules as
+  // engine v2): "only" = the session gave no chance to show the axis, "never" = it did.
+  function naRule(axis, s) {
+    if (axis === "prompting") return (s.prompts || []).length ? "never" : "only";
+    if (axis === "verification") {
+      return (s.prompts || []).some((p) => (p.reply || "").includes("```")) ? "never" : "only";
+    }
+    if (axis === "debugging") {
+      if ((s.exercise || {}).kind === "debug") return "never";
+      const failed = (s.runs || []).some((r) => !r.starter && r.pass_ratio != null && r.pass_ratio < 1);
+      return failed ? "never" : "only";
+    }
+    return null;
+  }
+
   function renderForm(s, saved) {
     const locked = Boolean(saved);
     const f = state.form;
@@ -912,12 +927,21 @@ fieldset:disabled .opt { cursor: default; }
       return label;
     };
     for (const a of AXES) {
+      // A locked rating is shown as it was saved, even if it broke a rule.
+      const rule = locked ? null : naRule(a.key, s);
+      // Also corrects a draft saved before these rules existed.
+      if (rule === "only") f.axes[a.key] = "na";
+      if (rule === "never" && f.axes[a.key] === "na") delete f.axes[a.key];
+      const ruleNote = rule === "only"
+        ? "Lượt này không có cơ hội thể hiện trục này, nên chỉ chọn được Không áp dụng."
+        : rule === "never" && a.na ? "Lượt này có cơ hội thể hiện trục này, nên không chọn Không áp dụng." : null;
       fs.append(h("fieldset", { class: "axis" },
         h("legend", { text: a.name }),
         h("p", { class: "basis", text: a.basis }),
-        a.levels.map(([desc, ex], lv) => option("ax-" + a.key, lv, String(lv), desc, ex)),
-        a.na ? option("ax-" + a.key, "na", "N/A", "Không áp dụng: " + a.na, "", "na") : null,
-        a.note ? h("p", { class: "small muted", style: "margin:6px 0 0", text: a.note }) : null));
+        rule === "only" ? null : a.levels.map(([desc, ex], lv) => option("ax-" + a.key, lv, String(lv), desc, ex)),
+        a.na && rule !== "never" ? option("ax-" + a.key, "na", "N/A", "Không áp dụng: " + a.na, "", "na") : null,
+        ruleNote ? h("p", { class: "small muted", style: "margin:6px 0 0", text: ruleNote }) : null,
+        a.note && rule !== "only" ? h("p", { class: "small muted", style: "margin:6px 0 0", text: a.note }) : null));
     }
     fs.append(h("fieldset", { class: "axis" },
       h("legend", { text: "Mức tổng thể" }),

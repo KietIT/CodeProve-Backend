@@ -58,10 +58,15 @@ def test_debug_exercises_are_never_not_applicable():
     assert out.level == 3  # fixed with no failing run at all
 
 
-def test_an_unfixed_debug_exercise_is_level_0_even_if_the_visible_tests_pass():
-    # sim-19 / sim-24 / sim-28: the buggy code passes the visible tests, the bug stays,
-    # v1 gave 20/20 because nothing ever failed.
+def test_visible_pass_with_a_hidden_failure_is_a_partial_fix():
+    # sim-19 / sim-20 / sim-37: the visible tests pass, an edge case still fails. v1 gave 20/20;
+    # the P1.3 raters gave 2-3, so it is level 2 (owner decision 2026-09-26).
     out = debugging(ev(run(2, 1.0, starter=True), run(4, 1.0), suite(4, 7, 2), kind="debug"))
+    assert out.level == 2 and out.reason == "partially_fixed"
+
+
+def test_an_unfixed_debug_exercise_with_a_visible_failure_is_level_0():
+    out = debugging(ev(run(2, 0.5), suite(3, 7, 1), kind="debug"))
     assert out.level == 0 and out.reason == "not_fixed"
 
 
