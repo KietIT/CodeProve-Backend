@@ -1,0 +1,27 @@
+{
+  "id": "sim-30",
+  "student": 10,
+  "exercise": "CP-110",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "duyệt từng cửa sổ rồi lấy max"
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "inline",
+      "code": "from collections import deque\n\ndef max_sliding_window(nums, k):\n    return [max(nums[i:i + k]) for i in range(len(nums) - k + 1)]"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "submit"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "sim-10",
+  "student": 9,
+  "exercise": "CP-008",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "add a check so it doesn't crash"
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "ask",
+      "text": "is my fix ok?",
+      "send_code": true
+    },
+    {
+      "at": 9.9,
+      "do": "submit"
+    }
+  ]
+}

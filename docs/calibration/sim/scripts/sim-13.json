@@ -1,0 +1,41 @@
+{
+  "id": "sim-13",
+  "student": 12,
+  "exercise": "CP-010",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.4,
+      "do": "hypothesis",
+      "text": "Kiểm tra i % 15 trước, rồi % 3, rồi % 5, vì 15 chia hết cho cả 3 và 5 nên nếu kiểm tra % 3 trước thì 15 thành Fizz. Số phải đổi sang chuỗi. n <= 0 thì trả list rỗng."
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "mutant:4"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "ask",
+      "text": "Mình đã đặt % 15 lên đầu nhưng fizzbuzz(5) lại ra 'Fizz' ở số 5. Mình nghĩ hai nhánh elif % 3 và % 5 đang bị đổi chỗ phần chuỗi in ra, đúng không? Bạn chỉ cần xác nhận hướng, mình tự sửa.",
+      "send_code": true
+    },
+    {
+      "at": 9.9,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

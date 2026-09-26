@@ -1,0 +1,26 @@
+{
+  "id": "sim-23",
+  "student": 3,
+  "exercise": "CP-106",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 2.2,
+      "do": "hypothesis",
+      "text": "Không nối chuỗi vào câu SQL nữa mà dùng tham số ? và truyền (name,) cho execute."
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "submit"
+    }
+  ]
+}

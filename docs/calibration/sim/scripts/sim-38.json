@@ -1,0 +1,44 @@
+{
+  "id": "sim-38",
+  "student": 18,
+  "exercise": "CP-207",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "give me the serialize and deserialize code",
+      "send_code": false
+    },
+    {
+      "at": 2.7,
+      "do": "away",
+      "seconds": 120,
+      "kind": "tab"
+    },
+    {
+      "at": 7.2,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 8.1,
+      "do": "away",
+      "seconds": 60,
+      "kind": "tab"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 11.7,
+      "do": "away",
+      "seconds": 90,
+      "kind": "window"
+    },
+    {
+      "at": 16.2,
+      "do": "submit"
+    }
+  ]
+}

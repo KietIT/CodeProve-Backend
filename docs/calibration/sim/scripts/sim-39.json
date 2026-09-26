@@ -1,0 +1,32 @@
+{
+  "id": "sim-39",
+  "student": 19,
+  "exercise": "CP-207",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "dùng đệ quy"
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "ask",
+      "text": "gợi ý cách test deserialize",
+      "send_code": false
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "sim-06",
+  "student": 6,
+  "exercise": "CP-004",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.4,
+      "do": "ask",
+      "text": "bai nay sai o dau",
+      "send_code": false
+    },
+    {
+      "at": 2.7,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 4.0,
+      "do": "run"
+    },
+    {
+      "at": 5.4,
+      "do": "ask",
+      "text": "van sai",
+      "send_code": false
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

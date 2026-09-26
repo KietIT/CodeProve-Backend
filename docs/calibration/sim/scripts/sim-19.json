@@ -1,0 +1,30 @@
+{
+  "id": "sim-19",
+  "student": 18,
+  "exercise": "CP-102",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "cache bị đầy"
+    },
+    {
+      "at": 3.2,
+      "do": "run"
+    },
+    {
+      "at": 6.3,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 7.2,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "submit"
+    }
+  ]
+}

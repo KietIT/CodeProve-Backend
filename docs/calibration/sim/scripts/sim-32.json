@@ -1,0 +1,41 @@
+{
+  "id": "sim-32",
+  "student": 12,
+  "exercise": "CP-202",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 2.7,
+      "do": "hypothesis",
+      "text": "Tìm nhị phân trên mảng ngắn hơn: chọn i phần tử từ a và j = half - i từ b sao cho max bên trái <= min bên phải. O(log(min(m, n))). Mảng rỗng thì dùng -inf / +inf ở biên; tổng chẵn lấy trung bình hai giá trị giữa."
+    },
+    {
+      "at": 9.0,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 9.9,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "ask",
+      "text": "find_median([1, 2], [3, 4]) ra 2 thay vì 2.5. Có phải do phép chia không?",
+      "send_code": true
+    },
+    {
+      "at": 16.2,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 17.1,
+      "do": "run"
+    },
+    {
+      "at": 19.8,
+      "do": "submit"
+    }
+  ]
+}

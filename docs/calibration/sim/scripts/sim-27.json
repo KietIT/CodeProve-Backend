@@ -1,0 +1,42 @@
+{
+  "id": "sim-27",
+  "student": 7,
+  "exercise": "CP-108",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "One Lock per Counter created in __init__, taken around the increment. A shared lock is essential: a new Lock() per call would never block. Also lock the read so value never sees a half-finished update."
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "I used one Lock per Counter and also lock the read in value. Is locking the getter necessary in CPython, or only for consistency across implementations? Please explain, no code.",
+      "send_code": true
+    },
+    {
+      "at": 11.7,
+      "do": "code",
+      "ref": "inline",
+      "code": "from threading import Lock\n\nclass Counter:\n    def __init__(self):\n        self._n = 0\n        self._lock = Lock()  # one shared lock per counter\n\n    def increment(self):\n        with self._lock:\n            self._n += 1\n\n    @property\n    def value(self):\n        with self._lock:\n            return self._n"
+    },
+    {
+      "at": 12.6,
+      "do": "run"
+    },
+    {
+      "at": 14.4,
+      "do": "submit"
+    }
+  ]
+}

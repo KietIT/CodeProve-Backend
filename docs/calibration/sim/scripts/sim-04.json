@@ -1,0 +1,41 @@
+{
+  "id": "sim-04",
+  "student": 4,
+  "exercise": "CP-003",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 2.2,
+      "do": "hypothesis",
+      "text": "Clean first: keep only alphanumeric characters, lower-cased, then compare the list with its reverse (or two pointers from both ends). O(n). Edge cases: empty string counts as a palindrome, punctuation and spaces must be ignored, digits must be kept."
+    },
+    {
+      "at": 6.3,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 7.2,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "ask",
+      "text": "Both visible tests pass, but they have no punctuation. For input like 'A man, a plan' my version may compare commas and spaces. Which cases should I add to check that I really ignore non-alphanumerics?",
+      "send_code": true
+    },
+    {
+      "at": 13.5,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 14.4,
+      "do": "run"
+    },
+    {
+      "at": 16.2,
+      "do": "submit"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "sim-11",
+  "student": 10,
+  "exercise": "CP-009",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "Dùng dict store đếm số request của từng client, nếu đã đủ limit thì trả False, không thì tăng bộ đếm."
+    },
+    {
+      "at": 3.6,
+      "do": "away",
+      "seconds": 90,
+      "kind": "tab"
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "away",
+      "seconds": 60,
+      "kind": "window"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

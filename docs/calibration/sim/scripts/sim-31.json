@@ -1,0 +1,33 @@
+{
+  "id": "sim-31",
+  "student": 11,
+  "exercise": "CP-201",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 2.7,
+      "do": "hypothesis",
+      "text": "INCR key, nếu là lần đầu (giá trị 1) thì EXPIRE key window. Trả về count <= limit."
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "inline",
+      "code": "def is_allowed(redis, key, limit, window):\n    count = redis.incr(key)\n    if count == 1:\n        redis.expire(key, window)\n    return count <= limit"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "ask",
+      "text": "race INCR EXPIRE la gi?",
+      "send_code": false
+    },
+    {
+      "at": 14.4,
+      "do": "submit"
+    }
+  ]
+}

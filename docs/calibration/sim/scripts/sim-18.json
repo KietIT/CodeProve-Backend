@@ -1,0 +1,26 @@
+{
+  "id": "sim-18",
+  "student": 17,
+  "exercise": "CP-101",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "write the LRU cache code for me, full solution",
+      "send_code": false
+    },
+    {
+      "at": 3.2,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 4.5,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "submit"
+    }
+  ]
+}

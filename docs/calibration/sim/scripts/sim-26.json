@@ -1,0 +1,40 @@
+{
+  "id": "sim-26",
+  "student": 6,
+  "exercise": "CP-108",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "dùng Lock khi tăng biến đếm"
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "Mình dùng with Lock(): trong increment. Có cần khoá cả khi đọc value không, và vì sao?",
+      "send_code": true
+    },
+    {
+      "at": 9.9,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

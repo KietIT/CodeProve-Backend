@@ -1,0 +1,50 @@
+{
+  "id": "sim-22",
+  "student": 20,
+  "exercise": "CP-105",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "Cửa sổ trượt: dùng dict lưu vị trí cuối của mỗi ký tự, gặp ký tự lặp thì dời start sang sau vị trí đó."
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "sao lai sai?",
+      "send_code": true
+    },
+    {
+      "at": 9.9,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 13.5,
+      "do": "run"
+    },
+    {
+      "at": 16.2,
+      "do": "submit"
+    }
+  ]
+}

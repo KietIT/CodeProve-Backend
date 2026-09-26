@@ -1,0 +1,41 @@
+{
+  "id": "sim-17",
+  "student": 16,
+  "exercise": "CP-101",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "Dùng OrderedDict: get thì move_to_end, put thì ghi rồi nếu vượt capacity thì popitem(last=False) để xoá phần tử lâu nhất. Cả hai O(1). Chú ý put một key đã có cũng phải làm mới thứ tự, và value 0 không được coi là thiếu."
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "ask",
+      "text": "Test thứ hai fail: sau khi put(3, 3) thì get(2) phải ra -1 nhưng cache của mình lại xoá key vừa thêm. Mình dùng popitem() lúc cache đầy, mình đoán nó xoá nhầm đầu, đúng không? Đừng đưa code, mình tự sửa.",
+      "send_code": true
+    },
+    {
+      "at": 14.4,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 15.3,
+      "do": "run"
+    },
+    {
+      "at": 18.0,
+      "do": "submit"
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "sim-01": [
+    "index_of lưu mỗi số đã duyệt kèm chỉ số của nó. Với số n ở vị trí i, phần bù là target - n; nếu phần bù đã có trong index_of thì cặp cần tìm là [index_of[target - n], i]. Tra dict là O(1) trung bình nên cả hàm chỉ duyệt mảng một lần, O(n) thời gian và O(n) bộ nhớ.",
+    "Để một phần tử không tự ghép với chính nó. Nếu thêm n vào trước rồi mới kiểm tra, với [3, 4] và target 6 thì 6 - 3 = 3 đã có (chính nó) nên trả sai [0, 0]. Kiểm tra trước thì lúc xét phần tử thứ hai của [3, 3] dict chỉ chứa số 3 đầu tiên, nên trả đúng [0, 1]; với nhiều số 0 và target 0 cũng vậy."
+  ],
+  "sim-02": [
+    "vì nó chạy được",
+    "ko biết"
+  ],
+  "sim-03": [
+    "Mình dùng list comprehension, chỉ giữ ký tự nào c.isalnum() là True, tức là chữ hoặc số, bỏ dấu cách và dấu câu.",
+    "Vì palindrome là đọc xuôi hay ngược đều giống nhau, nên đảo danh sách lại bằng [::-1] rồi so sánh, nếu bằng nhau thì là palindrome."
+  ],
+  "sim-04": [
+    "Put one pointer at the start and one at the end, skip characters that are not alphanumeric, compare the lower-cased characters, then move both inward until they meet. It is O(n) time like my cleaned-list version but O(1) extra space, because it never builds a second list. My version trades that memory for simpler code.",
+    "The definition ignores case, so 'A' and 'a' must count as the same character. Without lower() an input like 'Racecar' or 'A man, a plan, a canal: Panama' would compare 'R' with 'r' and return False even though it is a palindrome."
+  ],
+  "sim-05": [
+    "Vòng lặp bắt đầu từ 1 vì đề là tổng các số nguyên đầu tiên 1, 2, ..., n, và sửa lại cận trên thành n + 1 để lấy cả n.",
+    "total bắt đầu bằng 0, mỗi vòng cộng i vào total, i chạy từ 1 tới n, cuối cùng trả total."
+  ],
+  "sim-06": [
+    "để chạy",
+    "không biết"
+  ],
+  "sim-07": [
+    "I use lower() so the words are the same.",
+    "get gets the word count, it is useful for counting."
+  ],
+  "sim-08": [
+    "vì mình nghĩ bắt đầu từ 1 thì đúng hơn",
+    "chắc là O(n) vì có vòng lặp"
+  ],
+  "sim-09": [
+    "user.get(\"profile\") không lỗi khi thiếu khoá profile mà trả None, nhưng profile cũng có thể tồn tại mà giá trị là None. `or {}` đổi cả hai trường hợp đó (và mọi giá trị falsy) thành dict rỗng, nên dòng sau luôn gọi .get được. Nếu chỉ dùng user.get(\"profile\", {}) thì profile = None vẫn lỗi AttributeError.",
+    "user.get(\"profile\") trả None, `or {}` biến thành {}, rồi {}.get(\"name\", \"Unknown\") trả 'Unknown'. Không có chỗ nào truy cập trực tiếp bằng [] nên không có KeyError, kể cả khi profile có nhưng thiếu name."
+  ],
+  "sim-10": [
+    "Then profile becomes an empty dict so it doesn't crash.",
+    "It uses the profile dict so it should be ok."
+  ],
+  "sim-11": [
+    "count lấy từ store theo client_id, nếu count đã >= limit thì trả False, còn không thì lưu count + 1 lại vào store và trả True.",
+    "Nếu nhiều request cùng lúc thì có thể hai request cùng đọc count cũ rồi cùng ghi, nên có thể cho qua nhiều hơn limit, cần khoá hoặc thao tác nguyên tử."
+  ],
+  "sim-12": [
+    "để test",
+    "ko"
+  ],
+  "sim-13": [
+    "Vì 15 chia hết cho cả 3 và 5. Chuỗi if/elif dừng ở điều kiện đúng đầu tiên, nên nếu kiểm tra % 3 trước thì 15, 30, 45 sẽ rơi vào nhánh Fizz và không bao giờ tới FizzBuzz. Đặt % 15 lên đầu thì bội chung được xử lý trước, các số chỉ chia hết cho 3 hoặc cho 5 mới xuống các nhánh sau.",
+    "Nếu % 3 đứng trước % 15 thì mọi bội của 15 in 'Fizz'; nếu % 5 đứng trước thì in 'Buzz'. Còn đổi chỗ riêng hai nhánh % 3 và % 5 thì không sao, vì một số không phải bội của 15 không thể chia hết cho cả hai. Đó cũng là lỗi mình gặp lúc đầu: đổi nhầm phần chuỗi in ra nên số 5 thành Fizz."
+  ],
+  "sim-14": [
+    "không biết",
+    "set lưu số"
+  ],
+  "sim-15": [
+    "idk",
+    "no"
+  ],
+  "sim-16": [
+    "Để khoá lại khi tăng counter cho an toàn khi nhiều luồng.",
+    "Lock làm cho chỉ một luồng được chạy đoạn code đó nên không bị race."
+  ],
+  "sim-17": [
+    "OrderedDict vừa là hash map (tra key O(1)) vừa nhớ thứ tự chèn, nên dùng thứ tự đó làm thứ tự sử dụng: đầu là phần tử lâu nhất chưa dùng, cuối là mới nhất. move_to_end và popitem(last=False) đều O(1), nên không cần tự viết danh sách liên kết đôi + dict như cách kinh điển. Lúc đầu mình dùng popitem() không tham số là xoá nhầm đầu mới nhất.",
+    "get: kiểm tra key trong dict O(1), rồi move_to_end O(1) để đánh dấu vừa dùng. put: gán giá trị O(1), nếu key đã có thì cũng move_to_end để làm mới; nếu vượt capacity thì popitem(last=False) xoá phần tử lâu nhất O(1). Không có bước nào duyệt cả cache. Value 0 vẫn đúng vì mình kiểm tra `key not in self.data` chứ không kiểm tra giá trị."
+  ],
+  "sim-18": [
+    "the AI gave it",
+    "not sure"
+  ],
+  "sim-19": [
+    "Nó dùng _cache.get(key) để xem có chưa.",
+    "Vì OrderedDict có thứ tự."
+  ],
+  "sim-20": [
+    "When a new key pushes the size above MAX_ENTRIES, the OrderedDict drops one entry so the cache stays bounded. It should drop the least recently used one, the first item, because hits are moved to the end. My version calls popitem() with no argument, which removes the last item, the key I just inserted, so the value I return right after is already gone. It should be popitem(last=False).",
+    "Then the order would only reflect insertion, not use, so it becomes FIFO: a key read constantly would still be evicted once it becomes the oldest insert. The cache would stay bounded but hot keys would be recomputed, losing the point of LRU."
+  ],
+  "sim-21": [
+    "không biết",
+    "ko hiểu"
+  ],
+  "sim-22": [
+    "start là đầu cửa sổ. Khi gặp ký tự c đã có trong seen thì start = seen[c] + 1, tức là nhảy qua sau vị trí lần trước của c.",
+    "Mỗi bước tính i - start + 1 là độ dài cửa sổ hiện tại rồi lấy max với best."
+  ],
+  "sim-23": [
+    "Dấu ? là tham số, giá trị name được truyền riêng cho execute chứ không nối vào chuỗi SQL.",
+    "Vì execute nhận tuple (name,) là danh sách tham số, sqlite3 sẽ tự xử lý giá trị đó."
+  ],
+  "sim-24": [
+    "Because f-strings put the text directly in the query.",
+    "Maybe escape the quotes or use something from the library."
+  ],
+  "sim-25": [
+    "Với đồ thị có hướng, chu trình tồn tại khi và chỉ khi DFS gặp một cạnh quay lại nút còn đang nằm trên ngăn xếp đệ quy (back edge). DFS giữ đúng thông tin đó một cách tự nhiên, O(V + E). BFS thì phải đếm bậc vào (Kahn); dùng được nhưng mình thấy DFS gọn hơn cho bài chỉ cần trả True/False.",
+    "state[node] = 0 nghĩa là đang thăm (còn trên đường đi hiện tại), = 1 là đã thăm xong. Gặp lại nút trạng thái 0 là có chu trình; gặp nút 1 thì bỏ qua, vì nó chỉ được tới bằng đường khác như đồ thị kim cương. Lúc đầu mình quên đặt state = 1 khi xong nên kim cương bị báo nhầm là chu trình. Duyệt từ mọi nút để không bỏ sót thành phần khác."
+  ],
+  "sim-26": [
+    "Dùng Lock để khi tăng _n thì không có luồng khác cùng tăng, và khi đọc value thì không đọc giá trị đang sửa dở.",
+    "Mình viết with Lock() nên mỗi lần gọi là một lock riêng, như vậy các luồng không chờ nhau. Phải tạo một lock trong __init__ rồi dùng chung."
+  ],
+  "sim-27": [
+    "counter += 1 is really read, add, write. Without a lock two threads can read the same old value and both write old + 1, losing an increment. The lock, created once per Counter and shared, makes that read-modify-write a critical section, so increments are serialised and eight threads doing 500 each always end at 4000.",
+    "The GIL does not make += atomic: a thread switch can happen between the load and the store, so under contention the final count comes out lower than expected, and the error changes from run to run. That is also why a new Lock() per call is wrong: each thread gets its own lock and nobody ever waits."
+  ],
+  "sim-28": [
+    "Vì đề yêu cầu ném RuntimeError khi đọc file lỗi.",
+    "Đưa nội dung lỗi gốc vào thông báo, như mình đã làm với f-string."
+  ],
+  "sim-29": [
+    "Deque lấy và bỏ phần tử ở hai đầu đều O(1): bỏ phần tử cũ ra khỏi cửa sổ ở đầu trái, bỏ các phần tử nhỏ hơn phần tử mới ở đầu phải.",
+    "Trước khi thêm chỉ số i, mình pop hết chỉ số ở cuối có giá trị nhỏ hơn nums[i], nên deque giảm dần và đầu deque là max. Nếu chỉ số ở đầu <= i - k thì nó đã ra khỏi cửa sổ nên popleft."
+  ],
+  "sim-30": [
+    "Mình không dùng deque, mình lấy max của từng cửa sổ.",
+    "Chắc là dùng deque hoặc thuật toán nhanh hơn."
+  ],
+  "sim-31": [
+    "INCR tăng bộ đếm và trả về giá trị mới trong một thao tác nguyên tử trên Redis, nên nhiều server gọi cùng lúc vẫn không mất lượt đếm.",
+    "Mình chỉ gọi expire khi count == 1, tức là request đầu tiên của cửa sổ, nên các request sau không đặt lại thời hạn."
+  ],
+  "sim-32": [
+    "Mình chia a thành a[:i] | a[i:] và b thành b[:j] | b[j:] sao cho bên trái có đúng half phần tử. Nếu a_left <= b_right và b_left <= a_right thì mọi phần tử bên trái đều <= mọi phần tử bên phải (vì mỗi mảng đã sắp xếp sẵn), tức là bên trái đúng là nửa nhỏ của mảng gộp; khi đó trung vị là max bên trái (tổng lẻ) hoặc trung bình của max trái và min phải (tổng chẵn). Chỗ này mình từng sai vì dùng // nên mất .5.",
+    "i tìm nhị phân trong [0, m] trên mảng ngắn hơn, j = half - i để bên trái luôn đủ half phần tử. Nếu a_left > b_right thì lấy quá nhiều từ a nên hi = i - 1, ngược lại lo = i + 1. Chọn mảng ngắn hơn để j không bao giờ âm và độ phức tạp là O(log(min(m, n))); biên i = 0 hoặc i = m thì dùng -inf / +inf."
+  ],
+  "sim-33": [
+    "Vì sắp xếp thì chậm hơn một chút.",
+    "Mình chưa rõ phân vùng lắm, chắc là chia đôi mảng."
+  ],
+  "sim-34": [
+    "không biết, mình sửa theo lỗi",
+    "trả về False"
+  ],
+  "sim-35": [
+    "request.headers.get(\"Authorization\") returns None, which is falsy, so `token and verify(token)` short-circuits to False and we return deny() without calling the handler. An empty string behaves the same. The order matters too: checking token first means verify never has to handle None.",
+    "verify is the only real check: it decides whether the token is one we issued. The old code only tested that some header was present, so any forged value got through. Now the handler runs only when both conditions hold, and every other path, including forged, missing and empty tokens, falls through to deny()."
+  ],
+  "sim-36": [
+    "i là vị trí trong chuỗi, j là vị trí trong pattern.",
+    "Để nhanh hơn."
+  ],
+  "sim-37": [
+    "Để khoá hai tài khoản theo một thứ tự cố định, tài khoản nào đứng trước thì khoá trước.",
+    "Hai luồng luôn khoá theo cùng thứ tự nên không có chuyện mỗi luồng giữ một khoá rồi chờ nhau."
+  ],
+  "sim-38": [
+    "not sure",
+    "idk"
+  ],
+  "sim-39": [
+    "Dấu # đánh dấu chỗ không có nút.",
+    "build đọc từng giá trị rồi tạo nút."
+  ],
+  "sim-40": [
+    "Mình lấy chữ ký trong ALLOWED_TYPES theo content_type, nếu không có thì báo lỗi.",
+    "basename để lấy tên file cho gọn, cho an toàn hơn."
+  ]
+}

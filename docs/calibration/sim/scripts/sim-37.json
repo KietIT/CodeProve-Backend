@@ -1,0 +1,36 @@
+{
+  "id": "sim-37",
+  "student": 17,
+  "exercise": "CP-206",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "Deadlock vì hai luồng khoá theo thứ tự ngược nhau; phải khoá theo một thứ tự cố định."
+    },
+    {
+      "at": 3.2,
+      "do": "run"
+    },
+    {
+      "at": 6.3,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 7.2,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "ask",
+      "text": "Mình sort hai tài khoản theo balance để khoá theo thứ tự. Có vấn đề gì khi balance thay đổi giữa hai lần chuyển không?",
+      "send_code": true
+    },
+    {
+      "at": 13.5,
+      "do": "submit"
+    }
+  ]
+}

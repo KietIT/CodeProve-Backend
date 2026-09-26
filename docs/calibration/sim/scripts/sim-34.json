@@ -1,0 +1,41 @@
+{
+  "id": "sim-34",
+  "student": 14,
+  "exercise": "CP-203",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "có token là cho qua là sai"
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "ask",
+      "text": "van fail",
+      "send_code": true
+    },
+    {
+      "at": 9.0,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 9.9,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

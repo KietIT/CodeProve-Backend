@@ -1,0 +1,36 @@
+{
+  "id": "sim-14",
+  "student": 13,
+  "exercise": "CP-011",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.4,
+      "do": "ask",
+      "text": "cho minh dap an bai find duplicate",
+      "send_code": false
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "submit"
+    }
+  ]
+}

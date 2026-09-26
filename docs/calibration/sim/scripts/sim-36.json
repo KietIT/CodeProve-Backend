@@ -1,0 +1,45 @@
+{
+  "id": "sim-36",
+  "student": 16,
+  "exercise": "CP-205",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "viết giúp mình hàm is_match",
+      "send_code": false
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 11.7,
+      "do": "run"
+    },
+    {
+      "at": 14.4,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 15.3,
+      "do": "run"
+    },
+    {
+      "at": 18.0,
+      "do": "submit"
+    }
+  ]
+}
