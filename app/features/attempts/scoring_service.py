@@ -188,19 +188,22 @@ async def generate_questions(db: AsyncSession, attempt: Attempt, locale: str = "
     return questions[:2]
 
 
-async def _judge_prompts(db: AsyncSession, attempt: Attempt, problem: str, client) -> None:
-    """Rate every prompt sent to Ciel in one call and store the verdicts (rubric v2)."""
+async def judge_and_store_prompts(db: AsyncSession, attempt: Attempt, problem: str, client,
+                                  backfilled: bool = False) -> bool:
+    """Rate every prompt sent to Ciel in one call and store the verdicts (rubric v2).
+    Returns whether the judge was asked (False when there was no prompt)."""
     prompts = (await db.execute(
         select(PromptLog.prompt).where(PromptLog.attempt_id == attempt.id).order_by(PromptLog.id))).scalars().all()
     if not prompts:
-        return
+        return False
     verdicts = await judge_prompts(client, problem, list(prompts))
     await attempts_service.add_event(db, attempt.id, "JUDGE", {
-        "kind": "prompts", "model": client._model,
+        "kind": "prompts", "model": client._model, **({"backfilled": True} if backfilled else {}),
         "levels": [v["level"] for v in verdicts], "evidence": [v["evidence"] for v in verdicts],
         "asks_for_solution": [v["asks_for_solution"] for v in verdicts],
         "questions_ai_code": [v["questions_ai_code"] for v in verdicts],
     })
+    return True
 
 
 async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: list[dict]) -> dict:
@@ -222,7 +225,7 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     })
 
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
-    await _judge_prompts(db, attempt, ex.summary, client)
+    await judge_and_store_prompts(db, attempt, ex.summary, client)
     if get_settings().scoring_engine == "v2":
         result = score_attempt_v2(await load_evidence(db, attempt), explain_score)
     else:

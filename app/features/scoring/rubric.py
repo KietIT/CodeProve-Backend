@@ -48,11 +48,15 @@ def understanding(ev: Evidence) -> Indicator:
 def hypothesis(ev: Evidence) -> Indicator:
     """Best student hypothesis. Level 3 also needs it logged before the first code edit."""
     first_code = next((e["ts"] for e in ev.events if e["type"] == "CODE_EDIT"), None)
+    # Verdicts asked later for hypotheses logged before rubric v2 (see backfill.py).
+    backfilled = {v.get("for_ts"): v for v in ev.judges.get("hypothesis", [])}
     candidates = []
     for e in ev.events:
         p = e["payload"]
         if e["type"] != "HYPOTHESIS" or p.get("proposedBy", "user") != "user":
             continue
+        if not isinstance(p.get("level"), int) and isinstance(backfilled.get(e["ts"], {}).get("level"), int):
+            p = {**p, "level": backfilled[e["ts"]]["level"], "levelEvidence": backfilled[e["ts"]].get("evidence")}
         level, reason = p.get("level"), ""
         if not isinstance(level, int):
             # Only the correct/incorrect verdict (logged before rubric v2, or the judge gave
