@@ -127,4 +127,6 @@ def score_attempt(events: list[dict], explain_score: float | None, exercise_kind
         "features": f,
         "integrity_multiplier": mult,
         "not_applicable": {a: NA_REASONS[a] for a, v in axes.items() if v is None},
+        # Before the integrity multiplier; engine v2 falls back to these per axis.
+        "raw_axes": raw,
     }

@@ -109,6 +109,26 @@ async def test_explain_back_stores_the_judges_verdicts(client, db_session, auth_
     assert eb.json()["axes"]["understanding"] > 0
 
 
+async def test_engine_v2_reports_levels_and_evidence(client, db_session, auth_headers, monkeypatch):
+    from app.core.config import Settings
+
+    monkeypatch.setattr(scoring_service, "get_settings", lambda: Settings(scoring_engine="v2"))
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
+    eb = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json={
+        "answers": [{"question": "Why?", "answer": "Because I use a hash map for O(1) lookups."}]})
+    body = eb.json()
+    assert eb.status_code == 200
+    fb = body["feedback"]
+    assert fb["engine"] == "v2"
+    assert set(fb["levels"]) == {"understanding", "hypothesis", "prompting", "verification", "testing",
+                                 "debugging"}
+    assert fb["levels"]["prompting"] is None and fb["not_applicable"]["prompting"] == "no_ai_use"
+    assert fb["evidence"]["hypothesis"]["reason"] == "verdict_only"  # seeded hypothesis has no level
+    rep = (await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)).json()
+    assert rep["feedback"]["levels"] == fb["levels"] and rep["overall"] == body["overall"]
+
+
 async def test_explain_back_twice_returns_409(client, db_session, auth_headers):
     aid = await _seed_attempt(client, db_session, auth_headers)
     await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # default so the endpoint is a no-op (always 403) until an operator sets
     # it - there is no user-role/admin system in this codebase to hook into.
     admin_api_key: str = ""
+    # Which scoring engine writes new reports. v2 (rubric levels, P1.4) replaces
+    # v1 only after it beats v1 on the golden set (see the P1.4 plan, Task 7).
+    scoring_engine: Literal["v1", "v2"] = "v1"
 
     @field_validator("cors_origins", mode="before")
     @classmethod

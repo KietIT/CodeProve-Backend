@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.features.attempts import service as attempts_service
 from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
+from app.core.config import get_settings
 from app.features.scoring.engine import score_attempt
+from app.features.scoring.engine_v2 import score_attempt_v2
+from app.features.scoring.evidence import load_evidence
 from app.features.scoring.features import AxisFeatures
 from app.features.scoring.judges import judge_explain, judge_prompts
 from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, VerificationAnswer
@@ -120,8 +123,16 @@ def build_timeline(f: AxisFeatures) -> list[dict]:
     ]
 
 
+def result_feedback(result: dict) -> dict:
+    """Feedback for a scoring result; v2 results also carry each axis's level and evidence."""
+    feedback = build_feedback(result["axes"], result["features"], result["not_applicable"])
+    if "levels" in result:
+        feedback.update(engine=result["engine"], levels=result["levels"], evidence=result["evidence"])
+    return feedback
+
+
 def report_columns(result: dict) -> dict:
-    """FluencyReport column values for a score_attempt() result."""
+    """FluencyReport column values for a score_attempt() / score_attempt_v2() result."""
     axes, f = result["axes"], result["features"]
     return {
         "understanding_score": axes["understanding"],
@@ -131,7 +142,7 @@ def report_columns(result: dict) -> dict:
         "testing_score": axes["testing"],
         "debugging_score": axes["debugging"],
         "overall_score": result["overall"],
-        "feedback": {**build_feedback(axes, f, result["not_applicable"]), "timeline": build_timeline(f)},
+        "feedback": {**result_feedback(result), "timeline": build_timeline(f)},
     }
 
 
@@ -212,8 +223,11 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
 
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     await _judge_prompts(db, attempt, ex.summary, client)
-    events = await _events_as_dicts(db, attempt.id)
-    result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)
+    if get_settings().scoring_engine == "v2":
+        result = score_attempt_v2(await load_evidence(db, attempt), explain_score)
+    else:
+        events = await _events_as_dicts(db, attempt.id)
+        result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)
     f = result["features"]
     integrity = integrity_from_features(f)
 
@@ -223,19 +237,17 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     attempt.integrity_status = integrity
     await db.commit()
 
-    return _report_payload(result["axes"], result["overall"], f, integrity, result["not_applicable"])
+    return _report_payload(result, integrity)
 
 
-def _report_payload(
-    axes: dict, overall: float, f: AxisFeatures, integrity: str, not_applicable: dict[str, str]
-) -> dict:
-    axes_pct = {a: (v * 5 if v is not None else None) for a, v in axes.items()}
+def _report_payload(result: dict, integrity: str) -> dict:
+    axes = result["axes"]
     return {
-        "overall": overall,
-        "tier": tier_for(overall),
+        "overall": result["overall"],
+        "tier": tier_for(result["overall"]),
         "axes": axes,
-        "axes_pct": axes_pct,
-        "feedback": build_feedback(axes, f, not_applicable),
+        "axes_pct": {a: (v * 5 if v is not None else None) for a, v in axes.items()},
+        "feedback": result_feedback(result),
         "integrity_status": integrity,
-        "timeline": build_timeline(f),
+        "timeline": build_timeline(result["features"]),
     }
