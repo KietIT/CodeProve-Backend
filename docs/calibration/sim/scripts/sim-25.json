@@ -1,0 +1,35 @@
+{
+  "id": "sim-25",
+  "student": 5,
+  "exercise": "CP-107",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "DFS với trạng thái: đang thăm và đã xong. Gặp lại nút đang thăm là có chu trình; nút đã xong thì bỏ qua (đồ thị kim cương không phải chu trình). Duyệt từ mọi nút để bắt chu trình ở thành phần khác. O(V + E)."
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 9.0,
+      "do": "run"
+    },
+    {
+      "at": 11.7,
+      "do": "submit"
+    }
+  ]
+}

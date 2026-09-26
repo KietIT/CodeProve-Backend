@@ -1,0 +1,26 @@
+{
+  "id": "sim-28",
+  "student": 8,
+  "exercise": "CP-109",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "sửa exception cho rõ hơn"
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "submit"
+    }
+  ]
+}

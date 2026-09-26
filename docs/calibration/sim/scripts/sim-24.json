@@ -1,0 +1,32 @@
+{
+  "id": "sim-24",
+  "student": 4,
+  "exercise": "CP-106",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "escape the quotes in the name"
+    },
+    {
+      "at": 3.6,
+      "do": "away",
+      "seconds": 20,
+      "kind": "tab"
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 9.0,
+      "do": "submit"
+    }
+  ]
+}

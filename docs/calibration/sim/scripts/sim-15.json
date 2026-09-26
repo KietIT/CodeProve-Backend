@@ -1,0 +1,12 @@
+{
+  "id": "sim-15",
+  "student": 14,
+  "exercise": "CP-011",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 2.7,
+      "do": "submit"
+    }
+  ]
+}

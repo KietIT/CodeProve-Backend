@@ -1,0 +1,44 @@
+{
+  "id": "sim-08",
+  "student": 8,
+  "exercise": "CP-007",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "gộp hai mảng lại"
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 6.1,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 8.8,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "code",
+      "ref": "mutant:4"
+    },
+    {
+      "at": 11.5,
+      "do": "run"
+    },
+    {
+      "at": 14.4,
+      "do": "submit"
+    }
+  ]
+}

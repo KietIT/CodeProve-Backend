@@ -1,0 +1,42 @@
+{
+  "id": "sim-09",
+  "student": 1,
+  "exercise": "CP-008",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.3,
+      "do": "hypothesis",
+      "text": "user['profile'] lỗi khi không có khoá profile hoặc profile là None. Lấy profile bằng user.get('profile') or {} rồi profile.get('name', 'Unknown'), như vậy xử lý được cả thiếu khoá, None và profile không có tên."
+    },
+    {
+      "at": 3.6,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 4.5,
+      "do": "run"
+    },
+    {
+      "at": 6.3,
+      "do": "ask",
+      "text": "Mình sửa bằng user.get('profile') or {} để xử lý cả trường hợp profile là None. Nếu name tồn tại nhưng là chuỗi rỗng thì có nên trả 'Unknown' không, hay đề chỉ yêu cầu khi thiếu tên? Gợi ý giúp mình, đừng viết code.",
+      "send_code": true
+    },
+    {
+      "at": 9.9,
+      "do": "code",
+      "ref": "inline",
+      "code": "def display_name(user):\n    # profile may be missing or None\n    profile = user.get(\"profile\") or {}\n    return profile.get(\"name\", \"Unknown\")"
+    },
+    {
+      "at": 10.8,
+      "do": "run"
+    },
+    {
+      "at": 12.6,
+      "do": "submit"
+    }
+  ]
+}

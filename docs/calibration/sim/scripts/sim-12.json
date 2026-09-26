@@ -1,0 +1,22 @@
+{
+  "id": "sim-12",
+  "student": 11,
+  "exercise": "CP-010",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 2.7,
+      "do": "code",
+      "ref": "inline",
+      "code": "def hello():\n    print(\"xin chao\")\n\nhello()"
+    },
+    {
+      "at": 3.6,
+      "do": "run"
+    },
+    {
+      "at": 5.4,
+      "do": "submit"
+    }
+  ]
+}

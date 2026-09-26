@@ -1,0 +1,27 @@
+{
+  "id": "sim-40",
+  "student": 20,
+  "exercise": "CP-208",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "Mình cần kiểm tra những gì để upload an toàn? Mình định dùng basename cho tên file, còn loại file thì chưa biết kiểm tra thế nào.",
+      "send_code": false
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:2"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 11.7,
+      "do": "submit"
+    }
+  ]
+}

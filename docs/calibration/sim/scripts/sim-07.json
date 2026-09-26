@@ -1,0 +1,32 @@
+{
+  "id": "sim-07",
+  "student": 7,
+  "exercise": "CP-006",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.4,
+      "do": "hypothesis",
+      "text": "Lower-case the text, split into words and count each word in a dict."
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "what's wrong with my code?",
+      "send_code": true
+    },
+    {
+      "at": 10.8,
+      "do": "submit"
+    }
+  ]
+}

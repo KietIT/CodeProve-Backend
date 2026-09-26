@@ -1,0 +1,33 @@
+{
+  "id": "sim-33",
+  "student": 13,
+  "exercise": "CP-202",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "gộp hai mảng rồi lấy phần tử ở giữa"
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "inline",
+      "code": "def find_median(a, b):\n    merged = sorted(a + b)\n    n = len(merged)\n    mid = n // 2\n    if n % 2:\n        return float(merged[mid])\n    return (merged[mid - 1] + merged[mid]) / 2"
+    },
+    {
+      "at": 6.3,
+      "do": "away",
+      "seconds": 60,
+      "kind": "tab"
+    },
+    {
+      "at": 7.2,
+      "do": "run"
+    },
+    {
+      "at": 9.0,
+      "do": "submit"
+    }
+  ]
+}

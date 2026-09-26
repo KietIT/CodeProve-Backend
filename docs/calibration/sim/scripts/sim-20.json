@@ -1,0 +1,32 @@
+{
+  "id": "sim-20",
+  "student": 19,
+  "exercise": "CP-102",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "The dict is never evicted, so it grows forever. Bound it: OrderedDict plus MAX_ENTRIES, evict the least recently used entry. Keep caching falsy results (check membership, not truthiness)."
+    },
+    {
+      "at": 6.3,
+      "do": "code",
+      "ref": "mutant:3"
+    },
+    {
+      "at": 7.2,
+      "do": "run"
+    },
+    {
+      "at": 9.9,
+      "do": "ask",
+      "text": "My bounded cache passes the visible tests. How can I check which entry gets evicted when it is full?",
+      "send_code": true
+    },
+    {
+      "at": 13.5,
+      "do": "submit"
+    }
+  ]
+}

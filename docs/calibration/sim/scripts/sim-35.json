@@ -1,0 +1,42 @@
+{
+  "id": "sim-35",
+  "student": 15,
+  "exercise": "CP-203",
+  "locale": "en",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "The check only tests that a token is present; it must call verify(token). Missing header and empty token must be denied, and the handler must never run for a forged token."
+    },
+    {
+      "at": 4.5,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 5.4,
+      "do": "run"
+    },
+    {
+      "at": 7.2,
+      "do": "ask",
+      "text": "I changed it to `if token and verify(token)`. Could an empty-string token or a missing header still reach the handler? Just point me to cases to test.",
+      "send_code": true
+    },
+    {
+      "at": 10.8,
+      "do": "code",
+      "ref": "inline",
+      "code": "VALID_TOKENS = {\"valid-token\"}\n\ndef deny():\n    return \"401 Unauthorized\"\n\ndef verify(token):\n    return token in VALID_TOKENS\n\ndef require_auth(request, handler):\n    token = request.headers.get(\"Authorization\")\n    # both present and valid, or deny\n    if token and verify(token):\n        return handler(request)\n    return deny()"
+    },
+    {
+      "at": 11.7,
+      "do": "run"
+    },
+    {
+      "at": 13.5,
+      "do": "submit"
+    }
+  ]
+}

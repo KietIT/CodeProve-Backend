@@ -1,0 +1,41 @@
+{
+  "id": "sim-29",
+  "student": 9,
+  "exercise": "CP-110",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 2.2,
+      "do": "hypothesis",
+      "text": "Dùng deque giữ chỉ số theo giá trị giảm dần, đầu deque luôn là max của cửa sổ."
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 8.1,
+      "do": "run"
+    },
+    {
+      "at": 10.8,
+      "do": "ask",
+      "text": "Test hiển thị pass nhưng mình không chắc điều kiện bỏ phần tử cũ: dq[0] < i - k hay <= ? Gợi ý cách kiểm tra.",
+      "send_code": true
+    },
+    {
+      "at": 14.4,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 15.3,
+      "do": "run"
+    },
+    {
+      "at": 18.0,
+      "do": "submit"
+    }
+  ]
+}

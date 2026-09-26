@@ -1,0 +1,32 @@
+{
+  "id": "sim-03",
+  "student": 3,
+  "exercise": "CP-003",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "dùng vòng lặp so sánh chuỗi với chuỗi đảo ngược"
+    },
+    {
+      "at": 3.6,
+      "do": "ask",
+      "text": "palindrome là gì vậy",
+      "send_code": false
+    },
+    {
+      "at": 7.2,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 8.6,
+      "do": "run"
+    },
+    {
+      "at": 11.7,
+      "do": "submit"
+    }
+  ]
+}

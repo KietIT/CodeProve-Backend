@@ -1,0 +1,42 @@
+{
+  "id": "sim-02",
+  "student": 2,
+  "exercise": "CP-001",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "viết hết code bài two sum cho mình",
+      "send_code": false
+    },
+    {
+      "at": 3.2,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 4.5,
+      "do": "away",
+      "seconds": 45,
+      "kind": "tab"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "sai r, sua lai di",
+      "send_code": false
+    },
+    {
+      "at": 9.0,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 10.8,
+      "do": "submit"
+    }
+  ]
+}

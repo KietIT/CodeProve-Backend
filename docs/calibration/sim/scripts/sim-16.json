@@ -1,0 +1,36 @@
+{
+  "id": "sim-16",
+  "student": 15,
+  "exercise": "CP-012",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "hypothesis",
+      "text": "counter += 1 không atomic nên cần lock khi tăng"
+    },
+    {
+      "at": 3.2,
+      "do": "run"
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "mutant:1"
+    },
+    {
+      "at": 6.3,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "Mình thêm `with threading.Lock():` quanh counter += 1 rồi, test hiển thị pass. Như vậy đã an toàn khi nhiều luồng cùng gọi chưa?",
+      "send_code": true
+    },
+    {
+      "at": 10.8,
+      "do": "submit"
+    }
+  ]
+}

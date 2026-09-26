@@ -1,0 +1,38 @@
+{
+  "id": "sim-21",
+  "student": 2,
+  "exercise": "CP-105",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.8,
+      "do": "ask",
+      "text": "cho minh code bai longest substring",
+      "send_code": false
+    },
+    {
+      "at": 2.7,
+      "do": "use_ai_code"
+    },
+    {
+      "at": 3.6,
+      "do": "away",
+      "seconds": 30,
+      "kind": "window"
+    },
+    {
+      "at": 4.5,
+      "do": "run"
+    },
+    {
+      "at": 6.3,
+      "do": "ask",
+      "text": "code loi",
+      "send_code": false
+    },
+    {
+      "at": 8.1,
+      "do": "submit"
+    }
+  ]
+}

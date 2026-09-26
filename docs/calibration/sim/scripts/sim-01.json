@@ -1,0 +1,48 @@
+{
+  "id": "sim-01",
+  "student": 1,
+  "exercise": "CP-001",
+  "locale": "vi",
+  "steps": [
+    {
+      "at": 1.4,
+      "do": "hypothesis",
+      "text": "Dùng dict lưu số đã gặp -> chỉ số của nó. Với mỗi n, kiểm tra target - n đã có trong dict chưa, có thì trả về hai chỉ số, O(n). Phải kiểm tra trước rồi mới thêm n vào dict, để [3, 3] target 6 không tự ghép với chính nó."
+    },
+    {
+      "at": 5.4,
+      "do": "code",
+      "ref": "reference"
+    },
+    {
+      "at": 6.5,
+      "do": "run"
+    },
+    {
+      "at": 8.1,
+      "do": "ask",
+      "text": "Mình đã viết xong bằng dict, O(n), test hiển thị pass hết. Nếu mảng có số âm hoặc target = 0 với nhiều số 0 thì cách kiểm tra `target - n in seen` còn đúng không? Đừng đưa lời giải, chỉ gợi ý trường hợp mình có thể bỏ sót.",
+      "send_code": true
+    },
+    {
+      "at": 11.7,
+      "do": "ask",
+      "text": "Mình chưa sửa theo gợi ý trên vì muốn tự kiểm chứng trước: mình sẽ thử [3, 3] target 6 và [0, 4, 3, 0] target 0. Với thứ tự 'kiểm tra phần bù rồi mới thêm n vào dict' thì hai trường hợp đó đã đúng chưa, hay còn chỗ nào sai?",
+      "send_code": false
+    },
+    {
+      "at": 14.4,
+      "do": "code",
+      "ref": "inline",
+      "code": "def two_sum(nums, target):\n    index_of = {}\n    for i, n in enumerate(nums):\n        if target - n in index_of:\n            return [index_of[target - n], i]\n        index_of[n] = i\n    return []"
+    },
+    {
+      "at": 15.3,
+      "do": "run"
+    },
+    {
+      "at": 17.1,
+      "do": "submit"
+    }
+  ]
+}
