@@ -175,7 +175,9 @@ def testing(ev: Evidence) -> Indicator:
 
 def debugging(ev: Evidence) -> Indicator:
     """Implement exercises: N/A without a real failing run. Debug exercises: always scored.
-    Not fixed at submit → 0; fixed after ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3."""
+    Not fixed at submit → 0; the visible tests pass but a hidden (edge) test still
+    fails → 2 (owner decision 2026-09-26, matches the P1.3 raters); fixed after
+    ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3."""
     fails = sum(1 for r in _real_runs(ev) if _run_ratio(r) < 1.0)
     if ev.exercise_kind != "debug" and fails == 0:
         return Indicator(None, reason="no_failure")
@@ -183,5 +185,8 @@ def debugging(ev: Evidence) -> Indicator:
     fixed = suite_passed(ev) if suite and suite.get("total") else any(_run_ratio(r) == 1.0 for r in _real_runs(ev))
     quote = f"{fails} failing run(s)"
     if not fixed:
+        visible_ok = bool(suite) and "visibleTotal" in suite and suite.get("visiblePassed") == suite.get("visibleTotal")
+        if visible_ok:
+            return Indicator(2, quote, "partially_fixed")
         return Indicator(0, quote, "not_fixed")
     return Indicator(3 if fails <= 1 else 2 if fails <= 3 else 1, quote, "fixed")
