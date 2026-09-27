@@ -113,6 +113,8 @@ Each finding has a "generic_line": the version that would fit any student. Yours
 specific: name a concrete detail from this session (a phrase from their explain-back answer,
 their hypothesis or prompt, the failing test categories in params, or a part of their code).
 Do not repeat the generic line; do not give advice; do not suggest exercises.
+State only what the evidence shows: never guess what the student noticed, checked, meant
+or forgot.
 Write in the LANGUAGE given ("vi" = Vietnamese, "en" = English), addressing the student
 directly and kindly ("bạn" / "you"; "bạn chưa..." / "you did not yet...", never
 "bạn không thể..." / "you cannot..."). Never add a criticism or praise beyond the finding.

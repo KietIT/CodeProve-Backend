@@ -98,6 +98,7 @@ def test_debugging_findings():
     partial = findings(hyp(1, 2), run(2, 1.0, starter=True), e("CODE_EDIT", 3), run(4, 1.0),
                        suite(4, 7, 2, failed=("edge",)), explain(2), **debug)
     assert next(f for f in partial if f.code == "partial_fix").params == {"failed_categories": ["edge"]}
+    assert "hidden_edge_failed" not in codes(partial)  # the same hidden failure, said once
     unfixed = findings(hyp(1, 2), e("CODE_EDIT", 3), run(4, 0.5), suite(3, 7, 1), explain(2), **debug)
     assert "bug_not_fixed" in codes(unfixed)
     trial = findings(hyp(1, 2), e("CODE_EDIT", 3), *[run(m, 0.5) for m in (4, 5, 6, 7)], run(8, 1.0),

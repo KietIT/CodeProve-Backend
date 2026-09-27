@@ -27,6 +27,11 @@ MAX_CODE_LINES = 2
 MAX_FINAL_CODE_LINES = 60
 DEFAULT_TIMEOUT = 15.0
 TOKENS_BASE, TOKENS_PER_FINDING = 200, 200
+# Axes whose evidence is the student's own words (answers, hypotheses, prompts, AI code
+# handling): the LLM adds a real detail there. Testing, debugging and integrity findings are
+# counts, which the round-3 preview misread (totals called "visible", pass counts called
+# "fail") and could point at the bug: their template line states the numbers exactly.
+WRITTEN_AXES = {"understanding", "hypothesis", "prompting", "verification"}
 _BLOCK = re.compile(r"```[\w+-]*\n?(.*?)```", re.DOTALL)
 _EXERCISE = re.compile(r"\bCP-\d{3}\b")
 
@@ -72,6 +77,28 @@ def _prompt(locale: str, problem: str, findings: list[Finding], final_code: str,
     return f"{json.dumps(payload, ensure_ascii=False, indent=1)}\nSTUDENT'S FINAL CODE:\n{code}"
 
 
+async def _ask(client, locale: str, problem: str, findings: list[Finding], final_code: str,
+               answers: list[dict], timeout: float) -> tuple[dict[str, dict], str | None]:
+    """The writer's items by finding code, and what went wrong with the call (None if nothing)."""
+    try:
+        verdict = await asyncio.wait_for(
+            client.judge(FEEDBACK_WRITER_SYSTEM, _prompt(locale, problem, findings, final_code, answers),
+                         max_tokens=TOKENS_BASE + TOKENS_PER_FINDING * len(findings)),
+            timeout)
+    except asyncio.TimeoutError:
+        return {}, "timeout"
+    except Exception:  # never let the writer block a report: templates answer instead
+        logger.warning("feedback writer failed; using templates", exc_info=True)
+        return {}, "call_failed"
+    if not isinstance(verdict, dict) or not isinstance(verdict.get("items"), list):
+        return {}, "invalid_json"  # the client returns {} for unparsable (e.g. truncated) JSON
+    written: dict[str, dict] = {}
+    for item in verdict["items"]:
+        if isinstance(item, dict) and isinstance(item.get("code"), str):
+            written.setdefault(item["code"], item)
+    return written, None
+
+
 async def write_feedback(client, *, locale: str, problem: str, findings: list[Finding], final_code: str,
                          answers: list[dict], candidates: list[str], timeout: float = DEFAULT_TIMEOUT) -> list[dict]:
     """One entry per finding (same order): the finding, its four texts, the suggested
@@ -80,28 +107,16 @@ async def write_feedback(client, *, locale: str, problem: str, findings: list[Fi
     if not findings:
         return []
     next_exercise = candidates[0] if candidates else None
-    written: dict[str, dict] = {}
-    call_problem = None
-    try:
-        verdict = await asyncio.wait_for(
-            client.judge(FEEDBACK_WRITER_SYSTEM, _prompt(locale, problem, findings, final_code, answers),
-                         max_tokens=TOKENS_BASE + TOKENS_PER_FINDING * len(findings)),
-            timeout)
-        if not isinstance(verdict, dict) or not isinstance(verdict.get("items"), list):
-            call_problem = "invalid_json"  # the client returns {} for unparsable (e.g. truncated) JSON
-        else:
-            for item in verdict["items"]:
-                if isinstance(item, dict) and isinstance(item.get("code"), str):
-                    written.setdefault(item["code"], item)
-    except asyncio.TimeoutError:
-        call_problem = "timeout"
-    except Exception:  # never let the writer block a report: templates answer instead
-        logger.warning("feedback writer failed; using templates", exc_info=True)
-        call_problem = "call_failed"
+    to_write = [f for f in findings if f.axis in WRITTEN_AXES]
+    written, call_problem = (await _ask(client, locale, problem, to_write, final_code, answers, timeout)
+                             if to_write else ({}, None))
     out = []
     for finding in findings:
         texts = render(finding, locale, next_exercise)
         entry = {**finding.model_dump(), "text": texts, "next_exercise": next_exercise, "source": "template"}
+        if finding.axis not in WRITTEN_AXES:
+            out.append(entry)  # template by design, not a failure: no fallback_reason
+            continue
         if finding.code in written:
             line, reason = _validated(written[finding.code], texts["what_happened"])
         else:
@@ -112,7 +127,7 @@ async def write_feedback(client, *, locale: str, problem: str, findings: list[Fi
         else:
             entry["fallback_reason"] = reason  # quality tracking: why the template line was kept
         out.append(entry)
-    kept = [e["fallback_reason"] for e in out if e["source"] == "template"]
+    kept = [e["fallback_reason"] for e in out if "fallback_reason" in e]
     if kept:
         logger.warning("feedback writer: %d/%d finding(s) kept the template line: %s", len(kept), len(out), kept)
     return out

@@ -139,6 +139,9 @@ def diagnose(result: dict, ev: Evidence) -> list[Finding]:
         *_testing(*args("testing"), ev),
         *_debugging(*args("debugging"), ev),
     ]
+    if any(x.code == "partial_fix" for x in found):
+        # On a debug exercise the hidden edge failure IS the partial fix: say it once.
+        found = [x for x in found if x.code != "hidden_edge_failed"]
     if result["integrity_multiplier"] < 1.0:
         f = result["features"]
         found.append(_risk("integrity_flags", "overall", "high", paste=f.paste_flags, focus_lost=f.focus_lost))

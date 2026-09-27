@@ -61,8 +61,11 @@ the diagnosis texts are written in it. Send the UI language the student is using
 - `text`: four plain-text fields in `diagnosis.locale` (no markdown except, rarely, a 1–2 line
   inline code snippet). Render as text, not HTML.
 - `next_exercise`: an exercise code the student has not solved (link to it), or `null`.
-- `source`: `"llm"` when `text.what_happened` was written for this session; `"template"` when
-  the reviewed generic line was kept (then `fallback_reason` says why). `why_it_matters`,
+- `source`: `"llm"` when `text.what_happened` was written for this session (only findings on the
+  understanding, hypothesis, prompting and verification axes, whose evidence is the student's own
+  words); `"template"` otherwise. Testing, debugging and integrity findings always use the
+  template line, which states the counts exactly; `fallback_reason` appears only when the
+  writer was asked and its line was rejected. `why_it_matters`,
   `how_to_improve` and `try_next` always come from the team-reviewed templates. The UI does not
   need to show `source`; it is for quality tracking.
 - `axis: "overall"` is used only by `integrity_flags`.
