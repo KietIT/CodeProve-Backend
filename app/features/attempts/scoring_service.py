@@ -5,6 +5,7 @@ from app.features.attempts import service as attempts_service
 from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
 from app.core.config import get_settings
+from app.features.feedback.service import build_diagnosis
 from app.features.scoring.engine import score_attempt
 from app.features.scoring.engine_v2 import score_attempt_v2
 from app.features.scoring.evidence import load_evidence
@@ -128,6 +129,8 @@ def result_feedback(result: dict) -> dict:
     feedback = build_feedback(result["axes"], result["features"], result["not_applicable"])
     if "levels" in result:
         feedback.update(engine=result["engine"], levels=result["levels"], evidence=result["evidence"])
+    if "diagnosis" in result:
+        feedback["diagnosis"] = result["diagnosis"]
     return feedback
 
 
@@ -227,7 +230,9 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     await judge_and_store_prompts(db, attempt, ex.summary, client)
     if get_settings().scoring_engine == "v2":
-        result = score_attempt_v2(await load_evidence(db, attempt), explain_score)
+        ev = await load_evidence(db, attempt)
+        result = score_attempt_v2(ev, explain_score)
+        result["diagnosis"] = await build_diagnosis(db, attempt, ex, ev, result, client)
     else:
         events = await _events_as_dicts(db, attempt.id)
         result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)

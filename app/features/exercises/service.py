@@ -5,14 +5,14 @@ from app.features.exercises.starters import student_starter
 from app.models import Attempt, Exercise, TestCase
 
 _LEVEL_NAMES = {"fresher": "Fresher", "junior": "Junior", "senior": "Senior"}
-_LEVEL_ORDER = ["fresher", "junior", "senior"]
+LEVEL_ORDER = ["fresher", "junior", "senior"]
 
 
 def _topics(ex: Exercise) -> list[str]:
     return list(ex.domain_keywords or [ex.category])
 
 
-async def _status_by_exercise(db: AsyncSession, user_id: int) -> dict[int, str]:
+async def status_by_exercise(db: AsyncSession, user_id: int) -> dict[int, str]:
     """Map exercise_id -> "solved" | "attempted" for the given user.
 
     "solved" wins over "attempted" and mirrors the dashboard: an exercise counts
@@ -37,12 +37,12 @@ async def list_grouped(db: AsyncSession, level: str | None, user_id: int | None 
     if level:
         q = q.where(Exercise.level == level)
     rows = (await db.execute(q)).scalars().all()
-    status_map = await _status_by_exercise(db, user_id) if user_id is not None else {}
+    status_map = await status_by_exercise(db, user_id) if user_id is not None else {}
     groups: dict[str, list[Exercise]] = {}
     for ex in rows:
         groups.setdefault(ex.level, []).append(ex)
     result = []
-    for lv in _LEVEL_ORDER:
+    for lv in LEVEL_ORDER:
         if lv not in groups:
             continue
         # Rows are ordered by code, so the 1-based position is the display number.

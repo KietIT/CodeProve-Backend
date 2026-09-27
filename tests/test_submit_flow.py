@@ -129,6 +129,34 @@ async def test_engine_v2_reports_levels_and_evidence(client, db_session, auth_he
     assert rep["feedback"]["levels"] == fb["levels"] and rep["overall"] == body["overall"]
 
 
+async def test_engine_v2_reports_a_diagnosis_in_the_submit_language(client, db_session, auth_headers, monkeypatch):
+    from app.core.config import Settings
+
+    monkeypatch.setattr(scoring_service, "get_settings", lambda: Settings(scoring_engine="v2"))
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/submit?locale=vi", headers=auth_headers)
+    eb = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json={
+        "answers": [{"question": "Why?", "answer": "Because I use a hash map for O(1) lookups."}]})
+    assert eb.status_code == 200
+    diagnosis = eb.json()["feedback"]["diagnosis"]
+    assert diagnosis["version"] == 1 and diagnosis["locale"] == "vi"
+    assert diagnosis["findings"], "a scored session always has something to say"
+    for entry in diagnosis["findings"]:
+        assert set(entry["text"]) == {"what_happened", "why_it_matters", "how_to_improve", "try_next"}
+        # The fake judge cannot write feedback, so every text comes from the templates.
+        assert entry["source"] == "template"
+    rep = (await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)).json()
+    assert rep["feedback"]["diagnosis"] == diagnosis
+
+
+async def test_engine_v1_reports_have_no_diagnosis(client, db_session, auth_headers):
+    aid = await _seed_attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)
+    eb = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers, json={
+        "answers": [{"question": "Why?", "answer": "Because I use a hash map for O(1) lookups."}]})
+    assert "diagnosis" not in eb.json()["feedback"]
+
+
 async def test_explain_back_twice_returns_409(client, db_session, auth_headers):
     aid = await _seed_attempt(client, db_session, auth_headers)
     await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)

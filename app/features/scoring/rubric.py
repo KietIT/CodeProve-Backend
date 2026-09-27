@@ -188,7 +188,7 @@ def debugging(ev: Evidence) -> Indicator:
     Not fixed at submit → 0; the visible tests pass but a hidden (edge) test still
     fails → 2 (owner decision 2026-09-26, matches the P1.3 raters); fixed after
     ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3."""
-    fails = sum(1 for r in _real_runs(ev) if _run_ratio(r) < 1.0)
+    fails = failing_runs(ev)
     if ev.exercise_kind != "debug" and fails == 0:
         return Indicator(None, reason="no_failure")
     suite = ev.submit_suite
@@ -200,3 +200,14 @@ def debugging(ev: Evidence) -> Indicator:
             return Indicator(2, quote, "partially_fixed")
         return Indicator(0, quote, "not_fixed")
     return Indicator(3 if fails <= 1 else 2 if fails <= 3 else 1, quote, "fixed")
+
+
+def failing_runs(ev: Evidence) -> int:
+    """Runs of the student's own code that failed a visible test."""
+    return sum(1 for r in _real_runs(ev) if _run_ratio(r) < 1.0)
+
+
+def prompt_flags(ev: Evidence, name: str) -> list[bool]:
+    """A per-prompt flag from the latest prompt verdict (e.g. "asks_for_solution")."""
+    verdict = _latest_judge(ev, "prompts") or {}
+    return [bool(flag) for flag in verdict.get(name) or []]

@@ -103,3 +103,21 @@ Reply ONLY with compact JSON matching this exact shape:
  "hint_2_en": "<clearer hint naming the kind of mistake, still not the fix>",
  "explanation_vi": "<1-2 cau giai thich loi va cach sua, hien sau khi nguoi choi nop>",
  "explanation_en": "<one or two sentences explaining the bug and the fix, shown after the player submits>"}"""
+
+FEEDBACK_WRITER_SYSTEM = """You write the feedback a student reads right after submitting a coding exercise
+on CodeProve. You receive FINDINGS already established from the session's evidence. Explain
+ONLY those findings, one item per finding, in the given order. Never add a criticism or a
+strength that is not in the list, and never contradict a finding.
+For each finding write, in the LANGUAGE given ("vi" = Vietnamese, "en" = English), addressing
+the student directly ("bạn" / "you"), one or two short sentences per field:
+- "what_happened": what the student did in THIS session, citing the evidence or params.
+- "why_it_matters": why this matters for working well with code and AI.
+- "how_to_improve": one concrete habit to change next time.
+- "try_next": a concrete next step; if you suggest an exercise, it MUST be one of CANDIDATES
+  and you must also put its code in "next_exercise" (otherwise "next_exercise": "").
+Rules: plain text, no markdown headings; no code longer than 2 lines; NEVER write the solution,
+the corrected code, or the expected output of hidden tests; strengths are praised briefly and
+still get a next step.
+Reply ONLY with JSON:
+{"items": [{"code": "<finding code>", "what_happened": "...", "why_it_matters": "...",
+"how_to_improve": "...", "try_next": "...", "next_exercise": "<code or empty>"}]}"""

@@ -103,7 +103,8 @@ async def submit(
     settings = get_settings()
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     suite = await submit_tests.run_submit_suite(db, attempt)
-    await service.add_event(db, attempt_id, "SUBMIT", {})
+    # The report's feedback is written in the language the student submitted in.
+    await service.add_event(db, attempt_id, "SUBMIT", {"locale": "vi" if locale == "vi" else "en"})
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now(timezone.utc)
     questions = await scoring_service.generate_questions(db, attempt, locale)
