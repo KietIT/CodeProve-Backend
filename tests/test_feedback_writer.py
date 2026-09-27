@@ -10,12 +10,14 @@ FINDINGS = [
     Finding(code="explain_strong", axis="understanding", kind="strength", evidence="vì dict tra O(1)"),
 ]
 CANDIDATES = ["CP-105", "CP-003"]
+SPECIFIC = {
+    "hidden_edge_failed": "Code của bạn pass hai test hiển thị nhưng fail test ẩn với danh sách có hai số bằng nhau.",
+    "explain_strong": "Bạn giải thích rằng dict cho phép tra phần bù trong O(1), kể cả khi mảng rỗng.",
+}
 
 
-def item(code, **overrides):
-    base = {"code": code, "what_happened": f"{code}: bạn đã làm X.", "why_it_matters": "Vì Y.",
-            "how_to_improve": "Hãy làm Z.", "try_next": "Thử bài CP-105.", "next_exercise": "CP-105"}
-    return {**base, **overrides}
+def item(code, line=None):
+    return {"code": code, "what_happened": SPECIFIC.get(code, "Bạn đã làm X.") if line is None else line}
 
 
 class Fake:
@@ -33,77 +35,68 @@ class Fake:
         return self.reply
 
 
-async def write(client, findings=FINDINGS, timeout=12.0):
+async def write(client, findings=FINDINGS, timeout=12.0, candidates=CANDIDATES):
     return await write_feedback(client, locale="vi", problem="Two-sum", findings=findings,
                                 final_code="def f():\n    return 1", answers=[{"question": "Why?", "answer": "Vì."}],
-                                candidates=CANDIDATES, timeout=timeout)
+                                candidates=candidates, timeout=timeout)
 
 
 def template(finding, next_exercise="CP-105"):
     return render(finding, "vi", next_exercise)
 
 
-async def test_valid_items_are_used_in_finding_order():
+async def test_the_llm_writes_what_happened_and_the_advice_stays_reviewed():
     client = Fake({"items": [item("explain_strong"), item("hidden_edge_failed")]})
     out = await write(client)
     assert [x["code"] for x in out] == ["hidden_edge_failed", "explain_strong"]
-    assert all(x["source"] == "llm" for x in out)
-    assert out[0]["text"]["what_happened"] == "hidden_edge_failed: bạn đã làm X."
+    assert all(x["source"] == "llm" and "fallback_reason" not in x for x in out)
+    assert out[0]["text"]["what_happened"] == SPECIFIC["hidden_edge_failed"]
+    for field in ("why_it_matters", "how_to_improve", "try_next"):
+        assert out[0]["text"][field] == template(FINDINGS[0])[field]
     assert out[0]["next_exercise"] == "CP-105" and out[0]["severity"] == "medium"
     prompt = client.calls[0][1]
-    assert "hidden_edge_failed" in prompt and "CP-105" in prompt and "Vì." in prompt
-    # The template goes along as the house-style reference the writer must not make vaguer.
-    assert template(FINDINGS[0])["how_to_improve"] in prompt
+    assert "hidden_edge_failed" in prompt and "Vì." in prompt
+    # The generic line goes along so the writer knows what NOT to repeat.
+    assert template(FINDINGS[0])["what_happened"] in prompt
 
 
-async def test_a_finding_without_a_valid_item_falls_back_to_its_template():
-    out = await write(Fake({"items": [item("hidden_edge_failed"), item("made_up_code")]}))
-    assert out[0]["source"] == "llm"
-    assert out[1]["source"] == "template" and out[1]["text"] == template(FINDINGS[1])
+async def test_a_copy_of_the_template_line_is_not_counted_as_written():
+    copied = item("hidden_edge_failed", template(FINDINGS[0])["what_happened"].upper())
+    out = await write(Fake({"items": [copied, item("explain_strong")]}))
+    assert out[0]["source"] == "template" and out[0]["fallback_reason"] == "copied_template"
 
 
-async def test_long_code_blocks_are_stripped_and_code_only_fields_rejected():
-    leak = "Sửa thế này:\n```python\ndef two_sum(n, t):\n    seen = {}\n    return []\n```"
-    out = await write(Fake({"items": [item("hidden_edge_failed", how_to_improve=leak), item("explain_strong")]}))
-    assert out[0]["source"] == "llm" and "```" not in out[0]["text"]["how_to_improve"]
-    assert "def two_sum" not in out[0]["text"]["how_to_improve"]
+async def test_long_code_is_stripped_and_code_only_lines_rejected():
+    leak = "Bạn viết:\n```python\ndef two_sum(n, t):\n    seen = {}\n    return []\n```"
+    out = await write(Fake({"items": [item("hidden_edge_failed", leak), item("explain_strong")]}))
+    assert out[0]["source"] == "llm" and "def two_sum" not in out[0]["text"]["what_happened"]
     code_only = "```python\na = 1\nb = 2\nc = 3\n```"
-    out = await write(Fake({"items": [item("hidden_edge_failed", why_it_matters=code_only), item("explain_strong")]}))
-    assert out[0]["source"] == "template"
+    out = await write(Fake({"items": [item("hidden_edge_failed", code_only), item("explain_strong")]}))
+    assert out[0]["fallback_reason"] == "empty_field:what_happened"
 
 
-async def test_a_suggestion_outside_the_candidates_falls_back():
-    bad = item("hidden_edge_failed", next_exercise="CP-999", try_next="Thử bài CP-999.")
-    out = await write(Fake({"items": [bad, item("explain_strong")]}))
-    assert out[0]["source"] == "template" and out[1]["source"] == "llm"
-    sneaky = item("hidden_edge_failed", next_exercise="", try_next="Thử bài CP-208.")
-    assert (await write(Fake({"items": [sneaky, item("explain_strong")]})))[0]["source"] == "template"
+async def test_lines_suggesting_an_exercise_or_too_long_are_rejected():
+    out = await write(Fake({"items": [item("hidden_edge_failed", "Bạn nên làm bài CP-208."),
+                                      item("explain_strong", "x" * (MAX_FIELD_CHARS + 1))]}))
+    assert [x["fallback_reason"] for x in out] == ["exercise_mentioned", "too_long:what_happened"]
 
 
-async def test_empty_or_too_long_fields_fall_back():
-    out = await write(Fake({"items": [item("hidden_edge_failed", why_it_matters="  "),
-                                      item("explain_strong", what_happened="x" * (MAX_FIELD_CHARS + 1))]}))
-    assert [x["source"] for x in out] == ["template", "template"]
-
-
-async def test_a_failed_or_slow_call_uses_templates_for_everything():
-    for client, timeout in ((Fake(error=RuntimeError("down")), 12.0), (Fake({"items": []}, delay=0.5), 0.05)):
-        out = await write(client, timeout=timeout)
-        assert [x["source"] for x in out] == ["template", "template"]
-        assert out[0]["text"] == template(FINDINGS[0])
-
-
-async def test_each_template_records_why_it_was_used():
-    out = await write(Fake({"items": [item("hidden_edge_failed", what_happened="x" * (MAX_FIELD_CHARS + 1))]}))
-    assert out[0]["fallback_reason"] == "too_long:what_happened"
-    assert out[1]["fallback_reason"] == "no_item"
+async def test_each_template_line_records_why_it_was_kept():
+    assert (await write(Fake({"items": [item("hidden_edge_failed")]})))[1]["fallback_reason"] == "no_item"
     assert (await write(Fake({})))[0]["fallback_reason"] == "invalid_json"  # e.g. truncated JSON
     assert (await write(Fake({"items": []}, delay=0.5), timeout=0.05))[0]["fallback_reason"] == "timeout"
     assert (await write(Fake(error=RuntimeError("down"))))[0]["fallback_reason"] == "call_failed"
-    bad_next = item("hidden_edge_failed", next_exercise="CP-999")
-    assert (await write(Fake({"items": [bad_next]})))[0]["fallback_reason"] == "next_not_a_candidate"
-    written = await write(Fake({"items": [item("hidden_edge_failed"), item("explain_strong")]}))
-    assert all("fallback_reason" not in x for x in written)
+
+
+async def test_a_failed_call_keeps_the_whole_template():
+    out = await write(Fake(error=RuntimeError("down")))
+    assert [x["source"] for x in out] == ["template", "template"]
+    assert out[0]["text"] == template(FINDINGS[0])
+
+
+async def test_without_candidates_no_exercise_is_suggested():
+    out = await write(Fake({"items": [item("hidden_edge_failed"), item("explain_strong")]}), candidates=[])
+    assert out[0]["next_exercise"] is None and "CP-" not in out[0]["text"]["try_next"]
 
 
 async def test_no_findings_means_no_call():

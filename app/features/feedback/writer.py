@@ -1,12 +1,15 @@
-"""Feedback text for the findings: one LLM call, validated, with template fallback (P1.5).
+"""Feedback text for the findings: reviewed templates plus one LLM-written line (P1.5).
 
-The writer may only explain the findings it is given. Each written item is
-checked before use; an item that fails any check is replaced by its template,
-and a failed or slow call falls back to templates for everything. Checks:
-the code is one of the findings; every field is non-empty and at most
-MAX_FIELD_CHARS; code blocks longer than MAX_CODE_LINES lines are removed (the
-report is shown right after submit, so it must not hand over a solution);
-any exercise it suggests is one of the candidates.
+The golden-set previews showed where the LLM helps: writing about THIS session
+(round 1: specific "what happened", but vaguer advice than the templates;
+round 2, given the templates: copied them verbatim 100/109 times). So the
+advice fields (why_it_matters, how_to_improve, try_next) always come from the
+team-reviewed templates, and the LLM writes only `what_happened`, which must
+add a concrete detail of the session. One call per attempt, validated; any
+item that fails keeps the template's line, and a failed or slow call falls
+back entirely. Checks: the code is one of the findings; the line is non-empty,
+at most MAX_FIELD_CHARS, not a copy of the template, suggests no exercise, and
+loses code blocks longer than MAX_CODE_LINES lines (no solution leaks).
 """
 import asyncio
 import json
@@ -14,7 +17,7 @@ import logging
 import re
 
 from app.features.feedback.diagnosis import Finding
-from app.features.feedback.templates import FIELDS, render
+from app.features.feedback.templates import render
 from app.features.mentor.prompts import FEEDBACK_WRITER_SYSTEM
 
 logger = logging.getLogger(__name__)
@@ -23,9 +26,7 @@ MAX_FIELD_CHARS = 400
 MAX_CODE_LINES = 2
 MAX_FINAL_CODE_LINES = 60
 DEFAULT_TIMEOUT = 15.0
-# Vietnamese costs roughly twice the tokens of English; a truncated JSON reply
-# is unusable, so leave room for four full fields per finding.
-TOKENS_BASE, TOKENS_PER_FINDING = 250, 450
+TOKENS_BASE, TOKENS_PER_FINDING = 200, 200
 _BLOCK = re.compile(r"```[\w+-]*\n?(.*?)```", re.DOTALL)
 _EXERCISE = re.compile(r"\bCP-\d{3}\b")
 
@@ -37,51 +38,36 @@ def _strip_long_code(text: str) -> str:
     return _BLOCK.sub(replace, text).strip()
 
 
-def _validated(item: dict, candidates: list[str]) -> tuple[tuple[dict[str, str], str | None] | None, str]:
-    """((texts, suggested exercise), "") for a valid item, else (None, why it was rejected)."""
-    texts = {}
-    for field in FIELDS:
-        value = item.get(field)
-        if not isinstance(value, str):
-            return None, f"missing_field:{field}"
-        value = _strip_long_code(value)
-        if not value:
-            return None, f"empty_field:{field}"
-        if len(value) > MAX_FIELD_CHARS:
-            return None, f"too_long:{field}"
-        texts[field] = value
-    mentioned = set(_EXERCISE.findall(" ".join(texts.values())))
-    suggested = str(item.get("next_exercise") or "").strip() or None
-    if suggested and suggested not in candidates:
-        return None, "next_not_a_candidate"
-    if any(code not in candidates for code in mentioned):
-        return None, "exercise_not_a_candidate"
-    if suggested is None and mentioned:
-        suggested = sorted(mentioned)[0]
-    return (texts, suggested), ""
+def _normalized(text: str) -> str:
+    return " ".join(text.lower().split()).rstrip(".")
 
 
-def _entry(finding: Finding, texts: dict[str, str], next_exercise: str | None, source: str,
-           fallback_reason: str | None = None) -> dict:
-    entry = {**finding.model_dump(), "text": texts, "next_exercise": next_exercise, "source": source}
-    if fallback_reason:
-        entry["fallback_reason"] = fallback_reason  # quality tracking: why the template was used
-    return entry
+def _validated(item: dict, template_line: str) -> tuple[str | None, str]:
+    """(line, "") for a usable `what_happened`, else (None, why it was rejected)."""
+    value = item.get("what_happened")
+    if not isinstance(value, str):
+        return None, "missing_field:what_happened"
+    value = _strip_long_code(value)
+    if not value:
+        return None, "empty_field:what_happened"
+    if len(value) > MAX_FIELD_CHARS:
+        return None, "too_long:what_happened"
+    if _EXERCISE.search(value):
+        return None, "exercise_mentioned"
+    if _normalized(value) == _normalized(template_line):
+        return None, "copied_template"
+    return value, ""
 
 
-def _prompt(locale: str, problem: str, findings: list[Finding], final_code: str, answers: list[dict],
-            candidates: list[str]) -> str:
+def _prompt(locale: str, problem: str, findings: list[Finding], final_code: str, answers: list[dict]) -> str:
     code = "\n".join(final_code.split("\n")[:MAX_FINAL_CODE_LINES])
-    suggested = candidates[0] if candidates else None
     payload = {
         "language": locale,
         "problem": problem,
         "findings": [{"code": f.code, "kind": f.kind, "axis": f.axis, "params": f.params, "evidence": f.evidence,
-                      # The template is the house style the writer builds on (and the fallback).
-                      "reference": render(f, locale, suggested)}
+                      "generic_line": render(f, locale, None)["what_happened"]}
                      for f in findings],
         "explain_back": answers,
-        "candidates": candidates,
     }
     return f"{json.dumps(payload, ensure_ascii=False, indent=1)}\nSTUDENT'S FINAL CODE:\n{code}"
 
@@ -89,15 +75,16 @@ def _prompt(locale: str, problem: str, findings: list[Finding], final_code: str,
 async def write_feedback(client, *, locale: str, problem: str, findings: list[Finding], final_code: str,
                          answers: list[dict], candidates: list[str], timeout: float = DEFAULT_TIMEOUT) -> list[dict]:
     """One entry per finding (same order): the finding, its four texts, the suggested
-    exercise, `source` ("llm" or "template") and, for a template, `fallback_reason`."""
+    exercise, `source` ("llm" when `what_happened` was written for this session,
+    else "template") and, for a template line, `fallback_reason`."""
     if not findings:
         return []
-    fallback_next = candidates[0] if candidates else None
+    next_exercise = candidates[0] if candidates else None
     written: dict[str, dict] = {}
     call_problem = None
     try:
         verdict = await asyncio.wait_for(
-            client.judge(FEEDBACK_WRITER_SYSTEM, _prompt(locale, problem, findings, final_code, answers, candidates),
+            client.judge(FEEDBACK_WRITER_SYSTEM, _prompt(locale, problem, findings, final_code, answers),
                          max_tokens=TOKENS_BASE + TOKENS_PER_FINDING * len(findings)),
             timeout)
         if not isinstance(verdict, dict) or not isinstance(verdict.get("items"), list):
@@ -113,15 +100,19 @@ async def write_feedback(client, *, locale: str, problem: str, findings: list[Fi
         call_problem = "call_failed"
     out = []
     for finding in findings:
+        texts = render(finding, locale, next_exercise)
+        entry = {**finding.model_dump(), "text": texts, "next_exercise": next_exercise, "source": "template"}
         if finding.code in written:
-            valid, reason = _validated(written[finding.code], candidates)
+            line, reason = _validated(written[finding.code], texts["what_happened"])
         else:
-            valid, reason = None, call_problem or "no_item"
-        if valid:
-            out.append(_entry(finding, valid[0], valid[1], "llm"))
+            line, reason = None, call_problem or "no_item"
+        if line:
+            texts["what_happened"] = line
+            entry["source"] = "llm"
         else:
-            out.append(_entry(finding, render(finding, locale, fallback_next), fallback_next, "template", reason))
-    fallbacks = [e["fallback_reason"] for e in out if e["source"] == "template"]
-    if fallbacks:
-        logger.warning("feedback writer: %d/%d finding(s) on templates: %s", len(fallbacks), len(out), fallbacks)
+            entry["fallback_reason"] = reason  # quality tracking: why the template line was kept
+        out.append(entry)
+    kept = [e["fallback_reason"] for e in out if e["source"] == "template"]
+    if kept:
+        logger.warning("feedback writer: %d/%d finding(s) kept the template line: %s", len(kept), len(out), kept)
     return out
