@@ -52,6 +52,8 @@ async def test_valid_items_are_used_in_finding_order():
     assert out[0]["next_exercise"] == "CP-105" and out[0]["severity"] == "medium"
     prompt = client.calls[0][1]
     assert "hidden_edge_failed" in prompt and "CP-105" in prompt and "Vì." in prompt
+    # The template goes along as the house-style reference the writer must not make vaguer.
+    assert template(FINDINGS[0])["how_to_improve"] in prompt
 
 
 async def test_a_finding_without_a_valid_item_falls_back_to_its_template():

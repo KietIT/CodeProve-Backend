@@ -72,10 +72,13 @@ def _entry(finding: Finding, texts: dict[str, str], next_exercise: str | None, s
 def _prompt(locale: str, problem: str, findings: list[Finding], final_code: str, answers: list[dict],
             candidates: list[str]) -> str:
     code = "\n".join(final_code.split("\n")[:MAX_FINAL_CODE_LINES])
+    suggested = candidates[0] if candidates else None
     payload = {
         "language": locale,
         "problem": problem,
-        "findings": [{"code": f.code, "kind": f.kind, "axis": f.axis, "params": f.params, "evidence": f.evidence}
+        "findings": [{"code": f.code, "kind": f.kind, "axis": f.axis, "params": f.params, "evidence": f.evidence,
+                      # The template is the house style the writer builds on (and the fallback).
+                      "reference": render(f, locale, suggested)}
                      for f in findings],
         "explain_back": answers,
         "candidates": candidates,
