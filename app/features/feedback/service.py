@@ -25,13 +25,14 @@ def submit_locale(ev: Evidence) -> str:
 
 
 async def build_diagnosis(db: AsyncSession, attempt: Attempt, exercise: Exercise, ev: Evidence, result: dict,
-                          client) -> dict:
-    locale = submit_locale(ev)
+                          client, locale: str | None = None) -> dict:
+    locale = locale or submit_locale(ev)
     findings = diagnose(result, ev)
     suggested = await candidates(db, attempt.user_id, exercise, findings)
     entries = await write_feedback(client, locale=locale, problem=exercise.summary or "", findings=findings,
                                    final_code=ev.final_code, answers=ev.answers, candidates=suggested)
-    return {"version": VERSION, "locale": locale, "model": client._model, "findings": entries}
+    return {"version": VERSION, "locale": locale, "model": client._model, "candidates": suggested,
+            "findings": entries}
 
 
 async def refresh_diagnosis(db: AsyncSession, attempt: Attempt, exercise: Exercise, ev: Evidence, result: dict,
