@@ -56,7 +56,7 @@ Khi đọc, mỗi người ghi ý kiến vào cột cuối hoặc nhắn Kiệt:
 - **Chuyện gì đã xảy ra:** Bạn giải thích được cả cách làm lẫn lý do, kèm trường hợp đặc biệt.
 - **Vì sao quan trọng:** Đó là dấu hiệu rõ nhất của việc hiểu thật, không phụ thuộc vào AI.
 - **Cách cải thiện:** Giữ thói quen này và thử nói thêm về độ phức tạp thời gian.
-- **Thử tiếp:** Thử bài CP-105 và thử giải thích cả độ phức tạp của lời giải.
+- **Thử tiếp:** Thử bài CP-105 và giải thích thêm cả độ phức tạp của lời giải.
 
 ### `no_hypothesis` · Giả thuyết · Cần cải thiện
 *Xuất hiện khi: Không ghi giả thuyết.*
@@ -128,7 +128,7 @@ Khi đọc, mỗi người ghi ý kiến vào cột cuối hoặc nhắn Kiệt:
 - **Chuyện gì đã xảy ra:** Bạn dùng nguyên đoạn code Ciel đưa, không sửa hay kiểm tra thêm; lần này nó chạy đúng.
 - **Vì sao quan trọng:** Lần sau code AI có thể có lỗi mà test hiển thị không bắt được.
 - **Cách cải thiện:** Tự đọc hiểu code AI, thử thêm trường hợp biên, hoặc hỏi Ciel vì sao đoạn code đó đúng.
-- **Thử tiếp:** Thử bài CP-105 và thử thêm một trường hợp biên cho mọi đoạn code AI bạn dùng.
+- **Thử tiếp:** Thử bài CP-105 và kiểm tra thêm một trường hợp biên cho mọi đoạn code AI bạn dùng.
 
 ### `adapted_ai_code` · Kiểm chứng · Điểm mạnh
 *Xuất hiện khi: Dán rồi sửa code AI, nộp pass.*
@@ -192,7 +192,7 @@ Khi đọc, mỗi người ghi ý kiến vào cột cuối hoặc nhắn Kiệt:
 - **Chuyện gì đã xảy ra:** Bạn sửa được lỗi chính (test hiển thị pass) nhưng test ẩn nhóm đặc biệt còn fail.
 - **Vì sao quan trọng:** Một lỗi thường kéo theo các trường hợp tương tự; sửa xong cần kiểm tra cả chúng.
 - **Cách cải thiện:** Sau khi sửa, thử lại với các input biên liên quan đến chỗ vừa sửa.
-- **Thử tiếp:** Thử bài CP-105 và thử lại các input biên liên quan sau mỗi lần sửa lỗi.
+- **Thử tiếp:** Thử bài CP-105 và kiểm tra lại các input biên liên quan sau mỗi lần sửa lỗi.
 
 ### `trial_and_error` · Debug · Cần cải thiện
 *Xuất hiện khi: Sửa được sau ≥ 4 lần chạy fail.*
