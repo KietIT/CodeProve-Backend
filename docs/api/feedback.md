@@ -42,7 +42,7 @@ the diagnosis texts are written in it. Send the UI language the student is using
       "axis": "testing",
       "kind": "risk",
       "severity": "medium",
-      "params": {"failed_categories": ["boundary", "edge"]},
+      "params": {"failed_categories": ["boundary", "edge"], "failed_tests": ["limit of one"]},
       "evidence": "5/8",
       "text": {
         "what_happened": "...", "why_it_matters": "...",
@@ -61,8 +61,11 @@ the diagnosis texts are written in it. Send the UI language the student is using
 - `text`: four plain-text fields in `diagnosis.locale` (no markdown except, rarely, a 1–2 line
   inline code snippet). Render as text, not HTML.
 - `next_exercise`: an exercise code the student has not solved (link to it), or `null`.
-- `source`: `"llm"` when `text.what_happened` was written for this session; `"template"` when
-  the reviewed generic line was kept (then `fallback_reason` says why). `why_it_matters`,
+- `source`: `"llm"` when `text.what_happened` was written for this session (only
+  `explain_missing`, `explain_shallow`, `hypothesis_vague` and `prompts_vague`, whose evidence is
+  the student's own words); `"template"` otherwise. All other findings always use the template
+  line (strengths would restate the solution; counts are stated exactly); `fallback_reason`
+  appears only when the writer was asked and its line was rejected. `why_it_matters`,
   `how_to_improve` and `try_next` always come from the team-reviewed templates. The UI does not
   need to show `source`; it is for quality tracking.
 - `axis: "overall"` is used only by `integrity_flags`.
@@ -75,10 +78,12 @@ the diagnosis texts are written in it. Send the UI language the student is using
 | hypothesis | `no_hypothesis`, `hypothesis_vague`, `hypothesis_after_code` | `hypothesis_strong` |
 | prompting | `asked_for_solution` (`count`), `prompts_vague` | `prompts_strong` |
 | verification | `pasted_ai_failing`, `pasted_ai_unchecked` | `adapted_ai_code`, `questioned_ai_code` |
-| testing | `never_ran_tests`, `submitted_failing` (`passed`, `total`), `hidden_edge_failed` (`failed_categories`) | `all_tests_passed` |
-| debugging | `bug_not_fixed`, `partial_fix` (`failed_categories`), `trial_and_error` (`failing_runs`) | `quick_fix` |
+| testing | `never_ran_tests`, `submitted_failing` (`passed`, `total`), `hidden_edge_failed` (`failed_categories`, `failed_tests`) | `all_tests_passed` |
+| debugging | `bug_not_fixed` (`passed`, `total`), `partial_fix` (`failed_categories`, `failed_tests`), `trial_and_error` (`failing_runs`) | `quick_fix` |
 | overall | `integrity_flags` (`paste`, `focus_lost`) | |
 
 `failed_categories` values: `happy`, `boundary`, `edge`, `error`, `uncategorized`.
+`failed_tests`: names (descriptions) of up to 3 failing hidden tests, never their inputs; may be empty.
+A failing submit shows `bug_not_fixed` on debug exercises and `submitted_failing` otherwise, never both.
 Source of truth: `app/features/feedback/diagnosis.py` (`FINDING_CODES`), texts in
 `app/features/feedback/templates.py`.

@@ -13,9 +13,10 @@ def e(type_, minute, payload=None, flags=None):
     return {"type": type_, "ts": int(minute * MIN), "payload": payload or {}, "integrity_flags": flags or []}
 
 
-def suite(passed, total, visible_passed, visible_total=2, failed=()):
+def suite(passed, total, visible_passed, visible_total=2, failed=(), failures=()):
     return e("SUBMIT_TESTS", 20, {"passed": passed, "total": total, "visiblePassed": visible_passed,
-                                  "visibleTotal": visible_total, "failedCategories": list(failed)})
+                                  "visibleTotal": visible_total, "failedCategories": list(failed),
+                                  "failures": list(failures)})
 
 
 def run(minute, ratio, starter=False):
@@ -58,7 +59,22 @@ def test_hidden_edge_failures_carry_the_failed_categories():
     out = findings(hyp(1, 2), e("CODE_EDIT", 2), run(3, 1.0), suite(5, 8, 2, failed=("boundary", "edge")),
                    explain(2))
     edge = next(f for f in out if f.code == "hidden_edge_failed")
-    assert edge.params == {"failed_categories": ["boundary", "edge"]} and edge.severity == "medium"
+    assert edge.params == {"failed_categories": ["boundary", "edge"], "failed_tests": []}
+    assert edge.severity == "medium"
+
+
+def test_hidden_failures_are_named_but_visible_ones_and_inputs_are_not():
+    failures = [{"description": "limit of one", "category": "boundary", "hidden": True, "input": "SECRET"},
+                {"description": "test_empty_list", "category": "boundary", "hidden": True},
+                {"description": "limit of one", "category": "boundary", "hidden": True},
+                {"description": "visible case", "category": "happy", "hidden": False},
+                {"description": "", "category": "edge", "hidden": True},
+                {"description": "a", "hidden": True}, {"description": "b", "hidden": True}]
+    out = findings(hyp(1, 2), e("CODE_EDIT", 2), run(3, 1.0),
+                   suite(3, 8, 2, failed=("boundary", "edge"), failures=failures), explain(2))
+    edge = next(f for f in out if f.code == "hidden_edge_failed")
+    assert edge.params["failed_tests"] == ["limit of one", "empty list", "a"]  # deduped, at most 3
+    assert "SECRET" not in str(edge.params)
 
 
 def test_never_running_tests_is_high():
@@ -70,6 +86,7 @@ def test_submitting_with_visible_failures_reports_the_counts():
     out = findings(hyp(1, 2), e("CODE_EDIT", 2), run(3, 0.5), suite(5, 8, 1), explain(2))
     failing = next(f for f in out if f.code == "submitted_failing")
     assert failing.params == {"passed": 5, "total": 8}
+    assert "bug_not_fixed" not in codes(out)  # implement exercise: the submit decision, said once
 
 
 def test_asking_for_the_solution_outranks_vague_prompts():
@@ -97,9 +114,12 @@ def test_debugging_findings():
     # sim-19: visible pass, hidden edge fails.
     partial = findings(hyp(1, 2), run(2, 1.0, starter=True), e("CODE_EDIT", 3), run(4, 1.0),
                        suite(4, 7, 2, failed=("edge",)), explain(2), **debug)
-    assert next(f for f in partial if f.code == "partial_fix").params == {"failed_categories": ["edge"]}
+    assert next(f for f in partial if f.code == "partial_fix").params == {"failed_categories": ["edge"],
+                                                                         "failed_tests": []}
+    assert "hidden_edge_failed" not in codes(partial)  # the same hidden failure, said once
     unfixed = findings(hyp(1, 2), e("CODE_EDIT", 3), run(4, 0.5), suite(3, 7, 1), explain(2), **debug)
-    assert "bug_not_fixed" in codes(unfixed)
+    assert next(f for f in unfixed if f.code == "bug_not_fixed").params == {"passed": 3, "total": 7}
+    assert "submitted_failing" not in codes(unfixed)  # the same failing submit, said once
     trial = findings(hyp(1, 2), e("CODE_EDIT", 3), *[run(m, 0.5) for m in (4, 5, 6, 7)], run(8, 1.0),
                      suite(7, 7, 2), explain(2), **debug)
     assert next(f for f in trial if f.code == "trial_and_error").params == {"failing_runs": 4}

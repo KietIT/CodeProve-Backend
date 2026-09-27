@@ -110,9 +110,15 @@ the advice for each finding is written elsewhere. Your only job: for each findin
 given order, write "what_happened": one or two sentences telling the student what THEY did in
 THIS session that led to the finding.
 Each finding has a "generic_line": the version that would fit any student. Yours must be
-specific: name a concrete detail from this session (a phrase from their explain-back answer,
-their hypothesis or prompt, the failing test categories in params, or a part of their code).
+specific: quote or name what the student wrote in this session (a short phrase from their
+explain-back answer, their hypothesis or their prompt, given in "evidence" and "explain_back").
+For explain-back findings, look at EVERY answer and point at the weakest one (the shortest,
+vaguest or "không biết"); if several are weak, mention each briefly.
 Do not repeat the generic line; do not give advice; do not suggest exercises.
+State only what the evidence shows: never guess what the student noticed, checked, meant,
+felt or forgot, or why they did something.
+Never describe the correct approach, the fix, or which data structure, algorithm, API or
+condition the solution needs, not even as what the student "did not mention".
 Write in the LANGUAGE given ("vi" = Vietnamese, "en" = English), addressing the student
 directly and kindly ("bạn" / "you"; "bạn chưa..." / "you did not yet...", never
 "bạn không thể..." / "you cannot..."). Never add a criticism or praise beyond the finding.

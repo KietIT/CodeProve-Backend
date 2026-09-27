@@ -6,8 +6,9 @@ from app.features.feedback.templates import FIELDS, TEMPLATES, render
 SAMPLE_PARAMS = {
     "asked_for_solution": {"count": 2},
     "submitted_failing": {"passed": 5, "total": 8},
-    "hidden_edge_failed": {"failed_categories": ["boundary", "edge"]},
-    "partial_fix": {"failed_categories": ["edge"]},
+    "hidden_edge_failed": {"failed_categories": ["boundary", "edge"], "failed_tests": ["limit of one"]},
+    "partial_fix": {"failed_categories": ["edge"], "failed_tests": []},
+    "bug_not_fixed": {"passed": 3, "total": 7},
     "trial_and_error": {"failing_runs": 5},
     "integrity_flags": {"paste": 1, "focus_lost": 0},
 }
@@ -39,10 +40,26 @@ def test_every_template_renders_with_and_without_params(code, locale):
 
 
 def test_params_are_rendered_readably():
-    out = render(finding("hidden_edge_failed", failed_categories=["boundary", "edge"]), "vi", None)
-    assert "nhóm biên và đặc biệt" in out["what_happened"]
+    out = render(finding("hidden_edge_failed", failed_categories=["boundary", "edge"],
+                         failed_tests=["limit of one", "clients are limited independently"]), "vi", None)
+    assert out["what_happened"] == ("Test hiển thị pass hết nhưng test ẩn nhóm giá trị biên và tình huống đặc biệt "
+                                    "còn fail, gồm: “limit of one”, “clients are limited independently”.")
+    out = render(finding("hidden_edge_failed", failed_categories=["edge"], failed_tests=[]), "en", None)
+    assert out["what_happened"] == "All visible tests passed but hidden edge tests failed."
     out = render(finding("submitted_failing", passed=5, total=8), "en", None)
     assert "5/8" in out["what_happened"]
+    out = render(finding("integrity_flags", paste=2, focus_lost=3), "vi", None)
+    assert "(dán nội dung từ ngoài 2 lần và rời trang 3 lần)" in out["what_happened"]
+    assert "rời trang" not in render(finding("integrity_flags", paste=1, focus_lost=0), "vi", None)["what_happened"]
+
+
+def test_templates_avoid_the_absolutes_the_team_flagged():
+    flagged = ("chắc chắn nhất", "rủi ro lớn nhất", "kỹ năng quan trọng nhất", "không phụ thuộc",
+               "rỗng, một phần tử", "input rỗng", "tránh lỗi tinh vi", "surest", "biggest risk", "the key skill")
+    for code, by_locale in TEMPLATES.items():
+        for locale, texts in by_locale.items():
+            joined = " ".join(texts.values()).lower()
+            assert not [w for w in flagged if w in joined], (code, locale)
 
 
 def test_try_next_names_the_suggested_exercise():
