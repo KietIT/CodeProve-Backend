@@ -72,6 +72,25 @@ async def test_backfill_asks_once_per_missing_verdict_and_is_idempotent(db_sessi
     assert fake.calls == 3
 
 
+async def test_rescore_keeps_the_written_text_of_unchanged_findings(db_session):
+    from app.models import FluencyReport
+
+    at = await _scored_attempt(db_session)
+    first = await rescore_all(db_session, apply=True, engine="v2", attempt_ids={at.id}, client=FakeJudge())
+    assert first
+    rep = (await db_session.execute(select(FluencyReport).where(FluencyReport.attempt_id == at.id))).scalar_one()
+    findings = rep.feedback["diagnosis"]["findings"]
+    # Pretend the writer had written the first finding, then rescore again.
+    written = {**findings[0], "text": {k: f"LLM {k}" for k in findings[0]["text"]}, "source": "llm"}
+    rep.feedback = {**rep.feedback, "diagnosis": {**rep.feedback["diagnosis"], "findings": [written, *findings[1:]]}}
+    await db_session.commit()
+    await rescore_all(db_session, apply=True, engine="v2", attempt_ids={at.id})
+    await db_session.refresh(rep)
+    again = rep.feedback["diagnosis"]["findings"]
+    assert again[0]["source"] == "llm" and again[0]["text"]["what_happened"] == "LLM what_happened"
+    assert all(f["source"] == "template" for f in again[1:])
+
+
 async def test_rescore_v2_on_the_golden_set_writes_engine_json(db_session, tmp_path):
     from app.models import FluencyReport
 

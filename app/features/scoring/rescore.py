@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
 from app.features.attempts.scoring_service import _events_as_dicts, integrity_from_features, report_columns
+from app.features.feedback.service import refresh_diagnosis
 from app.features.scoring.backfill import backfill_judges
 from app.features.scoring.engine import score_attempt
 from app.features.scoring.engine_v2 import score_attempt_v2
@@ -60,7 +61,11 @@ async def rescore_all(db: AsyncSession, apply: bool, engine: str = "v1", attempt
             if client is not None:
                 await backfill_judges(db, attempt, client)
                 await db.commit()  # keep the verdicts even on a dry run: they are paid for
-            result = score_attempt_v2(await load_evidence(db, attempt), report.explanation_score)
+            ev = await load_evidence(db, attempt)
+            result = score_attempt_v2(ev, report.explanation_score)
+            # Feedback text is kept where the finding is unchanged; the writer is never re-asked.
+            previous = (report.feedback or {}).get("diagnosis")
+            result["diagnosis"] = await refresh_diagnosis(db, attempt, exercise, ev, result, previous)
         else:
             events = await _events_as_dicts(db, attempt.id)
             result = score_attempt(events, explain_score=report.explanation_score, exercise_kind=exercise.kind)
