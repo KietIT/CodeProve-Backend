@@ -30,7 +30,7 @@ async def build_diagnosis(db: AsyncSession, attempt: Attempt, exercise: Exercise
     findings = diagnose(result, ev)
     suggested = await candidates(db, attempt.user_id, exercise, findings)
     entries = await write_feedback(client, locale=locale, problem=exercise.summary or "", findings=findings,
-                                   final_code=ev.final_code, answers=ev.answers, candidates=suggested)
+                                   answers=ev.answers, candidates=suggested)
     return {"version": VERSION, "locale": locale, "model": client._model, "candidates": suggested,
             "findings": entries}
 

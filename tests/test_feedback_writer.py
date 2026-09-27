@@ -7,14 +7,17 @@ from app.features.feedback.writer import MAX_FIELD_CHARS, write_feedback
 FINDINGS = [
     Finding(code="explain_shallow", axis="understanding", kind="risk", severity="medium",
             evidence="vòng lặp chạy từ 1 tới n"),
-    Finding(code="hypothesis_strong", axis="hypothesis", kind="strength", evidence="dict lưu phần bù, O(n)"),
+    Finding(code="prompts_vague", axis="prompting", kind="risk", severity="medium", evidence="sao lai sai?"),
 ]
-TESTING = Finding(code="explain_shallow", axis="testing", kind="risk", severity="medium",
-                  params={"failed_categories": ["edge"]}, evidence="5/8")
+STRENGTH = Finding(code="hypothesis_strong", axis="hypothesis", kind="strength", evidence="dict lưu phần bù, O(n)")
+AI_CODE = Finding(code="pasted_ai_failing", axis="verification", kind="risk", severity="high",
+                  evidence="class LRUCache:")
+TESTING = Finding(code="hidden_edge_failed", axis="testing", kind="risk", severity="medium",
+                  params={"failed_categories": ["edge"], "failed_tests": ["limit of one"]}, evidence="5/8")
 CANDIDATES = ["CP-105", "CP-003"]
 SPECIFIC = {
     "explain_shallow": "Bạn trả lời \"vòng lặp chạy từ 1 tới n\" nhưng chưa nói vì sao dừng ở n.",
-    "hypothesis_strong": "Bạn ghi ngay từ đầu: dict lưu phần bù, O(n), và cẩn thận với [3, 3].",
+    "prompts_vague": "Bạn hỏi Ciel \"sao lai sai?\" mà chưa nói đang sai ở test nào.",
 }
 
 
@@ -39,7 +42,7 @@ class Fake:
 
 async def write(client, findings=FINDINGS, timeout=12.0, candidates=CANDIDATES):
     return await write_feedback(client, locale="vi", problem="Two-sum", findings=findings,
-                                final_code="def f():\n    return 1", answers=[{"question": "Why?", "answer": "Vì."}],
+                                answers=[{"question": "Why?", "answer": "Vì."}],
                                 candidates=candidates, timeout=timeout)
 
 
@@ -48,9 +51,9 @@ def template(finding, next_exercise="CP-105"):
 
 
 async def test_the_llm_writes_what_happened_and_the_advice_stays_reviewed():
-    client = Fake({"items": [item("hypothesis_strong"), item("explain_shallow")]})
+    client = Fake({"items": [item("prompts_vague"), item("explain_shallow")]})
     out = await write(client)
-    assert [x["code"] for x in out] == ["explain_shallow", "hypothesis_strong"]
+    assert [x["code"] for x in out] == ["explain_shallow", "prompts_vague"]
     assert all(x["source"] == "llm" and "fallback_reason" not in x for x in out)
     assert out[0]["text"]["what_happened"] == SPECIFIC["explain_shallow"]
     for field in ("why_it_matters", "how_to_improve", "try_next"):
@@ -64,22 +67,22 @@ async def test_the_llm_writes_what_happened_and_the_advice_stays_reviewed():
 
 async def test_a_copy_of_the_template_line_is_not_counted_as_written():
     copied = item("explain_shallow", template(FINDINGS[0])["what_happened"].upper())
-    out = await write(Fake({"items": [copied, item("hypothesis_strong")]}))
+    out = await write(Fake({"items": [copied, item("prompts_vague")]}))
     assert out[0]["source"] == "template" and out[0]["fallback_reason"] == "copied_template"
 
 
 async def test_long_code_is_stripped_and_code_only_lines_rejected():
     leak = "Bạn viết:\n```python\ndef two_sum(n, t):\n    seen = {}\n    return []\n```"
-    out = await write(Fake({"items": [item("explain_shallow", leak), item("hypothesis_strong")]}))
+    out = await write(Fake({"items": [item("explain_shallow", leak), item("prompts_vague")]}))
     assert out[0]["source"] == "llm" and "def two_sum" not in out[0]["text"]["what_happened"]
     code_only = "```python\na = 1\nb = 2\nc = 3\n```"
-    out = await write(Fake({"items": [item("explain_shallow", code_only), item("hypothesis_strong")]}))
+    out = await write(Fake({"items": [item("explain_shallow", code_only), item("prompts_vague")]}))
     assert out[0]["fallback_reason"] == "empty_field:what_happened"
 
 
 async def test_lines_suggesting_an_exercise_or_too_long_are_rejected():
     out = await write(Fake({"items": [item("explain_shallow", "Bạn nên làm bài CP-208."),
-                                      item("hypothesis_strong", "x" * (MAX_FIELD_CHARS + 1))]}))
+                                      item("prompts_vague", "x" * (MAX_FIELD_CHARS + 1))]}))
     assert [x["fallback_reason"] for x in out] == ["exercise_mentioned", "too_long:what_happened"]
 
 
@@ -97,7 +100,7 @@ async def test_a_failed_call_keeps_the_whole_template():
 
 
 async def test_without_candidates_no_exercise_is_suggested():
-    out = await write(Fake({"items": [item("explain_shallow"), item("hypothesis_strong")]}), candidates=[])
+    out = await write(Fake({"items": [item("explain_shallow"), item("prompts_vague")]}), candidates=[])
     assert out[0]["next_exercise"] is None and "CP-" not in out[0]["text"]["try_next"]
 
 
@@ -107,13 +110,22 @@ async def test_no_findings_means_no_call():
     assert client.calls == []
 
 
-async def test_count_based_findings_keep_their_exact_template_line():
-    # Round 3 misread test counts ("6/7 visible", "4/7 fail"): these lines stay templated.
-    client = Fake({"items": [item("explain_shallow"), {"code": "hidden_edge_failed", "what_happened": "6/7 visible"}]})
-    out = await write(client, findings=[FINDINGS[0], TESTING])
-    assert out[1]["source"] == "template" and "fallback_reason" not in out[1]
-    assert out[1]["text"] == template(TESTING)
-    assert "hidden_edge_failed" not in client.calls[0][1]
-    only_counts = Fake({"items": []})
-    assert (await write(only_counts, findings=[TESTING]))[0]["source"] == "template"
-    assert only_counts.calls == []
+async def test_strengths_counts_and_ai_code_keep_their_exact_template_line():
+    # Team review of round 3: strengths restated the solution, an AI-code line cited code the
+    # session did not show, and counts were misread. These stay templated, by design.
+    others = [STRENGTH, AI_CODE, TESTING]
+    client = Fake({"items": [item("explain_shallow"), *({"code": f.code, "what_happened": "x"} for f in others)]})
+    out = await write(client, findings=[FINDINGS[0], *others])
+    for finding, entry in zip(others, out[1:]):
+        assert entry["source"] == "template" and "fallback_reason" not in entry
+        assert entry["text"] == template(finding)
+        assert finding.code not in client.calls[0][1]
+    nothing_to_write = Fake({"items": []})
+    assert all(e["source"] == "template" for e in await write(nothing_to_write, findings=others))
+    assert nothing_to_write.calls == []
+
+
+async def test_the_writer_never_sees_the_final_code():
+    client = Fake({"items": [item("explain_shallow")]})
+    await write(client, findings=[FINDINGS[0]])
+    assert "FINAL CODE" not in client.calls[0][1]
