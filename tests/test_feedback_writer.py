@@ -52,6 +52,8 @@ async def test_valid_items_are_used_in_finding_order():
     assert out[0]["next_exercise"] == "CP-105" and out[0]["severity"] == "medium"
     prompt = client.calls[0][1]
     assert "hidden_edge_failed" in prompt and "CP-105" in prompt and "Vì." in prompt
+    # The template goes along as the house-style reference the writer must not make vaguer.
+    assert template(FINDINGS[0])["how_to_improve"] in prompt
 
 
 async def test_a_finding_without_a_valid_item_falls_back_to_its_template():
@@ -89,6 +91,19 @@ async def test_a_failed_or_slow_call_uses_templates_for_everything():
         out = await write(client, timeout=timeout)
         assert [x["source"] for x in out] == ["template", "template"]
         assert out[0]["text"] == template(FINDINGS[0])
+
+
+async def test_each_template_records_why_it_was_used():
+    out = await write(Fake({"items": [item("hidden_edge_failed", what_happened="x" * (MAX_FIELD_CHARS + 1))]}))
+    assert out[0]["fallback_reason"] == "too_long:what_happened"
+    assert out[1]["fallback_reason"] == "no_item"
+    assert (await write(Fake({})))[0]["fallback_reason"] == "invalid_json"  # e.g. truncated JSON
+    assert (await write(Fake({"items": []}, delay=0.5), timeout=0.05))[0]["fallback_reason"] == "timeout"
+    assert (await write(Fake(error=RuntimeError("down"))))[0]["fallback_reason"] == "call_failed"
+    bad_next = item("hidden_edge_failed", next_exercise="CP-999")
+    assert (await write(Fake({"items": [bad_next]})))[0]["fallback_reason"] == "next_not_a_candidate"
+    written = await write(Fake({"items": [item("hidden_edge_failed"), item("explain_strong")]}))
+    assert all("fallback_reason" not in x for x in written)
 
 
 async def test_no_findings_means_no_call():

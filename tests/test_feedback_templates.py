@@ -50,5 +50,12 @@ def test_try_next_names_the_suggested_exercise():
     assert "CP-" not in render(finding("no_hypothesis"), "vi", None)["try_next"]
 
 
+def test_try_next_does_not_repeat_the_leading_verb():
+    # "Thử bài CP-105 và thử ..." / "Try CP-105 and try ..." read badly.
+    for code in FINDING_CODES:
+        assert not TEMPLATES[code]["vi"]["practice"].lower().startswith("thử"), code
+        assert not TEMPLATES[code]["en"]["practice"].lower().startswith("try"), code
+
+
 def test_unknown_locale_falls_back_to_vietnamese():
     assert render(finding("no_hypothesis"), "fr", None) == render(finding("no_hypothesis"), "vi", None)
