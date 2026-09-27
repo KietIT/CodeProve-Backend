@@ -91,6 +91,19 @@ async def test_a_failed_or_slow_call_uses_templates_for_everything():
         assert out[0]["text"] == template(FINDINGS[0])
 
 
+async def test_each_template_records_why_it_was_used():
+    out = await write(Fake({"items": [item("hidden_edge_failed", what_happened="x" * (MAX_FIELD_CHARS + 1))]}))
+    assert out[0]["fallback_reason"] == "too_long:what_happened"
+    assert out[1]["fallback_reason"] == "no_item"
+    assert (await write(Fake({})))[0]["fallback_reason"] == "invalid_json"  # e.g. truncated JSON
+    assert (await write(Fake({"items": []}, delay=0.5), timeout=0.05))[0]["fallback_reason"] == "timeout"
+    assert (await write(Fake(error=RuntimeError("down"))))[0]["fallback_reason"] == "call_failed"
+    bad_next = item("hidden_edge_failed", next_exercise="CP-999")
+    assert (await write(Fake({"items": [bad_next]})))[0]["fallback_reason"] == "next_not_a_candidate"
+    written = await write(Fake({"items": [item("hidden_edge_failed"), item("explain_strong")]}))
+    assert all("fallback_reason" not in x for x in written)
+
+
 async def test_no_findings_means_no_call():
     client = Fake({"items": []})
     assert await write(client, findings=[]) == []

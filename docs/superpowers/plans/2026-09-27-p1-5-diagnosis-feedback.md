@@ -76,7 +76,7 @@ Severity: `high` blocks the skill the platform measures, `medium` costs a level,
 ### Task 4: LLM writer with validation
 
 `app/features/feedback/writer.py` + `FEEDBACK_WRITER_SYSTEM` in `mentor/prompts.py`. Input: locale, problem summary, findings (code, axis, kind, params, evidence), final code (≤ 60 lines), explain-back Q&A, candidates. Rules in the prompt: write only about the listed findings, quote the evidence, one or two sentences per field, no code longer than 2 lines, never the full solution, `try_next` ∈ candidates or empty. Output JSON `{"items": [{"code", "what_happened", "why_it_matters", "how_to_improve", "try_next"}]}`.
-Validation: codes ⊆ given codes; each field non-empty and ≤ 400 chars; code fences removed if longer than 2 lines; `try_next` must be a candidate; wrong locale is not detectable cheaply, so it is not checked. Any item that fails falls back to its template; a failed call (error/timeout 12 s) falls back entirely. Each finding records `source: "llm" | "template"`. Tests with a fake client: happy path, unknown code dropped, a long code block stripped, `try_next` outside candidates cleared, timeout → all templates. Commit `feat(feedback): LLM writer with validation and template fallback`.
+Validation: codes ⊆ given codes; each field non-empty and ≤ 400 chars; code fences removed if longer than 2 lines; `try_next` must be a candidate; wrong locale is not detectable cheaply, so it is not checked. Any item that fails falls back to its template; a failed call (error/timeout 15 s) falls back entirely. Each finding records `source: "llm" | "template"`. Tests with a fake client: happy path, unknown code dropped, a long code block stripped, `try_next` outside candidates cleared, timeout → all templates. Commit `feat(feedback): LLM writer with validation and template fallback`.
 
 ### Task 5: Wire into scoring and reports
 
@@ -97,7 +97,7 @@ Pass: 0 leaks; ≥ 80% of findings rated accurate and actionable; otherwise fix 
 
 ## Cost and latency
 
-One extra LLM call per submitted attempt (the writer), at explain-back, with a 12-second timeout. Explain-back already waits for its judges, so the student sees the report a few seconds later than today; on timeout the templates answer instantly.
+One extra LLM call per submitted attempt (the writer), at explain-back, with a 15-second timeout. Explain-back already waits for its judges, so the student sees the report a few seconds later than today; on timeout the templates answer instantly.
 
 ## Who does what
 
