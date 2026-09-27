@@ -51,9 +51,9 @@ Mẫu được viết lại theo góp ý của Trung và Phát: bỏ khẳng đ�
 
 - **Giám khảo explain-back chấm sai** (3a, 8b): lời giải dùng `with threading.Lock():` trong hàm (mỗi lần gọi tạo khoá mới, nên không an toàn) nhưng phần giải thích vẫn được chấm tốt. Lỗi thuộc engine (P1.4), phản hồi chỉ nói lại mức engine đã chấm. Ghi cho P2.
 - **Câu hỏi explain-back hỏi kỹ thuật học sinh không dùng** (12a: hỏi "phân vùng" khi lời giải gộp hai mảng). Ghi cho P2 (sinh câu hỏi).
-- **Mức nghiêm trọng:** Phát đề nghị hạ `explain_missing` xuống Vừa và `never_ran_tests` xuống Vừa khi bài vẫn pass hết; Trung thấy mức hiện tại hợp lý. Chưa đổi, chờ Kiệt quyết.
+- **Mức nghiêm trọng:** Phát đề nghị hạ `explain_missing` xuống Vừa và `never_ran_tests` xuống Vừa khi bài vẫn pass hết; Trung thấy mức hiện tại hợp lý. Kiệt quyết giữ nguyên (2026-09-27).
 - `no_hypothesis`: Phát đề nghị chỉ hiện khi đề yêu cầu ghi hướng giải. Mọi bài CodeProve đều có ô giả thuyết, nên giữ.
-- `integrity_flags`: câu mẫu mời học sinh "liên hệ đội CodeProve để được xem lại". Hiện chưa có kênh này trong sản phẩm; cần một kênh (ví dụ nút ở trang Feedback, P1.6) hoặc sửa câu.
+- `integrity_flags`: câu mẫu mời học sinh "liên hệ đội CodeProve để được xem lại". Hiện chưa có kênh riêng trong sản phẩm; Kiệt quyết giữ nguyên câu này và không làm kênh riêng (2026-09-27).
 
 ## Bước tiếp theo
 
