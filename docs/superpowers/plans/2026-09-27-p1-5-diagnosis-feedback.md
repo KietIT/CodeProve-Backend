@@ -1,5 +1,7 @@
 # P1.5 Diagnosis and Actionable Feedback Implementation Plan
 
+> **Status: done (2026-09-28).** Team review round 2 passed: 0 leaks, 93% accurate and actionable (`docs/calibration/feedback-review-results-2026-09-27.md`). A rescore now keeps only LLM lines of `WRITTEN_CODES`; everything else is re-rendered from the current templates.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Replace the generic "Improve your prompting." feedback with specific, evidence-backed findings, each explained as *what happened / why it matters / how to improve / what to try next*, in the student's language. Every finding comes from the rubric v2 evidence, so the feedback can never criticise something the session did not show.

@@ -51,10 +51,30 @@ Mẫu được viết lại theo góp ý của Trung và Phát: bỏ khẳng đ�
 
 - **Giám khảo explain-back chấm sai** (3a, 8b): lời giải dùng `with threading.Lock():` trong hàm (mỗi lần gọi tạo khoá mới, nên không an toàn) nhưng phần giải thích vẫn được chấm tốt. Lỗi thuộc engine (P1.4), phản hồi chỉ nói lại mức engine đã chấm. Ghi cho P2.
 - **Câu hỏi explain-back hỏi kỹ thuật học sinh không dùng** (12a: hỏi "phân vùng" khi lời giải gộp hai mảng). Ghi cho P2 (sinh câu hỏi).
-- **Mức nghiêm trọng:** Phát đề nghị hạ `explain_missing` xuống Vừa và `never_ran_tests` xuống Vừa khi bài vẫn pass hết; Trung thấy mức hiện tại hợp lý. Chưa đổi, chờ Kiệt quyết.
+- **Mức nghiêm trọng:** Phát đề nghị hạ `explain_missing` xuống Vừa và `never_ran_tests` xuống Vừa khi bài vẫn pass hết; Trung thấy mức hiện tại hợp lý. Kiệt quyết giữ nguyên (2026-09-27).
 - `no_hypothesis`: Phát đề nghị chỉ hiện khi đề yêu cầu ghi hướng giải. Mọi bài CodeProve đều có ô giả thuyết, nên giữ.
-- `integrity_flags`: câu mẫu mời học sinh "liên hệ đội CodeProve để được xem lại". Hiện chưa có kênh này trong sản phẩm; cần một kênh (ví dụ nút ở trang Feedback, P1.6) hoặc sửa câu.
+- `integrity_flags`: câu mẫu mời học sinh "liên hệ đội CodeProve để được xem lại". Hiện chưa có kênh riêng trong sản phẩm; Kiệt quyết giữ nguyên câu này và không làm kênh riêng (2026-09-27).
 
-## Bước tiếp theo
+## Vòng 2 (2026-09-28): đạt
 
-Chạy lại preview trên EC2 với code mới (vòng 4), kiểm tra tự động, rồi nhóm chấm lại cùng 12 lượt (`build_feedback_review.py` trong `calibration-private/scripts` chọn đúng 12 lượt này). Đạt tiêu chí thì đóng P1.5 và viết plan P1.6.
+Preview vòng 4 trên EC2 với code đã sửa: `preview check` 0 lỗi, 0 lộ; 0 câu AI bị loại. Phiếu `feedback-review-v2.md` (cùng 12 lượt, 30 nhận xét), cả nhóm chấm chung một phiếu (Trung nộp).
+
+| Chỉ số (30 nhận xét) | Vòng 1 (trung bình 3 người) | Vòng 2 |
+|---|---|---|
+| Đúng | 88% | 28/30 (93%) |
+| Cụ thể | 91% | 18/30 (60%) |
+| Làm theo được | 79% | 30/30 (100%) |
+| **Đúng và làm theo được** | 72% | **28/30 (93%)**, đạt ≥ 80% |
+| **Lộ đáp án** | 14/90 | **0/30**, đạt |
+
+**P1.5 đạt tiêu chí.** Hai nhận xét bị đánh "không đúng":
+
+- **3a** (`explain_shallow`, bài race condition): lỗi của giám khảo explain-back, đã ghi cho P2 ở trên.
+- **7c** (`pasted_ai_failing`): nhận xét đúng với dữ liệu. Ciel trả về một đoạn code chưa hoàn chỉnh, có dòng `self.order.append(key)`, và học sinh dán nguyên đoạn đó. Nhưng phiếu chấm không hiện câu trả lời của Ciel, nên người chấm không kiểm chứng được. Ở vòng 1, dòng code này cũng bị coi là "bịa" vì cùng lý do. Phiếu chấm sau nên hiện đoạn code Ciel đưa và việc học sinh có dán hay không.
+
+**Đánh đổi:** "Cụ thể" giảm từ 91% xuống 60%. Đây là kết quả dự kiến: 12 nhận xét dùng câu mẫu (điểm mạnh), vì câu AI viết riêng cho điểm mạnh là nguồn lộ đáp án. "Cụ thể" không nằm trong tiêu chí đạt. Nếu muốn điểm mạnh cụ thể hơn mà không lộ, có thể xét lại sau (ví dụ chỉ trích lời học sinh, không diễn giải).
+
+## Đóng P1.5
+
+- Báo cáo đã lưu trên production có thể còn câu AI viết kiểu cũ cho điểm mạnh. Rescore giờ chỉ giữ câu AI viết cho 4 mã được phép; mọi phần khác lấy từ mẫu hiện tại. Sau khi deploy, chạy `rescore --apply` để làm mới.
+- Bước tiếp theo: P1.6 (giao diện trang Feedback trong `codeprove-web`).

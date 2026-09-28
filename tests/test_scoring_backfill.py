@@ -72,23 +72,37 @@ async def test_backfill_asks_once_per_missing_verdict_and_is_idempotent(db_sessi
     assert fake.calls == 3
 
 
-async def test_rescore_keeps_the_written_text_of_unchanged_findings(db_session):
+class ShallowExplainJudge(FakeJudge):
+    async def judge(self, system, user, max_tokens=300):
+        verdict = await super().judge(system, user, max_tokens)
+        return {**verdict, "level": 1} if "score" in verdict else verdict
+
+
+async def test_rescore_keeps_only_the_written_lines_the_writer_may_still_write(db_session):
+    from app.features.feedback.templates import render
+    from app.features.feedback.diagnosis import Finding
     from app.models import FluencyReport
 
     at = await _scored_attempt(db_session)
-    first = await rescore_all(db_session, apply=True, engine="v2", attempt_ids={at.id}, client=FakeJudge())
+    first = await rescore_all(db_session, apply=True, engine="v2", attempt_ids={at.id}, client=ShallowExplainJudge())
     assert first
     rep = (await db_session.execute(select(FluencyReport).where(FluencyReport.attempt_id == at.id))).scalar_one()
     findings = rep.feedback["diagnosis"]["findings"]
-    # Pretend the writer had written the first finding, then rescore again.
-    written = {**findings[0], "text": {k: f"LLM {k}" for k in findings[0]["text"]}, "source": "llm"}
-    rep.feedback = {**rep.feedback, "diagnosis": {**rep.feedback["diagnosis"], "findings": [written, *findings[1:]]}}
+    assert {f["code"] for f in findings} >= {"explain_shallow", "hypothesis_strong"}
+    # An older report: every line written by the LLM, advice included, then rescore again.
+    written = [{**f, "text": {k: f"LLM {k}" for k in f["text"]}, "source": "llm"} for f in findings]
+    rep.feedback = {**rep.feedback, "diagnosis": {**rep.feedback["diagnosis"], "findings": written}}
     await db_session.commit()
     await rescore_all(db_session, apply=True, engine="v2", attempt_ids={at.id})
     await db_session.refresh(rep)
-    again = rep.feedback["diagnosis"]["findings"]
-    assert again[0]["source"] == "llm" and again[0]["text"]["what_happened"] == "LLM what_happened"
-    assert all(f["source"] == "template" for f in again[1:])
+    again = {f["code"]: f for f in rep.feedback["diagnosis"]["findings"]}
+    shallow = again["explain_shallow"]
+    assert shallow["source"] == "llm" and shallow["text"]["what_happened"] == "LLM what_happened"
+    assert not shallow["text"]["how_to_improve"].startswith("LLM")  # advice comes from today's templates
+    strong = again["hypothesis_strong"]  # strengths restated the solution: back to the template
+    finding = Finding(**{k: strong[k] for k in ("code", "axis", "kind", "severity", "params", "evidence")})
+    assert strong["source"] == "template"
+    assert strong["text"] == render(finding, rep.feedback["diagnosis"]["locale"], strong["next_exercise"])
 
 
 async def test_rescore_v2_on_the_golden_set_writes_engine_json(db_session, tmp_path):
