@@ -2,15 +2,16 @@
 
 `build_diagnosis` runs when an attempt is scored: diagnose, pick next-exercise
 candidates, and ask the writer once. `refresh_diagnosis` runs on a rescore and
-never calls the LLM: a finding whose code and params are unchanged keeps its
-stored text, anything else gets its template.
+never calls the LLM: every field comes from the current templates, except a
+stored LLM `what_happened` of a finding the writer still writes (WRITTEN_CODES)
+whose params are unchanged.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.feedback.diagnosis import diagnose
 from app.features.feedback.next_exercise import candidates
 from app.features.feedback.templates import DEFAULT_LOCALE, render
-from app.features.feedback.writer import write_feedback
+from app.features.feedback.writer import WRITTEN_CODES, write_feedback
 from app.features.scoring.evidence import Evidence
 from app.models import Attempt, Exercise
 
@@ -45,11 +46,14 @@ async def refresh_diagnosis(db: AsyncSession, attempt: Attempt, exercise: Exerci
     kept = {e.get("code"): e for e in previous.get("findings") or []}
     entries = []
     for finding in findings:
+        text = render(finding, locale, fallback_next)
+        entry = {**finding.model_dump(), "text": text, "next_exercise": fallback_next, "source": "template"}
         old = kept.get(finding.code)
-        if old and old.get("params") == finding.params and old.get("text"):
-            entries.append({**finding.model_dump(), "text": old["text"], "next_exercise": old.get("next_exercise"),
-                            "source": old.get("source", "template")})
-        else:
-            entries.append({**finding.model_dump(), "text": render(finding, locale, fallback_next),
-                            "next_exercise": fallback_next, "source": "template"})
+        # Only a line the writer may still write survives: older reports hold LLM lines on
+        # strengths that restated the solution (team review of round 3).
+        if (finding.code in WRITTEN_CODES and old and old.get("source") == "llm"
+                and old.get("params") == finding.params and (old.get("text") or {}).get("what_happened")):
+            text["what_happened"] = old["text"]["what_happened"]
+            entry["source"] = "llm"
+        entries.append(entry)
     return {"version": VERSION, "locale": locale, "model": previous.get("model"), "findings": entries}
