@@ -1,5 +1,7 @@
 # P1.7 Axis Weight Selection Implementation Plan
 
+> **Status: done (2026-09-29).** Current weights kept (Kiệt, 2026-09-29), so Task 7 was not needed and nothing is rescored. Results: `docs/calibration/weights-2026-09-29.md`. The clarified selection rule (Task 5) was approved. Follow-up for later: tier cutoffs (engine spreads wider than the raters; tier agreement 59%).
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Choose the six axis weights of the overall score with evidence: compare the current weights, equal weights, the team's AHP weights and constrained-regression weights by how well the resulting overall score agrees with the team's holistic overall ratings on the golden set, pick one by a rule fixed in advance, commit the choice and the evidence, and rescore.

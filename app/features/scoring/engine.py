@@ -1,8 +1,9 @@
 from app.features.scoring.features import AxisFeatures, compute_features
 
-# PROVISIONAL: chosen by the team, not derived. P1 replaces them with AHP
-# weights benchmarked against equal weights, then validates on the golden set
-# (docs/superpowers/specs/2026-09-24-scoring-roadmap.md, "Axis weights").
+# Chosen by the team, then kept after P1.7 compared them on the golden set with
+# equal, AHP and constrained-regression weights: none agreed with the raters'
+# overall levels clearly better (docs/calibration/weights-2026-09-29.md). Rerun
+# `python -m app.features.calibration.weights` when real rated sessions exist.
 WEIGHTS = {"understanding": 0.25, "hypothesis": 0.22, "prompting": 0.18,
            "verification": 0.15, "testing": 0.10, "debugging": 0.10}
 
