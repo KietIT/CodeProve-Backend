@@ -1,12 +1,10 @@
 import json
-import re
 
 from openai import AsyncOpenAI
 
 from app.core.config import get_settings
+from app.features.mentor.guard import code_blocks
 from app.features.mentor.prompts import MENTOR_INJECT_SUFFIX, MENTOR_SYSTEM
-
-_CODE_BLOCK = re.compile(r"```[a-zA-Z]*\n(.*?)```", re.DOTALL)
 
 
 class MentorClient:
@@ -21,10 +19,13 @@ class MentorClient:
         history: list[dict],
         inject_error: bool,
         context: str = "",
+        extra_instruction: str = "",
     ) -> dict:
         system = MENTOR_SYSTEM + (MENTOR_INJECT_SUFFIX if inject_error else "")
         if context:
             system = f"{system}\n\n{context}"
+        if extra_instruction:
+            system = f"{system}\n\n{extra_instruction}"
         messages = [{"role": "system", "content": system}, *history, {"role": "user", "content": user_message}]
         resp = await self._client.chat.completions.create(
             model=self._model, messages=messages, temperature=0.4, max_tokens=400
@@ -35,7 +36,7 @@ class MentorClient:
             "text": text,
             "prompt_tokens": usage.prompt_tokens if usage else 0,
             "completion_tokens": usage.completion_tokens if usage else 0,
-            "code_loc": _code_loc(text),
+            "code_loc": code_loc(text),
         }
 
     async def judge(self, system: str, user: str, max_tokens: int = 300) -> dict:
@@ -52,8 +53,8 @@ class MentorClient:
             return {}
 
 
-def _code_loc(text: str) -> int:
-    return sum(len(b.strip().splitlines()) for b in _CODE_BLOCK.findall(text))
+def code_loc(text: str) -> int:
+    return sum(len(b.strip().splitlines()) for b in code_blocks(text))
 
 
 _singleton: MentorClient | None = None

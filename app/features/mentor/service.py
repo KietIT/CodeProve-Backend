@@ -2,7 +2,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service as attempts_service
-from app.features.mentor.client import get_mentor_client
+from app.features.mentor import guard
+from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
 from app.models import Attempt, Event, Exercise, PromptLog
 
@@ -70,6 +71,17 @@ async def mentor_reply(
     context = build_exercise_context(ex, code)
     client = get_mentor_client()
     result = await client.chat(message, history=[], inject_error=inject, context=context)
+    prompt_tokens, completion_tokens = result["prompt_tokens"], result["completion_tokens"]
+    withheld = await guard.solves_exercise(db, ex.id, result["text"])
+    if withheld:
+        # Never shown, so the trap (if any) was not served either: ask again without it.
+        inject = False
+        retry = await client.chat(message, history=[], inject_error=False, context=context,
+                                  extra_instruction=guard.RETRY_INSTRUCTION)
+        prompt_tokens += retry["prompt_tokens"]
+        completion_tokens += retry["completion_tokens"]
+        text = guard.FALLBACK if await guard.solves_exercise(db, ex.id, retry["text"]) else retry["text"]
+        result = {**retry, "text": text, "code_loc": code_loc(text)}
 
     flags = ["PRIMING"] if looks_like_priming(message) else []
     await attempts_service.add_event(
@@ -80,7 +92,7 @@ async def mentor_reply(
             "messageText": message,
             "messageLength": len(message),
             "keywordsMatched": keywords,
-            "promptTokens": result["prompt_tokens"],
+            "promptTokens": prompt_tokens,
         },
         flags=flags,
     )
@@ -89,18 +101,20 @@ async def mentor_reply(
         attempt.id,
         "AI_REPLY",
         {
-            "completionTokens": result["completion_tokens"],
+            "completionTokens": completion_tokens,
             "aiCode": [{"loc": result["code_loc"]}] if result["code_loc"] else [],
             "injectedError": inject,
+            "withheldSolution": withheld,
         },
     )
+    # Only what the student saw is stored: the Verification axis and the raters read these replies.
     db.add(
         PromptLog(
             attempt_id=attempt.id,
             prompt=message,
             response=result["text"],
             model=get_mentor_client()._model,
-            tokens=result["prompt_tokens"] + result["completion_tokens"],
+            tokens=prompt_tokens + completion_tokens,
         )
     )
     await db.commit()
