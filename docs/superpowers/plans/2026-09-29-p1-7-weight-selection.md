@@ -52,7 +52,7 @@ Commit `refactor(scoring): one weighted_overall for engine v1, v2 and calibratio
 
 **Files:** Create `app/features/calibration/weights.py`; test `tests/test_calibration_weights.py`.
 
-- `candidates(ahp_answers) -> dict[str, dict[str, float]]`: `current` (`WEIGHTS`), `equal`, `ahp` (group AIJ of every member with an answer set, via `analyze._ahp_section`), `ahp_consistent` (only when it differs).
+- `candidates(ahp_answers) -> dict[str, dict[str, float]]`: `current` (`WEIGHTS`), `equal`, `ahp` (group AIJ of every member with an answer set, via `analyze.ahp_section`), `ahp_consistent` (only when it differs).
 - `human_overall(dump) -> dict[session, float]`: mean overall level (0–3) over raters (same rule as `analyze.py`).
 - `evaluate(overall_by_session, human) -> {"spearman", "icc", "tier_exact", "n"}`: tier level via `tier_for` cutoffs mapped to 0–3.
 - `bootstrap_delta(a, b, human, samples=2000, seed=0)`: paired bootstrap of Spearman(a) − Spearman(b) → (mean, low, high).
