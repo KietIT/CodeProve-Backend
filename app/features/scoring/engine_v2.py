@@ -9,7 +9,7 @@ weak axis into a missing one. The v1 integrity multiplier scales the scores;
 the levels keep describing what was observed.
 """
 from app.features.scoring import rubric
-from app.features.scoring.engine import NA_REASONS, WEIGHTS, clamp, score_attempt
+from app.features.scoring.engine import NA_REASONS, WEIGHTS, clamp, score_attempt, weighted_overall
 from app.features.scoring.evidence import Evidence
 
 AXES = ("understanding", "hypothesis", "prompting", "verification", "testing", "debugging")
@@ -51,12 +51,9 @@ def score_attempt_v2(ev: Evidence, explain_score: float | None) -> dict:
             levels[axis] = None
             not_applicable[axis] = NA_REASONS.get(axis, indicator.reason)
     axes = {a: (round(v * mult, 2) if v is not None else None) for a, v in raw.items()}
-    active = {a: v for a, v in axes.items() if v is not None}
-    total = sum(WEIGHTS[a] for a in active)
-    overall = round(5 * sum(WEIGHTS[a] / total * v for a, v in active.items()), 2) if total else 0.0
     return {
         "axes": axes,
-        "overall": clamp(0, 100, overall),
+        "overall": weighted_overall(axes, WEIGHTS),
         "features": v1["features"],
         "integrity_multiplier": mult,
         "not_applicable": not_applicable,

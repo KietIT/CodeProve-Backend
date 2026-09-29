@@ -14,6 +14,8 @@
 
 ## Decisions for Kiệt before Task 1
 
+**Decided 2026-09-29:** 1 = B (the 39 simulated sessions only, limitation stated in the results), 2 = A (AHP of Kiệt, Phát, Trung), 3 = floor 5%. The `--exclude-email-like` export change in Task 1 is therefore not needed.
+
 1. **Which sessions.** P1.3 recommended adding ≥ 15 real sessions because the 39 simulated ones were written to spread the levels and may overstate agreement.
    - (A, recommended if the data exists) Export 15–20 real student sessions with `app.features.calibration.export`, the team rates them on the same offline page (≈ 1–1.5 h each), then analyse 39 + real. Needs ≥ 15 sessions from students outside the team; Task 1 counts them first.
    - (B) Use the 39 simulated sessions only; state the limitation in the results.

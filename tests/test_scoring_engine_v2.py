@@ -1,6 +1,6 @@
 import math
 
-from app.features.scoring.engine import WEIGHTS
+from app.features.scoring.engine import WEIGHTS, weighted_overall
 from app.features.scoring.engine_v2 import score_attempt_v2
 from app.features.scoring.evidence import Evidence
 
@@ -38,6 +38,16 @@ def test_axes_are_20_times_the_level_over_3_and_na_axes_are_excluded():
     assert math.isclose(result["overall"], round(5 * sum(WEIGHTS[a] / total * v for a, v in active.items()), 2))
     assert result["evidence"]["hypothesis"] == {"evidence": "dict, O(n)", "reason": ""}
     assert result["engine"] == "v2"
+
+
+def test_weighted_overall_renormalises_over_applicable_axes():
+    weights = {"understanding": 0.5, "hypothesis": 0.3, "prompting": 0.2}
+    # Prompting N/A: the other two weights become 0.625 / 0.375.
+    assert weighted_overall({"understanding": 20.0, "hypothesis": 10.0, "prompting": None}, weights) == 81.25
+    assert weighted_overall({"understanding": None, "hypothesis": None, "prompting": None}, weights) == 0.0
+    assert weighted_overall({"understanding": 25.0, "hypothesis": 25.0, "prompting": 25.0}, weights) == 100
+    result = score_attempt_v2(session(), explain_score=14)
+    assert result["overall"] == weighted_overall(result["axes"], WEIGHTS)
 
 
 def test_an_unrated_axis_falls_back_to_the_v1_score():
