@@ -1,8 +1,9 @@
 from app.features.scoring.features import AxisFeatures, compute_features
 
-# PROVISIONAL: chosen by the team, not derived. P1 replaces them with AHP
-# weights benchmarked against equal weights, then validates on the golden set
-# (docs/superpowers/specs/2026-09-24-scoring-roadmap.md, "Axis weights").
+# Chosen by the team, then kept after P1.7 compared them on the golden set with
+# equal, AHP and constrained-regression weights: none agreed with the raters'
+# overall levels clearly better (docs/calibration/weights-2026-09-29.md). Rerun
+# `python -m app.features.calibration.weights` when real rated sessions exist.
 WEIGHTS = {"understanding": 0.25, "hypothesis": 0.22, "prompting": 0.18,
            "verification": 0.15, "testing": 0.10, "debugging": 0.10}
 
@@ -18,6 +19,16 @@ NA_REASONS = {
 
 def clamp(lo: float, hi: float, x: float) -> float:
     return max(lo, min(hi, x))
+
+
+def weighted_overall(axes: dict[str, float | None], weights: dict[str, float]) -> float:
+    """The 0-100 overall from 0-20 axis scores: weighted mean over the applicable
+    axes (N/A weights renormalise away). Shared by both engines and the P1.7
+    weight analysis, so they cannot compute it differently."""
+    active = {a: v for a, v in axes.items() if v is not None}
+    total = sum(weights[a] for a in active)
+    overall = round(5 * sum(weights[a] / total * v for a, v in active.items()), 2) if total else 0.0
+    return clamp(0, 100, overall)
 
 
 # ── Scoring philosophy (rev. 2026-09-24, P0) ─────────────────────────────────
@@ -118,12 +129,9 @@ def score_attempt(events: list[dict], explain_score: float | None, exercise_kind
     # The integrity multiplier applies to every scored axis so a compromised
     # session cannot report "Strong understanding" off a pasted explanation.
     axes = {a: (round(v * mult, 2) if v is not None else None) for a, v in raw.items()}
-    active = {a: v for a, v in axes.items() if v is not None}
-    total_weight = sum(WEIGHTS[a] for a in active)
-    overall = round(5 * sum((WEIGHTS[a] / total_weight) * v for a, v in active.items()), 2) if total_weight else 0.0
     return {
         "axes": axes,
-        "overall": clamp(0, 100, overall),
+        "overall": weighted_overall(axes, WEIGHTS),
         "features": f,
         "integrity_multiplier": mult,
         "not_applicable": {a: NA_REASONS[a] for a, v in axes.items() if v is None},

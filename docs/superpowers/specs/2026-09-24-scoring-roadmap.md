@@ -60,6 +60,11 @@ improper linear models").
   humans) get less weight.
 - P3: periodic recalibration as data grows.
 
+**Outcome of P1 (2026-09-29):** the team weights (25/22/18/15/10/10) were kept.
+On the 39-session golden set none of equal, AHP (3 members) or
+constrained-regression weights agreed with the raters clearly better
+(`docs/calibration/weights-2026-09-29.md`); rerun with real rated sessions.
+
 ## P1 — Exercise data + evidence-based scoring and feedback
 
 - [2] Reference solution, 5–8 categorised hidden tests and a mutant bank for all 30 exercises

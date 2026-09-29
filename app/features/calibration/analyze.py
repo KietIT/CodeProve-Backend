@@ -92,7 +92,7 @@ def _load_exports(directory: Path, dump: Dump) -> None:
             dump.ratings[rater] = data["ratings"]
 
 
-def _ahp_section(answers_by_rater: dict[str, dict]) -> dict:
+def ahp_section(answers_by_rater: dict[str, dict]) -> dict:
     members, matrices = {}, {}
     for rater, answers in answers_by_rater.items():
         try:
@@ -142,7 +142,7 @@ def analyse(dump: Dump) -> dict:
         "counts": {"raters": len(raters), "sessions": len(sessions), "complete": len(complete)},
         "missing": {r: n for r, n in missing.items() if n},
         "raters": raters,
-        "ahp": _ahp_section(dump.ahp),
+        "ahp": ahp_section(dump.ahp),
         "axes": {},
         "overall": {},
     }
