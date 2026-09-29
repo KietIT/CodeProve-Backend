@@ -5,7 +5,8 @@ from app.features.calibration import weights as weights_module
 from app.features.calibration.ahp import AXES, PAIRS
 from app.features.calibration.analyze import OVERALL_LEVELS, Dump
 from app.features.calibration.weights import (
-    bootstrap_delta, candidates, evaluate, fit_weights, human_overall, loo_predictions, overalls, tier_level,
+    analyse_weights, bootstrap_delta, candidates, evaluate, fit_weights, human_overall, loo_predictions, overalls,
+    render_weights, tier_level,
 )
 from app.features.scoring.engine import WEIGHTS, weighted_overall
 
@@ -57,6 +58,7 @@ def test_a_set_on_the_axis_humans_follow_agrees_best():
     assert best["spearman"] > 0.99 and best["n"] == 30
     assert best["spearman"] > evaluate(overalls(engine, UNIFORM), human)["spearman"]
     assert 0 <= best["tier_exact"] <= 1 and not math.isnan(best["icc"])
+    assert evaluate({"S1": 90.0, "S2": 10.0}, {"S1": 2.0, "S2": 0.5})["tier_bias"] == 0.25  # (1 + -0.5) / 2
 
 
 TRUE = {"understanding": 0.3, "hypothesis": 0.25, "prompting": 0.15, "verification": 0.1, "testing": 0.1,
@@ -99,6 +101,37 @@ def test_leave_one_out_never_fits_on_the_held_out_session(monkeypatch):
     for held_out, used in zip(sorted(engine), seen):
         assert held_out not in used and len(used) == 5
     assert predictions == overalls(engine, TRUE)
+
+
+def _dump_from(engine: dict, human: dict, ahp_answers: dict | None = None) -> Dump:
+    """Two raters whose levels average to `human` (rounded to the 0-3 scale)."""
+    ratings = {"r1": {}, "r2": {}}
+    for sid, level in human.items():
+        low = min(3, max(0, math.floor(level)))
+        high = min(3, low + (level - low >= 0.5))
+        ratings["r1"][sid] = {"overall": OVERALL_LEVELS[low]}
+        ratings["r2"][sid] = {"overall": OVERALL_LEVELS[high]}
+    return Dump(ahp=ahp_answers or {}, ratings=ratings, engine=engine)
+
+
+def test_the_rule_keeps_the_current_weights_when_humans_follow_them():
+    engine, human = _following(WEIGHTS, n=24)
+    result = analyse_weights(_dump_from(engine, human), samples=200)
+    assert result["chosen"] == "current"
+    assert set(result["sets"]) == {"current", "equal", "regression"}  # no AHP answers: no AHP set
+
+
+def test_the_rule_picks_the_best_set_when_it_is_clearly_better():
+    engine, human = _synthetic(n=40)  # humans follow the testing axis only
+    result = analyse_weights(_dump_from(engine, human), samples=200)
+    assert result["chosen"] == "regression"
+    regression = result["sets"]["regression"]
+    assert regression["weights"]["testing"] >= 0.7
+    assert regression["delta"][1] > 0  # bootstrap interval vs current excludes 0
+    assert len(regression["folds"]) == 40
+    assert result["tier_changes"]  # sessions whose tier moves under the chosen set
+    report = render_weights(result)
+    assert "Bộ được chọn" in report and "regression" in report and "Hạn chế" in report
 
 
 def test_bootstrap_is_paired_and_deterministic():

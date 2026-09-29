@@ -27,7 +27,7 @@
 - **Primary metric:** Spearman between the recomputed overall and the human mean overall level (fixed sets: all sessions; regression: leave-one-out predictions).
 - **Secondary:** ICC(2,1) absolute agreement between the engine's tier (0–3 from the current cutoffs 50 / 70 / 85) and the human mean level, and exact tier agreement (%).
 - **Uncertainty:** 2 000-sample paired bootstrap of ΔSpearman against the current weights (95% interval).
-- **Choice:** keep the **current** weights unless a candidate beats them by ≥ 0.02 Spearman **and** its bootstrap interval of the difference excludes 0. Among candidates that qualify, prefer the simpler one (equal < AHP < regression). "Prefer the simpler set when differences are small" (design).
+- **Choice:** keep the **current** weights unless a candidate beats them by ≥ 0.02 Spearman **and** its bootstrap interval of the difference excludes 0. Among the candidates that qualify, take the best one, unless a simpler qualifying one (equal < AHP < regression) is within 0.02 of it: then the simplest such. "Prefer the simpler set when differences are small" (design). *(Clarified while implementing Task 5: "always the simplest qualifier" could pick equal weights even when the regression set is far better.)*
 - Tier cutoffs are not changed in P1.7; if the tier agreement shows a systematic offset (e.g. engine one tier above humans on most sessions), it is reported as a follow-up decision.
 
 ---
