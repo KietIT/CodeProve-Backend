@@ -12,7 +12,7 @@ import statistics
 
 from app.features.attempts.scoring_service import tier_for
 from app.features.calibration import ahp
-from app.features.calibration.agreement import icc2, spearman
+from app.features.calibration.agreement import icc2, pearson, spearman
 from app.features.calibration.analyze import OVERALL_LEVELS, Dump, ahp_section
 from app.features.scoring.engine import WEIGHTS, weighted_overall
 
@@ -66,6 +66,76 @@ def evaluate(overall_by_session: dict[str, float], human: dict[str, float]) -> d
         "tier_exact": sum(t == _half_up(h) for t, h in zip(tiers, people)) / len(sessions) if sessions else math.nan,
         "n": len(sessions),
     }
+
+
+FLOOR = 0.05  # owner decision 2026-09-29: no axis may drop below 5%
+_STEPS = (0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001)
+
+
+def _fit_score(engine: dict[str, dict], human: dict[str, float], sessions: list[str],
+               weights: dict[str, float]) -> float:
+    r = pearson([weighted_overall(engine[s]["axes"], weights) for s in sessions], [human[s] for s in sessions])
+    return -math.inf if math.isnan(r) else r
+
+
+def _on_floor(weights: dict[str, float], floor: float) -> dict[str, float]:
+    """Scale a weight set into the feasible region: every weight >= floor, sum 1."""
+    total = sum(weights.values())
+    return {a: floor + (1 - len(AXES) * floor) * weights[a] / total for a in AXES}
+
+
+def _search(start: dict[str, float], score, floor: float) -> tuple[dict[str, float], float]:
+    """Derivative-free local search on the simplex: move weight from one axis to
+    another while it improves the score, with shrinking steps."""
+    w, best = dict(start), score(start)
+    for step in _STEPS:
+        improved = True
+        while improved:
+            improved = False
+            for give in AXES:
+                for take in AXES:
+                    amount = min(step, w[give] - floor)
+                    if give == take or amount <= 1e-12:
+                        continue
+                    trial = {**w, give: w[give] - amount, take: w[take] + amount}
+                    value = score(trial)
+                    if value > best + 1e-12:
+                        w, best, improved = trial, value, True
+    return w, best
+
+
+def fit_weights(engine: dict[str, dict], human: dict[str, float], floor: float = FLOOR) -> dict[str, float]:
+    """Weights (each >= floor, sum 1) whose overall correlates best (Pearson) with
+    the human mean level on the given sessions. Several starts: current, equal,
+    and one leaning on each axis; the best local optimum wins."""
+    sessions = sorted(set(engine) & set(human))
+
+    def score(weights: dict[str, float]) -> float:
+        return _fit_score(engine, human, sessions, weights)
+
+    corner = 1 - (len(AXES) - 1) * floor
+    starts = [_on_floor(WEIGHTS, floor), _on_floor({a: 1.0 for a in AXES}, floor),
+              *({b: (corner if b == a else floor) for b in AXES} for a in AXES)]
+    best_w, best = starts[0], -math.inf
+    for start in starts:
+        w, value = _search(start, score, floor)
+        if value > best:
+            best_w, best = w, value
+    return best_w
+
+
+def loo_predictions(engine: dict[str, dict], human: dict[str, float],
+                    floor: float = FLOOR) -> tuple[dict[str, float], list[dict[str, float]]]:
+    """Leave-one-out: each session's overall under weights fitted without it,
+    plus the weights of every fold (to show how stable the fit is)."""
+    sessions = sorted(set(engine) & set(human))
+    predictions, folds = {}, []
+    for held_out in sessions:
+        rest = [s for s in sessions if s != held_out]
+        w = fit_weights({s: engine[s] for s in rest}, {s: human[s] for s in rest}, floor)
+        folds.append(w)
+        predictions[held_out] = weighted_overall(engine[held_out]["axes"], w)
+    return predictions, folds
 
 
 def bootstrap_delta(a: dict[str, float], b: dict[str, float], human: dict[str, float],

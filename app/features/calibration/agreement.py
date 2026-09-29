@@ -5,7 +5,8 @@
 - quadratic_kappa / mean_pairwise_kappa: weighted Cohen's kappa for the 0-3
   axis levels, averaged over rater pairs; "not applicable" (None) is handled
   separately so it neither inflates nor deflates agreement on the levels.
-- spearman: rank correlation (average ranks for ties), engine vs humans.
+- spearman: rank correlation (average ranks for ties), engine vs humans;
+  pearson: the linear correlation it is built on.
 """
 import itertools
 import math
@@ -80,10 +81,13 @@ def _ranks(values: list[float]) -> list[float]:
     return ranks
 
 
-def spearman(x: list[float], y: list[float]) -> float:
-    rx, ry = _ranks(x), _ranks(y)
-    mx, my = sum(rx) / len(rx), sum(ry) / len(ry)
-    cov = sum((a - mx) * (b - my) for a, b in zip(rx, ry))
-    sx = math.sqrt(sum((a - mx) ** 2 for a in rx))
-    sy = math.sqrt(sum((b - my) ** 2 for b in ry))
+def pearson(x: list[float], y: list[float]) -> float:
+    mx, my = sum(x) / len(x), sum(y) / len(y)
+    cov = sum((a - mx) * (b - my) for a, b in zip(x, y))
+    sx = math.sqrt(sum((a - mx) ** 2 for a in x))
+    sy = math.sqrt(sum((b - my) ** 2 for b in y))
     return cov / (sx * sy) if sx and sy else math.nan
+
+
+def spearman(x: list[float], y: list[float]) -> float:
+    return pearson(_ranks(x), _ranks(y))
