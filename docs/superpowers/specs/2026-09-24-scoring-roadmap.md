@@ -116,6 +116,18 @@ traversal, type spoofing, size limit) allow selecting several lines, one per iss
 No interim workaround before P2 (owner's decision): until then debug exercises keep the
 current flow (fix the code in the editor).
 
+### P2 status (2026-09-30)
+
+- Done and live: P2.1 Ciel no-solution guard, P2.2 debug Locate → Fix (+ Ciel hints only until the
+  bug is located, Visualizer during the locate step), P2.3 student-written tests (Tests tab).
+- **Skipped by the owner:** P2.4 post-submit "Review AI code" step (the current flow is good
+  enough).
+- **Deferred for lack of time (owner, 2026-09-30):** P2.5 explain-back judge fixes (already
+  implemented on branch `feat/p2-5-explain-judge`, not merged; can be merged later as is) and P2.6
+  recalibration of the new indicators with the team (plan
+  `docs/superpowers/plans/2026-09-30-p2-6-recalibration.md`). Until P2.6 runs, the P2.2 Debugging and
+  P2.3 Testing level tables are not checked against human raters.
+
 ## P3 — AI Tutor + infrastructure
 
 - [1] Skill tags per exercise
