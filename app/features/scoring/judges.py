@@ -42,11 +42,14 @@ def is_non_answer(answer: str) -> bool:
     return len(text) < 15 or len(text.split()) < 4
 
 
-async def judge_explain(client, question: str, answer: str) -> dict:
-    """{"score": 0-20 (v1), "level": 0-3 | None, "evidence": str} for one explain-back answer."""
+async def judge_explain(client, question: str, answer: str, context: str = "") -> dict:
+    """{"score": 0-20 (v1), "level": 0-3 | None, "evidence": str} for one explain-back answer.
+    `context` (P2.5): the student's final code and the submit-suite result, so an answer that
+    calls code correct while the tests show it wrong is not rated strong."""
     if is_non_answer(answer):
         return {"score": 0.0, "level": 0, "evidence": ""}
-    verdict = await client.judge(EXPLAIN_SCORE_SYSTEM, f"Question: {question}\nAnswer: {answer}")
+    user = f"Question: {question}\nAnswer: {answer}"
+    verdict = await client.judge(EXPLAIN_SCORE_SYSTEM, f"{context}\n\n{user}" if context else user)
     try:
         score = float(verdict.get("score", 0))
     except (TypeError, ValueError):

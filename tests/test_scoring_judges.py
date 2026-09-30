@@ -74,6 +74,16 @@ async def test_hypothesis_errors_still_propagate():
         await judge_hypothesis(Scripted(TimeoutError()), "p", "text")
 
 
+async def test_the_explain_judge_sees_the_code_and_the_test_results_when_given():
+    client = Scripted({"score": 5, "level": 1, "evidence": "lock makes it safe"})
+    context = "Student's final code:\n...\nTest results at submit: 6/7 passed"
+    await judge_explain(client, "Why the lock?", "the lock makes it thread safe here", context)
+    system, user, _ = client.calls[0]
+    assert user.startswith(context) and user.endswith("Answer: the lock makes it thread safe here")
+    # P2.5: presenting code the tests show wrong as correct caps the level.
+    assert "at most level 1" in system
+
+
 async def test_locate_reason_is_judged_against_the_real_bug_with_numbered_code():
     client = Scripted({"level": 3, "evidence": "stops before n"})
     verdict = await judge_locate(client, STARTER, "Line 3: range(1, n) never adds n.", [3],
@@ -95,3 +105,20 @@ async def test_a_failed_locate_judge_leaves_the_reason_unrated():
     client = Scripted(RuntimeError("down"))
     assert await judge_locate(client, STARTER, "x", [3], "the loop bound is off by one") == {
         "level": None, "evidence": ""}
+
+
+def test_explain_context_names_the_code_and_the_failing_tests_but_no_inputs():
+    from app.features.attempts.scoring_service import explain_context
+
+    suite = {"passed": 6, "total": 7, "failures": [
+        {"description": "increment waits while another thread holds the lock", "input": "SECRET", "hidden": True}]}
+    context = explain_context("def inc():\n    with threading.Lock():\n        x += 1", suite)
+    assert "with threading.Lock():" in context and "6/7 passed" in context
+    assert "increment waits while another thread holds the lock" in context and "SECRET" not in context
+    assert explain_context("", suite) == "" and explain_context(None, None) == ""
+    assert "Test results" not in explain_context("x = 1", None)
+
+
+def test_the_question_generator_asks_only_about_the_code():
+    from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
+    assert "does not appear in the code" in EXPLAIN_QUESTION_SYSTEM

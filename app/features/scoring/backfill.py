@@ -10,7 +10,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service as attempts_service
-from app.features.attempts.scoring_service import judge_and_store_locate, judge_and_store_prompts
+from app.features.attempts.scoring_service import (
+    explain_context_for, judge_and_store_locate, judge_and_store_prompts,
+)
 from app.features.scoring.judges import is_non_answer, judge_explain, judge_hypothesis
 from app.models import Attempt, Event, Exercise, VerificationAnswer
 
@@ -27,7 +29,8 @@ async def backfill_judges(db: AsyncSession, attempt: Attempt, client) -> int:
         answers = (await db.execute(select(VerificationAnswer).where(VerificationAnswer.attempt_id == attempt.id)
                                     .order_by(VerificationAnswer.id))).scalars().all()
         if answers:
-            verdicts = [await judge_explain(client, a.question, a.answer) for a in answers]
+            context = await explain_context_for(db, attempt)
+            verdicts = [await judge_explain(client, a.question, a.answer, context) for a in answers]
             calls += sum(1 for a in answers if not is_non_answer(a.answer))  # non-answers skip the call
             await attempts_service.add_event(db, attempt.id, "JUDGE", {
                 "kind": "explain", "model": client._model, "backfilled": True,
