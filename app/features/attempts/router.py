@@ -13,6 +13,7 @@ from app.features.exercises.starters import is_untouched, student_starter
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
 from app.features.student_tests import service as student_tests
+from app.features.student_tests.evaluate import evaluate as evaluate_student_tests
 from app.schemas.attempt import (
     AttemptOut, AttemptState, CheckOut, CreateAttemptIn, HintOut, LocateIn, OwnRunIn, RunIn, RunResult, SnapshotIn,
     StudentTestIn, StudentTestsIn,
@@ -161,6 +162,8 @@ async def submit(
     settings = get_settings()
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     suite = await submit_tests.run_submit_suite(db, attempt)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    await evaluate_student_tests(db, attempt, ex)
     # The report's feedback is written in the language the student submitted in.
     await service.add_event(db, attempt_id, "SUBMIT", {"locale": "vi" if locale == "vi" else "en"})
     attempt.status = "submitted"

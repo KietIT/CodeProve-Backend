@@ -29,7 +29,7 @@ def normalize_expected(expected: str) -> str:
         return expected.strip()
 
 
-def _case(test: dict, i: int) -> dict:
+def as_case(test: dict, i: int) -> dict:
     return {"input_data": test["input"], "expected_output": normalize_expected(test["expected"]),
             "description": f"student test {i}", "weight": 1.0}
 
@@ -74,7 +74,7 @@ async def check(db: AsyncSession, attempt: Attempt, ex: Exercise, test: dict) ->
     if reason:
         status = "error"
     else:
-        result = await run_tests(ex.reference_solution, [_case(test, 1)], get_settings().sandbox_timeout)
+        result = await run_tests(ex.reference_solution, [as_case(test, 1)], get_settings().sandbox_timeout)
         case = result["cases"][0]
         if case["passed"]:
             status = "valid"
@@ -94,7 +94,7 @@ async def run_on_own_code(db: AsyncSession, attempt: Attempt, ex: Exercise, sour
     allowed = module_names(ex.reference_solution)
     refused = {i: check_input(t["input"], allowed) for i, t in enumerate(tests)}
     runnable = [(i, t) for i, t in enumerate(tests) if refused[i] is None]
-    result = await run_tests(source_code, [_case(t, i) for i, t in runnable], get_settings().sandbox_timeout) \
+    result = await run_tests(source_code, [as_case(t, i) for i, t in runnable], get_settings().sandbox_timeout) \
         if runnable else {"cases": []}
     by_index = {i: case for (i, _), case in zip(runnable, result["cases"])}
     out = []
