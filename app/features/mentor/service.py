@@ -5,6 +5,7 @@ from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
 from app.features.mentor import guard
 from app.features.mentor.client import code_loc, get_mentor_client
+from app.features.mentor.memory import attempt_history
 from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
 from app.models import Attempt, Event, Exercise, PromptLog
 
@@ -79,7 +80,8 @@ async def mentor_reply(
         solves = await guard.solves_exercise(db, ex.id, text)
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
-    result = await client.chat(message, history=[], inject_error=inject, context=context,
+    history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
+    result = await client.chat(message, history=history, inject_error=inject, context=context,
                                extra_instruction=locate_rule)
     prompt_tokens, completion_tokens = result["prompt_tokens"], result["completion_tokens"]
     withheld, revealed = await problems(result["text"])
@@ -89,7 +91,7 @@ async def mentor_reply(
         stricter = "\n\n".join(part for part in (
             locate_rule, guard.RETRY_INSTRUCTION if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
-        retry = await client.chat(message, history=[], inject_error=False, context=context,
+        retry = await client.chat(message, history=history, inject_error=False, context=context,
                                   extra_instruction=stricter)
         prompt_tokens += retry["prompt_tokens"]
         completion_tokens += retry["completion_tokens"]
