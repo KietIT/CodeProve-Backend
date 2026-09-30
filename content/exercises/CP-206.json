@@ -103,6 +103,17 @@
       "note_en": "Assigns the balance instead of adding to it, so b's money is lost."
     }
   ],
+  "debug": {
+    "explanation_vi": "Dòng 2–3 khoá a rồi mới khoá b; giao dịch từ b sang a khoá theo thứ tự ngược lại, nên mỗi luồng giữ một khoá và chờ nhau mãi (deadlock). Luôn khoá hai tài khoản theo một thứ tự cố định, ví dụ sắp theo id.",
+    "explanation_en": "Lines 2–3 lock a then b; a transfer from b to a locks them in the opposite order, so each thread holds one lock and waits forever (deadlock). Always take the two locks in one fixed order, e.g. sorted by id.",
+    "hint_vi": "Lỗi chỉ xảy ra khi hai giao dịch ngược chiều chạy cùng lúc.",
+    "hint_en": "It only happens when two opposite transfers run at the same time.",
+    "review": {
+      "status": "approved",
+      "author": "claude",
+      "reviewer": "Kiệt, Phát, Trung"
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

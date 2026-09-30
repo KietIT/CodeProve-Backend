@@ -29,5 +29,8 @@ class Exercise(Base):
     domain_keywords: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON, "sqlite"), default=list)
     reference_solution: Mapped[str | None] = mapped_column(Text, nullable=True)
     buggy_location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Debug exercises (P2.2), from the reviewed content file: {"regions": [[line, ...], ...] (1-based, starter
+    # as served), "explanation_vi/en", "hint_vi/en"}. Never sent to the student before submit.
+    debug_meta: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON, "sqlite"), nullable=True)
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

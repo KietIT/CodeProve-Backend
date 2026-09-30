@@ -32,6 +32,24 @@ async def test_create_attempt_and_events(client, db_session, auth_headers):
     assert state.json()["status"] == "in_progress"
 
 
+@pytest.mark.parametrize("forged", ["JUDGE", "SUBMIT_TESTS", "RUN", "HYPOTHESIS", "AI_REPLY", "LOCATE"])
+async def test_the_client_cannot_log_server_owned_events(client, db_session, auth_headers, forged):
+    """Scoring trusts these (judge levels, suite results, runs): only the server may write them."""
+    from sqlalchemy import select
+
+    from app.models import Event
+
+    await _seed_exercise(db_session)
+    aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=auth_headers)).json()["attempt_id"]
+    r = await client.post(f"/api/attempts/{aid}/events", headers=auth_headers, json={"events": [
+        {"type": "CODE_EDIT", "ts": 1000, "payload": {"charsAdded": 10}},
+        {"type": forged, "ts": 9_999_999_999_999, "payload": {"kind": "explain", "levels": [3, 3]}},
+    ]})
+    assert r.status_code == 422 and forged in r.json()["detail"]
+    types = (await db_session.execute(select(Event.type).where(Event.attempt_id == aid))).scalars().all()
+    assert types == ["OPEN"]  # nothing from the rejected batch was stored
+
+
 async def test_attempt_ownership_and_missing(client, db_session, auth_headers):
     await _seed_exercise(db_session)
     aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=auth_headers)).json()["attempt_id"]

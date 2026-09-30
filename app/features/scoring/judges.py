@@ -10,7 +10,9 @@ Verdicts are stored as events by the callers so a rescore never re-asks the LLM.
 import logging
 import math
 
-from app.features.mentor.prompts import EXPLAIN_SCORE_SYSTEM, HYPOTHESIS_JUDGE_SYSTEM, PROMPT_JUDGE_SYSTEM
+from app.features.mentor.prompts import (
+    EXPLAIN_SCORE_SYSTEM, HYPOTHESIS_JUDGE_SYSTEM, LOCATE_JUDGE_SYSTEM, PROMPT_JUDGE_SYSTEM,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,22 @@ async def judge_hypothesis(client, problem: str, text: str) -> dict:
     verdict = await client.judge(HYPOTHESIS_JUDGE_SYSTEM, f"Problem: {problem}\nStudent hypothesis: {text}")
     return {"correct": bool(verdict.get("correct", False)), "note": verdict.get("note", ""),
             "level": level_of(verdict.get("level")), "evidence": _evidence(verdict.get("evidence"))}
+
+
+async def judge_locate(client, served_starter: str, explanation: str, lines: list[int], reason: str) -> dict:
+    """P2.2: how well the one-sentence reason of the locate step explains the real bug.
+    Trivial reasons are level 0 without a call; a failed call leaves it unrated (None)."""
+    if is_non_answer(reason):
+        return {"level": 0, "evidence": ""}
+    numbered = "\n".join(f"{i} | {line}" for i, line in enumerate(served_starter.split("\n"), start=1))
+    user = (f"Code:\n{numbered}\n\nReal bug: {explanation}\n\n"
+            f"Selected lines: {', '.join(map(str, lines)) or '(none)'}\nStudent's reason: {reason}")
+    try:
+        verdict = await client.judge(LOCATE_JUDGE_SYSTEM, user)
+    except Exception:  # never block scoring: the indicator becomes N/A instead
+        logger.warning("locate judge failed; reason left unrated", exc_info=True)
+        return {"level": None, "evidence": ""}
+    return {"level": level_of(verdict.get("level")), "evidence": _evidence(verdict.get("evidence"))}
 
 
 def _unrated() -> dict:

@@ -115,6 +115,22 @@
       "note_en": "Semaphore(2) lets two threads in at once, so the race remains."
     }
   ],
+  "debug": {
+    "regions": [
+      [
+        5
+      ]
+    ],
+    "explanation_vi": "Dòng 5: counter += 1 gồm đọc, cộng rồi ghi; hai luồng có thể cùng đọc một giá trị và một lần tăng bị mất. Phải cập nhật khi đang giữ một threading.Lock dùng chung.",
+    "explanation_en": "Line 5: counter += 1 is a read-modify-write; two threads can read the same value and one increment is lost. The update must happen while holding a shared threading.Lock.",
+    "hint_vi": "Lỗi chỉ lộ ra khi nhiều luồng chạy cùng lúc.",
+    "hint_en": "It only shows up when several threads run at the same time.",
+    "review": {
+      "status": "approved",
+      "author": "claude",
+      "reviewer": "Kiệt, Phát, Trung"
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

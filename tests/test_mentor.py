@@ -9,7 +9,7 @@ pytestmark = pytest.mark.asyncio
 class FakeClient:
     _model = "fake"
 
-    async def chat(self, user_message, history, inject_error, context=""):
+    async def chat(self, user_message, history, inject_error, context="", extra_instruction=""):
         self.last_context = context
         return {
             "text": "Consider edge cases. ```py\nfor i in range(n):\n    pass\n```",

@@ -7,6 +7,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Attempt, CodeSnapshot, Event, Exercise, User
 
 
+# Event types only the server writes, after running, judging or checking something. Scoring trusts
+# them, so the client's telemetry endpoint must not accept them (a forged JUDGE or SUBMIT_TESTS with
+# a late ts would otherwise become "the latest verdict"). OPEN stays allowed: the client logs one too,
+# and scoring reads the first OPEN, which the server writes when the attempt is created.
+SERVER_EVENT_TYPES = frozenset({
+    "RUN", "TEST_RUN", "SUBMIT", "SUBMIT_TESTS", "PROMPT", "AI_REPLY", "HYPOTHESIS", "JUDGE", "EXPLAIN_BACK",
+    "LOCATE", "DEBUG_HINT",
+})
+
+
 def now_ms() -> int:
     return int(time.time() * 1000)
 

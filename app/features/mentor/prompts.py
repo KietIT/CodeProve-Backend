@@ -56,6 +56,24 @@ Also rate the same answer on this rubric ("level"):
 Reply ONLY with JSON:
 {"score": <0-20 number>, "reason": "<one short sentence>", "level": 0-3, "evidence": "<quote>"}."""
 
+LOCATE_JUDGE_SYSTEM = """You rate a student's explanation of a bug in a debug exercise. You get
+the buggy code as the student saw it (numbered), the real bug as written by the teachers, the
+lines the student selected and their one-sentence reason (Vietnamese or English). Rate ONLY
+whether the reason identifies the real cause of the bug and why it breaks the program
+("level"):
+- 0 = empty, off-topic, or a wrong cause (even if the selected line is right).
+  e.g. "có lỗi ở đây", "the variable name is bad"
+- 1 = vague: points at the right area without saying what is wrong.
+  e.g. "vòng lặp sai", "the loop is wrong"
+- 2 = names the right cause, but not why it produces a wrong result.
+  e.g. "range phải tới n + 1", "should use a lock"
+- 3 = names the right cause AND why it breaks the result.
+  e.g. "range(1, n) dừng trước n nên n không được cộng", "two threads read the same value
+  before either writes it back, so an increment is lost"
+Judge the idea, not the wording or the language. Do not reward naming the fix alone.
+"evidence" = the few words of the reason that justify the level, quoted exactly.
+Reply ONLY with compact JSON: {"level": 0-3, "evidence": "<quote>"}."""
+
 PROMPT_JUDGE_SYSTEM = """You rate each message a student sent to an AI tutor while solving a
 coding exercise. Rate every message on its own ("level"):
 - 0 = asks for the solution or is off-topic.

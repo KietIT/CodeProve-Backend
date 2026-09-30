@@ -37,7 +37,8 @@ def score_attempt_v2(ev: Evidence, explain_score: float | None) -> dict:
     not_applicable: dict[str, str] = {}
     for axis in AXES:
         indicator = _INDICATORS[axis](ev)
-        evidence[axis] = {"evidence": indicator.evidence, "reason": indicator.reason}
+        evidence[axis] = {"evidence": indicator.evidence, "reason": indicator.reason,
+                          **({"parts": indicator.parts} if indicator.parts else {})}
         if indicator.level is not None:
             raw[axis] = 20 * indicator.level / 3
             levels[axis] = display_level(indicator.level)

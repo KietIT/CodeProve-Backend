@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service as attempts_service
-from app.features.attempts.scoring_service import judge_and_store_prompts
+from app.features.attempts.scoring_service import judge_and_store_locate, judge_and_store_prompts
 from app.features.scoring.judges import is_non_answer, judge_explain, judge_hypothesis
 from app.models import Attempt, Event, Exercise, VerificationAnswer
 
@@ -36,6 +36,11 @@ async def backfill_judges(db: AsyncSession, attempt: Attempt, client) -> int:
     if "prompts" not in judged_kinds and await judge_and_store_prompts(db, attempt, problem, client,
                                                                       backfilled=True):
         calls += 1
+
+    if "locate" not in judged_kinds:
+        ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+        if await judge_and_store_locate(db, attempt, ex, client, backfilled=True):
+            calls += 1
 
     done = {p.get("for_ts") for p in judged if p.get("kind") == "hypothesis"}
     for e in events:

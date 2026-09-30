@@ -131,6 +131,24 @@
       "note_en": "popitem() removes the entry just added, so reading it right after fails."
     }
   ],
+  "debug": {
+    "regions": [
+      [
+        1,
+        4,
+        5
+      ]
+    ],
+    "explanation_vi": "Cache ở dòng 1 là dict thường và dòng 4–5 chỉ thêm phần tử, không bao giờ xoá, nên nó lớn vô hạn. Cần giới hạn kích thước và một quy tắc loại bỏ, ví dụ OrderedDict bỏ phần tử lâu không dùng nhất.",
+    "explanation_en": "The cache on line 1 is a plain dict and lines 4–5 only ever add entries, so it grows without bound. It needs a maximum size and an eviction rule, e.g. an OrderedDict that drops the least recently used entry.",
+    "hint_vi": "Kết quả vẫn đúng, nhưng bộ nhớ tăng mãi theo thời gian.",
+    "hint_en": "The results are right, but memory keeps growing over time.",
+    "review": {
+      "status": "approved",
+      "author": "claude",
+      "reviewer": "Kiệt, Phát, Trung"
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

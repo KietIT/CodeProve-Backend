@@ -1,6 +1,8 @@
 import pytest
 
-from app.features.scoring.judges import judge_explain, judge_hypothesis, judge_prompts, level_of
+from app.features.scoring.judges import judge_explain, judge_hypothesis, judge_locate, judge_prompts, level_of
+
+STARTER = "def f(n):\n    total = 0\n    for i in range(1, n):\n        total += i\n    return total"
 
 
 class Scripted:
@@ -70,3 +72,26 @@ async def test_hypothesis_errors_still_propagate():
     # Same as before P1.4: the caller sees the failure instead of a silent "wrong".
     with pytest.raises(TimeoutError):
         await judge_hypothesis(Scripted(TimeoutError()), "p", "text")
+
+
+async def test_locate_reason_is_judged_against_the_real_bug_with_numbered_code():
+    client = Scripted({"level": 3, "evidence": "stops before n"})
+    verdict = await judge_locate(client, STARTER, "Line 3: range(1, n) never adds n.", [3],
+                                 "range(1, n) stops before n so n is never added")
+    assert verdict == {"level": 3, "evidence": "stops before n"}
+    system, user, _ = client.calls[0]
+    assert "3 |     for i in range(1, n):" in user  # the judge sees what the student saw, numbered
+    assert "Selected lines: 3" in user and "Line 3: range(1, n) never adds n." in user
+
+
+async def test_an_empty_or_trivial_reason_is_level_0_without_a_call():
+    client = Scripted()
+    assert await judge_locate(client, STARTER, "x", [3], "") == {"level": 0, "evidence": ""}
+    assert await judge_locate(client, STARTER, "x", [3], "sai") == {"level": 0, "evidence": ""}
+    assert client.calls == []
+
+
+async def test_a_failed_locate_judge_leaves_the_reason_unrated():
+    client = Scripted(RuntimeError("down"))
+    assert await judge_locate(client, STARTER, "x", [3], "the loop bound is off by one") == {
+        "level": None, "evidence": ""}

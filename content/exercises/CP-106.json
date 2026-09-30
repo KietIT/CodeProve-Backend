@@ -95,6 +95,17 @@
       "note_en": "Uses LIKE, so a % in the name becomes a wildcard."
     }
   ],
+  "debug": {
+    "explanation_vi": "Dòng 3 ghép thẳng name vào câu SQL, nên input như ' OR '1'='1 làm đổi nghĩa câu truy vấn (SQL injection). Phải truyền giá trị bằng tham số: \"... WHERE name = ?\", (name,).",
+    "explanation_en": "Line 3 concatenates name into the SQL text, so input like ' OR '1'='1 changes the query (SQL injection). Pass the value as a parameter: \"... WHERE name = ?\", (name,).",
+    "hint_vi": "Lỗi bảo mật nằm ở cách dựng câu truy vấn.",
+    "hint_en": "A security bug in how the query is built.",
+    "review": {
+      "status": "approved",
+      "author": "claude",
+      "reviewer": "Kiệt, Phát, Trung"
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

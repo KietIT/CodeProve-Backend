@@ -99,6 +99,17 @@
       "note_en": "Only copies the message into the string instead of chaining the cause with from."
     }
   ],
+  "debug": {
+    "explanation_vi": "Dòng 4–5 bắt ngoại lệ rồi raise một RuntimeError mới mà không nối với lỗi gốc, nên nguyên nhân thật (ví dụ file nào không có) bị mất. Cần except Exception as exc và raise ... from exc.",
+    "explanation_en": "Lines 4–5 catch the exception and raise a new RuntimeError without chaining it, so the real cause (e.g. which file was missing) is lost. Bind it (except Exception as exc) and raise ... from exc.",
+    "hint_vi": "Khi có lỗi, thông tin cần để điều tra bị mất.",
+    "hint_en": "When it fails, the information you need to investigate is lost.",
+    "review": {
+      "status": "approved",
+      "author": "claude",
+      "reviewer": "Kiệt, Phát, Trung"
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

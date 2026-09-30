@@ -26,6 +26,8 @@ FINDING_CODES = (
     "never_ran_tests", "submitted_failing", "hidden_edge_failed", "all_tests_passed",
     "bug_not_fixed", "partial_fix", "trial_and_error", "quick_fix",
     "integrity_flags",
+    # P2.2, debug exercises with the locate step
+    "bug_located", "bug_not_located", "bug_explained_well", "bug_explanation_weak",
 )
 _SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 # Integrity problems are said first: they undermine every other axis.
@@ -126,8 +128,36 @@ def _testing(level, quote, reason, ev: Evidence) -> list[Finding]:
     return [_strength("all_tests_passed", "testing", quote)] if level == 3 else []
 
 
-def _debugging(level, quote, reason, ev: Evidence) -> list[Finding]:
+def _locate(parts: dict) -> list[Finding]:
+    """Findings of the P2.2 locate step (the bug itself is named by the report's reveal, not here)."""
+    out = []
+    if parts["skipped"] or parts["located"] == 0:
+        out.append(_risk("bug_not_located", "debugging", "medium", hints_used=parts["hints_used"]))
+    elif parts["located"] == 3:
+        out.append(_strength("bug_located", "debugging"))
+    explained = parts["explained"]
+    if not parts["skipped"] and explained is not None:
+        if explained <= 1:
+            out.append(_risk("bug_explanation_weak", "debugging", "low"))
+        elif explained == 3:
+            out.append(_strength("bug_explained_well", "debugging"))
+    return out
+
+
+def _debugging(level, quote, reason, ev: Evidence, parts: dict | None = None) -> list[Finding]:
     suite = ev.submit_suite or {}
+    if parts:  # debug exercise with the locate step: the fix part has its own levels
+        fix = []
+        if parts["fixed"] <= 1:
+            fix = [_risk("bug_not_fixed", "debugging", "high", quote,
+                         passed=suite.get("passed", 0), total=suite.get("total", 0))]
+        elif parts["fixed"] == 2:
+            fix = [_risk("partial_fix", "debugging", "medium", quote, **_failed_hidden(suite))]
+        elif parts["efficiency"] == 1:
+            fix = [_risk("trial_and_error", "debugging", "medium", quote, failing_runs=rubric.failing_runs(ev))]
+        elif parts["efficiency"] == 3:
+            fix = [_strength("quick_fix", "debugging", quote)]
+        return _locate(parts) + fix
     if reason == "not_fixed":
         return [_risk("bug_not_fixed", "debugging", "high", quote,
                       passed=suite.get("passed", 0), total=suite.get("total", 0))]
@@ -152,7 +182,7 @@ def diagnose(result: dict, ev: Evidence) -> list[Finding]:
         *_prompting(*args("prompting"), ev),
         *_verification(*args("verification")),
         *_testing(*args("testing"), ev),
-        *_debugging(*args("debugging"), ev),
+        *_debugging(*args("debugging"), ev, evidence["debugging"].get("parts")),
     ]
     # A failing submit is both an unfixed bug and a submit decision, and a hidden edge
     # failure after a fix is both a testing gap and a partial fix: say each once (team

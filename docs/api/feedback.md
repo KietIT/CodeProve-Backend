@@ -79,7 +79,7 @@ the diagnosis texts are written in it. Send the UI language the student is using
 | prompting | `asked_for_solution` (`count`), `prompts_vague` | `prompts_strong` |
 | verification | `pasted_ai_failing`, `pasted_ai_unchecked` | `adapted_ai_code`, `questioned_ai_code` |
 | testing | `never_ran_tests`, `submitted_failing` (`passed`, `total`), `hidden_edge_failed` (`failed_categories`, `failed_tests`) | `all_tests_passed` |
-| debugging | `bug_not_fixed` (`passed`, `total`), `partial_fix` (`failed_categories`, `failed_tests`), `trial_and_error` (`failing_runs`) | `quick_fix` |
+| debugging | `bug_not_fixed` (`passed`, `total`), `partial_fix` (`failed_categories`, `failed_tests`), `trial_and_error` (`failing_runs`), `bug_not_located` (`hints_used`), `bug_explanation_weak` | `quick_fix`, `bug_located`, `bug_explained_well` |
 | overall | `integrity_flags` (`paste`, `focus_lost`) | |
 
 `failed_categories` values: `happy`, `boundary`, `edge`, `error`, `uncategorized`.
@@ -87,3 +87,50 @@ the diagnosis texts are written in it. Send the UI language the student is using
 A failing submit shows `bug_not_fixed` on debug exercises and `submitted_failing` otherwise, never both.
 Source of truth: `app/features/feedback/diagnosis.py` (`FINDING_CODES`), texts in
 `app/features/feedback/templates.py`.
+
+## Debug exercises: the locate step (P2.2)
+
+On the 9 debug exercises (`kind: "debug"`) the student first locates the bug, then fixes it.
+The step exists when `GET /api/attempts/{id}` returns `debug` non-null.
+
+### Before submit
+
+- `GET /api/attempts/{id}?locale=vi|en` → `debug: {"located": bool, "hints_used": 0-2, "hints": [text, ...]}`
+  (`null` on other exercises). `hints` are the hints already bought, in the requested language, so a
+  reload restores the step. The editor stays read-only until `located` is true.
+- `POST /api/attempts/{id}/debug/hint?locale=vi|en` → `{"step": 1|2, "text": "..."}`. Step 1 is the kind
+  of bug, step 2 a line range ("Xem kỹ các dòng 2–4."). 409 after locating, after 2 hints or after submit;
+  400 on a non-debug exercise. Each hint lowers the "located" part of the Debugging axis; say so on
+  the button.
+- `POST /api/attempts/{id}/debug/locate` body `{"lines": [int], "reason": str (≤ 500), "skipped": bool}`
+  → `{"ok": true}`. Lines are 1-based lines of the starter **as served** (comments stripped: the code
+  the editor shows). Between 1 and `regions + 1` lines, which the UI does not know: allow up to 3 and
+  show the 422 `detail` if the server refuses. `skipped: true` records a skip (lines and reason
+  ignored). 409 if already located or submitted. The response never says whether the lines were
+  right: the answer is revealed after submit.
+- The exercise's free hint (`hint`, the "Gợi ý / Hint" accordion) must stay hidden on debug
+  exercises until `located` is true: several of those hints name the bug.
+
+### After submit: `feedback.debug`
+
+Present on reports of debug exercises whose attempt has a location (absent otherwise):
+
+```json
+"debug": {
+  "regions": [[3]],
+  "selected": [2, 3],
+  "hit": [true],
+  "hints_used": 1,
+  "skipped": false,
+  "explanation": "Dòng 3: range(1, n) dừng trước n ..."
+}
+```
+
+`regions`: the real bug, as groups of 1-based served-starter lines (several groups = several
+issues, e.g. CP-208). `hit[i]`: whether the selection touched `regions[i]`. `explanation` is in the
+report's locale. Show the starter with the student's lines and the real ones marked, and the
+explanation.
+
+`feedback.evidence.debugging.parts` (for analytics; the UI needs only the level and the findings):
+`{"located": 0-3, "explained": 0-3 | null, "fixed": 0-3, "efficiency": 0-3 | null, "hit": [...],
+"hints_used": n, "skipped": bool}`. The Debugging level is their mean.

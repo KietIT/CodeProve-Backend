@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
+from app.features.attempts import debug
 from app.features.attempts.scoring_service import _events_as_dicts, integrity_from_features, report_columns
 from app.features.feedback.service import refresh_diagnosis
 from app.features.scoring.backfill import backfill_judges
@@ -66,6 +67,7 @@ async def rescore_all(db: AsyncSession, apply: bool, engine: str = "v1", attempt
             # Feedback text is kept where the finding is unchanged; the writer is never re-asked.
             previous = (report.feedback or {}).get("diagnosis")
             result["diagnosis"] = await refresh_diagnosis(db, attempt, exercise, ev, result, previous)
+            result["debug_reveal"] = debug.reveal(exercise, ev.events, result["diagnosis"]["locale"])
         else:
             events = await _events_as_dicts(db, attempt.id)
             result = score_attempt(events, explain_score=report.explanation_score, exercise_kind=exercise.kind)

@@ -1,5 +1,7 @@
 """Prove an exercise content file in the sandbox before it can be synced."""
-from app.features.content.schema import ExerciseContent
+from app.features.content.schema import ContentDebug, ExerciseContent
+from app.features.exercises.debug_regions import derive
+from app.features.exercises.starters import student_starter
 from app.features.sandbox.runner import run_tests
 
 VISIBLE_RANGE = (1, 2)
@@ -7,6 +9,9 @@ HIDDEN_MAX = 8
 HIDDEN_MIN_DEFAULT = 5
 MUTANT_RANGE = (3, 5)
 REQUIRED_HIDDEN_CATEGORIES = ("boundary", "edge")
+DEBUG_REGIONS = (1, 3)
+DEBUG_REGION_MAX_LINES = 3
+QUOTE_MIN_CHARS = 8  # a hint containing a starter line this long gives the line away
 
 
 def _cases(content: ExerciseContent) -> list[dict]:
@@ -40,6 +45,33 @@ def _structure_errors(content: ExerciseContent) -> list[str]:
         seen.add(t.description)
     if not MUTANT_RANGE[0] <= len(content.mutants) <= MUTANT_RANGE[1]:
         errors.append(f"mutants: {len(content.mutants)} (need {MUTANT_RANGE[0]}-{MUTANT_RANGE[1]})")
+    return errors
+
+
+def _debug_errors(debug: ContentDebug, served: str, reference: str) -> list[str]:
+    """The debug block must point at lines the fix changes, in the starter as served."""
+    errors: list[str] = []
+    derived = derive(served, reference)
+    changed = {line for region in derived for line in region}
+    regions = debug.regions or derived
+    line_count = len(served.split("\n"))
+    if not DEBUG_REGIONS[0] <= len(regions) <= DEBUG_REGIONS[1]:
+        errors.append(f"debug: {len(regions)} regions (need {DEBUG_REGIONS[0]}-{DEBUG_REGIONS[1]})")
+    for i, region in enumerate(regions, start=1):
+        if not region:
+            errors.append(f"debug region {i}: empty")
+            continue
+        if len(region) > DEBUG_REGION_MAX_LINES:
+            errors.append(f"debug region {i}: more than {DEBUG_REGION_MAX_LINES} lines")
+        outside = [line for line in region if not 1 <= line <= line_count]
+        if outside:
+            errors.append(f"debug region {i}: lines {outside} are outside the starter ({line_count} lines)")
+        elif not set(region) & changed:
+            errors.append(f"debug region {i}: not a changed line of the starter (changed: {sorted(changed)})")
+    quotable = [line.strip() for line in served.split("\n") if len(line.strip()) >= QUOTE_MIN_CHARS]
+    for field in ("hint_vi", "hint_en"):
+        if any(line in getattr(debug, field) for line in quotable):
+            errors.append(f"debug: {field} quotes the starter")
     return errors
 
 
@@ -79,4 +111,11 @@ async def validate_content(content: ExerciseContent, kind: str, starter_code: st
         res = await run_tests(starter_code, cases, timeout)
         if res["passed"] == res["total"]:
             errors.append("debug starter passes every test: no test covers the planted bug")
+        if content.debug is None:
+            errors.append("a debug exercise needs a 'debug' block (bug regions, explanation, hint)")
+        else:
+            errors += _debug_errors(content.debug, student_starter(starter_code, "debug"),
+                                    content.reference_solution)
+    elif content.debug is not None:
+        errors.append("'debug' block: only debug exercises have one")
     return errors
