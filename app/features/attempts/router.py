@@ -8,11 +8,13 @@ from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.features.attempts import scoring_service, service, submit_tests
+from app.features.attempts import debug, scoring_service, service, submit_tests
 from app.features.exercises.starters import is_untouched, student_starter
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
-from app.schemas.attempt import AttemptOut, AttemptState, CreateAttemptIn, RunIn, RunResult, SnapshotIn
+from app.schemas.attempt import (
+    AttemptOut, AttemptState, CreateAttemptIn, HintOut, LocateIn, RunIn, RunResult, SnapshotIn,
+)
 from app.schemas.event import EventsIn
 from app.schemas.report import ExplainBackIn, ReportOut
 
@@ -27,12 +29,30 @@ async def create(data: CreateAttemptIn, db: AsyncSession = Depends(get_db),
 
 
 @router.get("/{attempt_id}", response_model=AttemptState)
-async def get_state(attempt_id: int, db: AsyncSession = Depends(get_db),
+async def get_state(attempt_id: int, locale: str = "en", db: AsyncSession = Depends(get_db),
                     user: User = Depends(get_current_user)) -> AttemptState:
     attempt = await service.require_attempt(db, attempt_id, user)
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     return AttemptState(id=attempt.id, exercise_code=ex.code, status=attempt.status,
-                        score=attempt.score, latest_code=await service.latest_code(db, attempt.id))
+                        score=attempt.score, latest_code=await service.latest_code(db, attempt.id),
+                        debug=await debug.state(db, attempt, ex, locale))
+
+
+@router.post("/{attempt_id}/debug/hint", response_model=HintOut)
+async def debug_hint(attempt_id: int, locale: str = "en", db: AsyncSession = Depends(get_db),
+                     user: User = Depends(get_current_user)) -> HintOut:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    return HintOut(**await debug.take_hint(db, attempt, ex, locale))
+
+
+@router.post("/{attempt_id}/debug/locate")
+async def debug_locate(attempt_id: int, data: LocateIn, db: AsyncSession = Depends(get_db),
+                       user: User = Depends(get_current_user)) -> dict:
+    attempt = await service.require_attempt(db, attempt_id, user)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    await debug.locate(db, attempt, ex, data.lines, data.reason, data.skipped)
+    return {"ok": True}
 
 
 @router.post("/{attempt_id}/events")
