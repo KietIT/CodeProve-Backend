@@ -56,6 +56,21 @@ async def test_apply_replaces_tests_and_mutants(db_session, tmp_path):
     assert len((await db_session.execute(select(ExerciseMutant))).scalars().all()) == 3
     ex = (await db_session.execute(select(Exercise))).scalar_one()
     assert ex.reference_solution.startswith("def sum_to_n(n):")
+    assert ex.student_tests is True  # every test is a plain call: the Tests tab is on (P2.3)
+
+
+async def test_the_tests_tab_stays_off_when_the_tests_need_privileged_code(db_session, tmp_path):
+    from app.models import Exercise
+
+    await _exercise(db_session)
+    raw = json.loads(_content(review=APPROVED, debug=DEBUG).model_dump_json())
+    for t in raw["tests"]:
+        t["input"] = f"(globals().get('x'), {t['input']})[-1]"
+    p = tmp_path / "CP-004.json"
+    p.write_text(json.dumps(raw), encoding="utf-8")
+    result = await sync_content(db_session, [p], apply=True)
+    assert result[0]["status"] == "ok" and result[0]["student_tests"] == 0
+    assert (await db_session.execute(select(Exercise))).scalar_one().student_tests is False
 
 
 async def test_a_draft_debug_block_is_not_written_and_an_approved_one_is(db_session, tmp_path):

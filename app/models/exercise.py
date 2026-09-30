@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Float, String, Text, false, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,5 +32,8 @@ class Exercise(Base):
     # Debug exercises (P2.2), from the reviewed content file: {"regions": [[line, ...], ...] (1-based, starter
     # as served), "explanation_vi/en", "hint_vi/en"}. Never sent to the student before submit.
     debug_meta: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON, "sqlite"), nullable=True)
+    # P2.3: the student writes tests (Tests tab). Set by content sync where the exercise's own tests
+    # fit the student-test input rules (student_tests.safety).
+    student_tests: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
