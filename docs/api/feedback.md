@@ -60,7 +60,9 @@ the diagnosis texts are written in it. Send the UI language the student is using
 - `severity`: `high` | `medium` | `low` for risks, `null` for strengths.
 - `text`: four plain-text fields in `diagnosis.locale` (no markdown except, rarely, a 1–2 line
   inline code snippet). Render as text, not HTML.
-- `next_exercise`: an exercise code the student has not solved (link to it), or `null`.
+- `next_exercise`: an exercise code the student has not solved (link to it), or `null`. It is
+  picked from `candidates`: up to 3 unsolved exercises at the same level or one above, ranked by
+  the learner model since P3.4 (see [learner.md](learner.md#recommendations)).
 - `source`: `"llm"` when `text.what_happened` was written for this session (only
   `explain_missing`, `explain_shallow`, `hypothesis_vague` and `prompts_vague`, whose evidence is
   the student's own words); `"template"` otherwise. All other findings always use the template

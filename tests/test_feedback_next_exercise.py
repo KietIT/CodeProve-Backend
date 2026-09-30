@@ -28,28 +28,42 @@ def risk(code: str) -> Finding:
     return Finding(code=code, axis="debugging", kind="risk", severity="medium")
 
 
-async def test_unsolved_same_category_first_and_never_two_levels_up(db_session):
+async def test_new_student_gets_same_level_first_and_never_two_levels_up(db_session):
     user, ex = await _catalog(db_session)
     out = await candidates(db_session, user.id, ex["CP-001"], [])
-    assert out == ["CP-003", "CP-105", "CP-004"][:MAX_CANDIDATES]
+    # No ratings yet: the fresher exercises (p = 0.64) are nearest the 0.70 target, then code order.
+    assert out == ["CP-003", "CP-004", "CP-006"][:MAX_CANDIDATES]
     assert "CP-202" not in out and "CP-001" not in out
 
 
-async def test_solved_exercises_are_skipped(db_session):
+async def test_solved_and_just_started_exercises_are_skipped_or_pushed_down(db_session):
     from app.models import Attempt
 
     user, ex = await _catalog(db_session)
     db_session.add(Attempt(user_id=user.id, exercise_id=ex["CP-003"].id, status="scored"))
-    db_session.add(Attempt(user_id=user.id, exercise_id=ex["CP-006"].id, status="in_progress"))  # not solved
+    db_session.add(Attempt(user_id=user.id, exercise_id=ex["CP-006"].id, status="in_progress"))  # started now
     await db_session.flush()
     out = await candidates(db_session, user.id, ex["CP-001"], [])
-    assert "CP-003" not in out and out[0] == "CP-105"
+    assert out == ["CP-004", "CP-105", "CP-106"]
 
 
 async def test_debugging_risks_prefer_debug_exercises(db_session):
     user, ex = await _catalog(db_session)
-    out = await candidates(db_session, user.id, ex["CP-001"], [risk("partial_fix")])
-    assert out[:2] == ["CP-004", "CP-106"]
+    assert (await candidates(db_session, user.id, ex["CP-006"], []))[0] == "CP-001"
+    out = await candidates(db_session, user.id, ex["CP-006"], [risk("partial_fix")])
+    assert out[0] == "CP-004"
+
+
+async def test_exercises_for_a_weak_skill_come_first(db_session):
+    from app.models import LearnerSkill
+
+    user, ex = await _catalog(db_session)
+    ex["CP-006"].skills = ["string-processing"]
+    db_session.add_all([LearnerSkill(user_id=user.id, skill="hash-map", rating=1000.0, attempts=2),
+                        LearnerSkill(user_id=user.id, skill="graph", rating=1000.0, attempts=2),
+                        LearnerSkill(user_id=user.id, skill="string-processing", rating=960.0, attempts=2)])
+    await db_session.flush()
+    assert (await candidates(db_session, user.id, ex["CP-001"], []))[0] == "CP-006"
 
 
 async def test_a_senior_exercise_stays_at_senior(db_session):
