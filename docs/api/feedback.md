@@ -148,8 +148,11 @@ Exercises with `GET /api/attempts/{id}` → `tests` non-null have the tab (20 of
   learning mode: one worked example from a **visible** test, hints on the missing categories).
 - `StudentTest = {"category": "happy"|"boundary"|"edge"|"error", "input": str (≤ 300), "expected": str
   (≤ 300), "why": str (≤ 200)}`. `input` is one Python expression calling the exercise's own
-  functions/classes (e.g. `two_sum([3, 3], 6)`, `(lambda c: (c.put(1, 1), c.get(1))[-1])(LRUCache(2))`);
+  functions/classes (e.g. `f([1, 2], 3)`, `(lambda o: (o.add(1), o.size())[-1])(MyClass())`);
   `expected` is the value as Python would print it (`[0, 1]`, `'abc'`, `None`; spacing does not matter).
+  **Never use a real exercise's function, class or values in placeholders or help examples** (a
+  `two_sum([3, 3], 6)` → `[0, 1]` example is a ready valid test for CP-001): every student input field
+  has only the placeholder "Viết vào đây" / "Write here" (owner decision 2026-09-30).
 - `PUT /api/attempts/{id}/tests` body `{"tests": [StudentTest]}` (≤ 10) → `{"ok": true}`; latest save
   wins; save on every edit (debounced). 400 without the tab, 409 after submit, 422 on bad fields.
 - `POST /api/attempts/{id}/tests/check` body one `StudentTest` → `{"status": "valid" | "wrong_expected"
