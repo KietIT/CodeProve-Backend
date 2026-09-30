@@ -167,3 +167,73 @@ def test_without_a_locate_event_the_p14_indicator_is_unchanged():
     assert out.level == 3 and out.reason == "fixed" and out.parts is None
     unfixed = debugging(debug_ev(run(3, 0.5), suite(3, 7, visible_passed=1)))
     assert unfixed.level == 0 and unfixed.reason == "not_fixed"
+
+
+# ---------- Testing: student tests (P2.3) ----------
+
+from app.features.scoring.rubric import testing as score_testing  # noqa: E402
+
+
+def student_tests(valid, written=None, categories=("happy",), exercise_categories=("boundary", "edge", "happy"),
+                  killed=0, total=3):
+    written = valid if written is None else written
+    tests = [{"category": "happy", "input": "f()", "expected": "1", "why": "", "valid": i < valid,
+              "reason": None} for i in range(written)]
+    return ("STUDENT_TESTS", 10, {"tests": tests, "categories": sorted(categories),
+                                  "exercise_categories": sorted(exercise_categories),
+                                  "mutants": [], "killed": killed, "total": total})
+
+
+def passing_suite():
+    return ("SUBMIT_TESTS", 10, {"passed": 8, "total": 8, "passRatio": 1.0, "visiblePassed": 2, "visibleTotal": 2})
+
+
+def session_with(*events, level="junior"):
+    out = ev(("RUN", 3, {"passed": True, "passRatio": 1.0, "isStarter": False}), *events)
+    out.exercise_level = level
+    return out
+
+
+def test_strong_student_tests_are_level_3_on_every_part():
+    out = score_testing(session_with(student_tests(4, categories=("boundary", "edge", "happy"), killed=3), passing_suite()))
+    assert out.level == 3 and out.reason == "all_pass"
+    assert {k: out.parts[k] for k in ("valid", "coverage", "mutation", "correctness")} == {
+        "valid": 3, "coverage": 3, "mutation": 3, "correctness": 3}
+
+
+def test_junior_needs_three_valid_tests():
+    parts = lambda *a, **k: score_testing(session_with(student_tests(*a, **k), passing_suite())).parts  # noqa: E731
+    assert parts(1)["valid"] == 0          # 1/3
+    assert parts(2)["valid"] == 1          # 2/3 >= 50%
+    assert parts(3, written=4)["valid"] == 2   # 3/4 = 75%
+    assert parts(4)["valid"] == 3
+
+
+def test_coverage_and_mutation_levels():
+    def parts(**k):
+        return score_testing(session_with(student_tests(3, **k), passing_suite())).parts
+    assert parts(categories=("boundary", "happy"))["coverage"] == 2     # all but one
+    assert parts(categories=("happy",))["coverage"] == 1
+    assert parts(categories=())["coverage"] == 0
+    assert parts(killed=2)["mutation"] == 2 and parts(killed=1)["mutation"] == 1 and parts(killed=0)["mutation"] == 0
+    assert parts(killed=0, total=0)["mutation"] is None                 # no mutants: not applicable
+
+
+def test_the_axis_is_the_mean_and_keeps_the_correctness_reason():
+    out = score_testing(session_with(student_tests(3, categories=("happy",), killed=1),
+                           ("SUBMIT_TESTS", 10, {"passed": 7, "total": 8, "passRatio": 0.875,
+                                                 "visiblePassed": 2, "visibleTotal": 2})))
+    # valid 3, coverage 1, mutation 1, correctness 2 (hidden fail)
+    assert out.level == (3 + 1 + 1 + 2) / 4 and out.reason == "hidden_fail"
+
+
+def test_junior_without_tests_scores_0_on_the_test_parts_but_a_fresher_does_not():
+    junior = score_testing(session_with(student_tests(0, categories=()), passing_suite()))
+    assert junior.level == (0 + 0 + 0 + 3) / 4
+    fresher = score_testing(session_with(student_tests(0, categories=()), passing_suite(), level="fresher"))
+    assert fresher.level == 3 and fresher.parts["valid"] is None  # the tab is optional on fresher
+
+
+def test_without_student_tests_the_p14_indicator_is_unchanged():
+    out = score_testing(session_with(passing_suite()))
+    assert out.level == 3 and out.reason == "all_pass" and out.parts is None

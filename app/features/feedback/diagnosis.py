@@ -116,8 +116,10 @@ def _failed_hidden(suite: dict) -> dict:
             "failed_tests": names[:MAX_FAILED_TESTS]}
 
 
-def _testing(level, quote, reason, ev: Evidence) -> list[Finding]:
+def _testing(level, quote, reason, ev: Evidence, parts: dict | None = None) -> list[Finding]:
     suite = ev.submit_suite or {}
+    if parts:  # P2.3: the axis also covers the student's tests; these findings are about correctness
+        level = parts["correctness"]
     if reason == "never_ran":
         return [_risk("never_ran_tests", "testing", "high")]
     if level in (0, 1):
@@ -181,7 +183,7 @@ def diagnose(result: dict, ev: Evidence) -> list[Finding]:
         *_hypothesis(*args("hypothesis")),
         *_prompting(*args("prompting"), ev),
         *_verification(*args("verification")),
-        *_testing(*args("testing"), ev),
+        *_testing(*args("testing"), ev, evidence["testing"].get("parts")),
         *_debugging(*args("debugging"), ev, evidence["debugging"].get("parts")),
     ]
     # A failing submit is both an unfixed bug and a submit decision, and a hidden edge

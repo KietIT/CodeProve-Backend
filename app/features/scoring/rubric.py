@@ -161,7 +161,48 @@ def _real_runs(ev: Evidence) -> list[dict]:
     return [r for r in ev.runs if not r["payload"].get("isStarter")]
 
 
+REQUIRED_VALID_TESTS = 3  # junior/senior (P2.3 decision 3)
+
+
 def testing(ev: Evidence) -> Indicator:
+    """P2.3: with the student's tests (STUDENT_TESTS), the mean of valid tests,
+    category coverage, mutation score and correctness (the hidden suite); a
+    fresher who wrote no tests is scored on correctness only. Without that event
+    (sessions before the Tests tab, exercises without it): correctness alone,
+    the P1.4 indicator."""
+    correctness = _correctness(ev)
+    student = next((e["payload"] for e in reversed(ev.events) if e["type"] == "STUDENT_TESTS"), None)
+    if student is None:
+        return correctness
+    tests = student.get("tests") or []
+    optional = ev.exercise_level == "fresher"
+    valid = sum(1 for t in tests if t.get("valid"))
+    wanted = set(student.get("exercise_categories") or [])
+    covered = len(set(student.get("categories") or []) & wanted)
+    killed, total = student.get("killed", 0), student.get("total", 0)
+    parts = {
+        "valid": None if optional and not tests else _share_level(valid / max(len(tests), 1 if optional
+                                                                                 else REQUIRED_VALID_TESTS)),
+        "coverage": None if (optional and not tests) or not wanted else
+        3 if covered >= len(wanted) else 2 if covered == len(wanted) - 1 and covered else 1 if covered else 0,
+        "mutation": None if (optional and not tests) or not total else _mutation_level(killed / total),
+        "correctness": correctness.level,
+        "written": len(tests), "valid_count": valid, "killed": killed, "total": total,
+    }
+    applicable = [parts[k] for k in ("valid", "coverage", "mutation", "correctness") if parts[k] is not None]
+    quote = f"{valid}/{len(tests)} valid test(s), {killed}/{total} mutant(s) caught; suite {correctness.evidence}"
+    return Indicator(statistics.mean(applicable), quote, correctness.reason, parts)
+
+
+def _share_level(share: float) -> int:
+    return 3 if share >= 1 else 2 if share >= 0.75 else 1 if share >= 0.5 else 0
+
+
+def _mutation_level(ratio: float) -> int:
+    return 3 if ratio >= 1 else 2 if ratio >= 2 / 3 else 1 if ratio >= 1 / 3 else 0
+
+
+def _correctness(ev: Evidence) -> Indicator:
     """0 never ran / submitted failing nearly all · 1 submitted with a visible test
     failing · 2 visible pass, hidden fail · 3 the whole suite passes."""
     suite = ev.submit_suite

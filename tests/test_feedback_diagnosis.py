@@ -184,3 +184,16 @@ def test_the_fix_findings_follow_the_fixed_and_efficiency_parts():
     slow = debug_findings(locate([3]), located_judge(3), *[run(m, 0.5) for m in (3, 4, 5, 6)], run(7, 1.0),
                           suite(7, 7, 2))
     assert next(f for f in slow if f.code == "trial_and_error").params == {"failing_runs": 4}
+
+
+# ---------- Student tests (P2.3) ----------
+
+def test_correctness_findings_read_the_correctness_part_not_the_axis_mean():
+    student = e("STUDENT_TESTS", 19, {"tests": [], "categories": [], "exercise_categories": ["happy", "edge"],
+                                      "mutants": [], "killed": 0, "total": 3})
+    ev_ = Evidence(exercise_kind="implement", events=sorted(
+        [hyp(1, 2), e("CODE_EDIT", 2), run(3, 1.0), suite(8, 8, 2), explain(2), student], key=lambda x: x["ts"]),
+        exercise_level="junior")
+    out = diagnose(score_attempt_v2(ev_, 12), ev_)
+    # Axis mean is (0 + 0 + 0 + 3) / 4, but the suite passed: still "all tests passed", not "submitted failing".
+    assert "submitted_failing" not in codes(out) and "all_tests_passed" in codes(out)

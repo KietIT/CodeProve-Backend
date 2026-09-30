@@ -74,6 +74,8 @@ class Evidence:
     answers: list[dict] = field(default_factory=list)  # explain-back {question, answer}
     # Debug exercises (P2.2): the bug regions, 1-based lines of the starter as served.
     debug_regions: list[list[int]] | None = None
+    # fresher | junior | senior (P2.3: the Tests tab is optional on fresher).
+    exercise_level: str = ""
 
     @property
     def final_code(self) -> str:
@@ -107,8 +109,8 @@ class Evidence:
 
 
 async def load_evidence(db: AsyncSession, attempt: Attempt) -> Evidence:
-    kind, debug_meta = (await db.execute(
-        select(Exercise.kind, Exercise.debug_meta).where(Exercise.id == attempt.exercise_id))).one()
+    kind, debug_meta, level = (await db.execute(
+        select(Exercise.kind, Exercise.debug_meta, Exercise.level).where(Exercise.id == attempt.exercise_id))).one()
     events = [
         {"type": e.type, "ts": e.ts, "payload": e.payload or {}, "integrity_flags": e.integrity_flags or []}
         for e in (await db.execute(select(Event).where(Event.attempt_id == attempt.id))).scalars().all()
@@ -134,4 +136,4 @@ async def load_evidence(db: AsyncSession, attempt: Attempt) -> Evidence:
                                    .order_by(VerificationAnswer.id))).scalars()
     ]
     return Evidence(exercise_kind=kind or "implement", events=events, replies=replies, snapshots=snapshots,
-                    answers=answers, debug_regions=(debug_meta or {}).get("regions"))
+                    answers=answers, debug_regions=(debug_meta or {}).get("regions"), exercise_level=level or "")
