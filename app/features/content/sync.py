@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import async_session_maker
 from app.features.content.schema import CONTENT_DIR, ExerciseContent, load_content_file
 from app.features.content.validate import validate_content
+from app.features.exercises.debug_regions import derive
+from app.features.exercises.starters import student_starter
 from app.models import Exercise, ExerciseMutant, TestCase
 
 
@@ -35,6 +37,24 @@ async def _write(db: AsyncSession, ex: Exercise, content: ExerciseContent) -> No
     for i, m in enumerate(content.mutants, start=1):
         db.add(ExerciseMutant(exercise_id=ex.id, code=m.code, bug_line=m.bug_line, bug_type=m.bug_type,
                               note_vi=m.note_vi, note_en=m.note_en, order_index=i))
+    if content.debug and content.debug.review.approved:
+        # A draft block leaves the stored metadata as it is.
+        ex.debug_meta = debug_meta(content, ex.starter_code)
+
+
+def debug_meta(content: ExerciseContent, current_starter: str) -> dict:
+    """The stored form of an approved debug block: regions resolved on the served starter."""
+    served = student_starter(content.starter_for(current_starter), "debug")
+    d = content.debug
+    return {"regions": d.regions or derive(served, content.reference_solution),
+            "explanation_vi": d.explanation_vi, "explanation_en": d.explanation_en,
+            "hint_vi": d.hint_vi, "hint_en": d.hint_en}
+
+
+def _debug_status(content: ExerciseContent) -> str | None:
+    if content.debug is None:
+        return None
+    return "approved" if content.debug.review.approved else "draft"
 
 
 async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list[dict]:
@@ -61,7 +81,9 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
         results.append({"code": content.code, "status": "ok", "tests": len(content.tests),
                         "hidden": sum(t.hidden for t in content.tests), "mutants": len(content.mutants),
                         "reviewer": content.review.reviewer,
-                        "overrides": content.exercise.fields_set() if content.exercise else []})
+                        "overrides": content.exercise.fields_set() if content.exercise else [],
+                        "debug": _debug_status(content),
+                        "debug_reviewer": content.debug.review.reviewer if content.debug else None})
         if apply:
             await _write(db, ex, content)
     if apply:
@@ -84,6 +106,10 @@ async def _main(codes: list[str], apply: bool) -> int:
             if r["overrides"]:
                 # Student-facing text/code changes: make them impossible to miss in the dry run.
                 print(f"    ! overrides the exercise's {', '.join(r['overrides'])}")
+            if r["debug"] == "approved":
+                print(f"    debug block approved by {r['debug_reviewer']}: bug regions, explanation and hint written")
+            elif r["debug"] == "draft":
+                print("    debug block is a draft: not written")
         elif r["status"] == "skipped":
             print(f"{r['code']}  skipped  {r['reason']}")
         else:

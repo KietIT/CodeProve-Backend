@@ -58,6 +58,31 @@ async def test_apply_replaces_tests_and_mutants(db_session, tmp_path):
     assert ex.reference_solution.startswith("def sum_to_n(n):")
 
 
+async def test_a_draft_debug_block_is_not_written_and_an_approved_one_is(db_session, tmp_path):
+    from app.models import Exercise
+
+    await _exercise(db_session)
+    draft = await sync_content(db_session, [_write(tmp_path, APPROVED)], apply=True)  # DEBUG is a draft
+    assert draft[0]["status"] == "ok" and draft[0]["debug"] == "draft"
+    ex = (await db_session.execute(select(Exercise))).scalar_one()
+    assert ex.debug_meta is None
+
+    p = tmp_path / "CP-004.json"
+    raw = json.loads(_content(review=APPROVED, debug={**DEBUG, "review": APPROVED}).model_dump_json())
+    p.write_text(json.dumps(raw), encoding="utf-8")
+    result = await sync_content(db_session, [p], apply=True)
+    assert result[0]["debug"] == "approved" and result[0]["debug_reviewer"] == "an"
+    await db_session.refresh(ex)
+    assert ex.debug_meta == {"regions": [[3]], "explanation_vi": DEBUG["explanation_vi"],
+                             "explanation_en": DEBUG["explanation_en"], "hint_vi": DEBUG["hint_vi"],
+                             "hint_en": DEBUG["hint_en"]}
+
+    # A later draft edit of the block keeps the approved metadata in place.
+    await sync_content(db_session, [_write(tmp_path, APPROVED)], apply=True)
+    await db_session.refresh(ex)
+    assert ex.debug_meta["regions"] == [[3]]
+
+
 async def test_unapproved_or_self_reviewed_files_are_skipped(db_session, tmp_path):
     await _exercise(db_session)
     draft = await sync_content(db_session, [_write(tmp_path, {"status": "draft", "author": "claude", "reviewer": None})], apply=True)
