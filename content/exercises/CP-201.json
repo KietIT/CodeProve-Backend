@@ -115,12 +115,12 @@
   "skills": {
     "tags": [
       "concurrency",
-      "data-structure-design"
+      "distributed-systems"
     ],
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Trung, Phát, Minh"
     }
   },
   "review": {

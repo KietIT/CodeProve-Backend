@@ -66,3 +66,21 @@ Thẻ ít bài (1–2 bài) thì điểm Elo của kỹ năng đó sẽ ít dữ
 ## Sau khi duyệt
 
 Người duyệt (khác tác giả) ghi tên vào `skills.review.reviewer` và đổi `status` thành `approved` trong từng file `content/exercises/CP-*.json` (hoặc báo lại để Claude sửa). Sau đó chạy `python -m app.features.content.sync` (dry run sẽ in dòng `skills ... approved by ...`) rồi `--apply`. Thẻ còn là draft sẽ không được ghi vào DB.
+
+## Kết quả duyệt (2026-09-30)
+
+Kiệt, Trung, Phát và Minh đã duyệt. 22/30 bài được cả 4 người đồng ý. Phiếu đã điền được lưu ngoài repo, trong `calibration-private/exports`. Các ý kiến được xử lý dựa trên đề và lời giải tham chiếu:
+
+| Ý kiến | Quyết định |
+|---|---|
+| `null-handling`: "Xử lý dữ liệu thiếu" quá rộng (Trung, Minh) | Đổi thành **Xử lý giá trị null** / Null handling |
+| `error-handling` (Minh) | Đổi thành **Xử lý lỗi và ngoại lệ** |
+| CP-011: chỉ giữ thẻ của cách giải chính (Trung, Minh) | Lời giải dùng `set` → **chỉ còn `hash-map`** |
+| CP-201: thiếu `distributed-systems` (Minh) | Thêm thẻ mới **`distributed-systems`** (Hệ thống phân tán) thay cho `data-structure-design`, vì bài dùng Redis chung, không thiết kế cấu trúc dữ liệu |
+| CP-207: `string-processing` chỉ là định dạng đầu ra (Minh) | **Bỏ `string-processing`** (lời giải chỉ `split`/`join`) |
+| CP-005: bỏ `security` nếu đề không nói tới injection (Phát) | **Giữ nguyên**: đề yêu cầu lọc ký tự nguy hiểm trước khi vào tầng database và giải thích mình đang phòng thủ cái gì |
+| CP-102: bỏ `caching` nếu lỗi không nằm ở cache (Trung, Minh) | **Giữ nguyên**: đề nói rõ là cache tăng không giới hạn, và cách sửa là thêm cơ chế loại bỏ kiểu LRU |
+| CP-110: `data-structure-design` quá rộng (Minh) | **Giữ nguyên**: một thẻ "deque đơn điệu" riêng chỉ có 1 bài nên Elo gần như không có dữ liệu |
+| CP-203: thêm `input-validation` (Trung) | **Giữ nguyên**: code gốc đã từ chối token thiếu hoặc rỗng; lỗi thật là không gọi `verify()` (xác thực), không phải kiểm tra dữ liệu vào |
+
+Bộ thẻ cuối cùng có 18 thẻ. Thẻ của cả 30 bài được đánh dấu `approved`.

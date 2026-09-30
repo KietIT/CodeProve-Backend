@@ -109,13 +109,12 @@
   ],
   "skills": {
     "tags": [
-      "hash-map",
-      "two-pointers"
+      "hash-map"
     ],
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Trung, Phát, Minh"
     }
   },
   "review": {

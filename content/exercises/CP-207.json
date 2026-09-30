@@ -246,13 +246,12 @@
   "skills": {
     "tags": [
       "recursion",
-      "linked-structures",
-      "string-processing"
+      "linked-structures"
     ],
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Trung, Phát, Minh"
     }
   },
   "review": {
