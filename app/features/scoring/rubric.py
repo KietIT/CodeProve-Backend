@@ -8,6 +8,7 @@ so the engine and the human raters use the same scale.
 import statistics
 from dataclasses import dataclass
 
+from app.features.exercises.debug_regions import hit_regions
 from app.features.scoring.evidence import Evidence, Reply, code_lines
 
 # A reply's code counts as pasted when this share of its NEW lines (lines the
@@ -23,6 +24,8 @@ class Indicator:
     evidence: str = ""
     # Machine-readable why, for feedback and debugging (e.g. "no_ai_use", "after_code").
     reason: str = ""
+    # Sub-indicators when an axis is built from several (P2.2 debugging), for the findings.
+    parts: dict | None = None
 
 
 def _latest_judge(ev: Evidence, kind: str) -> dict | None:
@@ -187,19 +190,69 @@ def debugging(ev: Evidence) -> Indicator:
     """Implement exercises: N/A without a real failing run. Debug exercises: always scored.
     Not fixed at submit → 0; the visible tests pass but a hidden (edge) test still
     fails → 2 (owner decision 2026-09-26, matches the P1.3 raters); fixed after
-    ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3."""
+    ≥ 4 failing runs → 1, 2-3 → 2, 0-1 → 3.
+    A debug exercise with a locate step (P2.2) is scored from four parts instead."""
     fails = failing_runs(ev)
     if ev.exercise_kind != "debug" and fails == 0:
         return Indicator(None, reason="no_failure")
-    suite = ev.submit_suite
+    located = next((e["payload"] for e in ev.events if e["type"] == "LOCATE"), None)
+    if ev.exercise_kind == "debug" and located is not None and ev.debug_regions:
+        return _debugging_with_locate(ev, located, fails)
     fixed = solved(ev)
     quote = f"{fails} failing run(s)"
     if not fixed:
-        visible_ok = bool(suite) and "visibleTotal" in suite and suite.get("visiblePassed") == suite.get("visibleTotal")
-        if visible_ok:
+        if _visible_ok(ev.submit_suite):
             return Indicator(2, quote, "partially_fixed")
         return Indicator(0, quote, "not_fixed")
-    return Indicator(3 if fails <= 1 else 2 if fails <= 3 else 1, quote, "fixed")
+    return Indicator(_efficiency(fails), quote, "fixed")
+
+
+def _visible_ok(suite: dict | None) -> bool:
+    return bool(suite) and "visibleTotal" in suite and suite.get("visiblePassed") == suite.get("visibleTotal")
+
+
+def _efficiency(fails: int) -> int:
+    return 3 if fails <= 1 else 2 if fails <= 3 else 1
+
+
+def _located_level(hit: list[bool], hints: int) -> int:
+    """Every region hit: 3 / 2 / 1 with 0 / 1 / 2 hints. Some regions hit: 2 without a hint, else 1."""
+    if all(hit):
+        return max(1, 3 - hints)
+    if any(hit):
+        return 2 if hints == 0 else 1
+    return 0
+
+
+def _fixed_level(ev: Evidence) -> int:
+    """3 full suite passes · 2 visible pass, hidden fail · 1 some visible pass · 0 none."""
+    if solved(ev):
+        return 3
+    suite = ev.submit_suite
+    if _visible_ok(suite):
+        return 2
+    if suite and "visiblePassed" in suite:
+        return 1 if suite.get("visiblePassed", 0) > 0 else 0
+    real = _real_runs(ev)  # no suite (old sessions): the last real run
+    return 1 if real and _run_ratio(real[-1]) > 0 else 0
+
+
+def _debugging_with_locate(ev: Evidence, located: dict, fails: int) -> Indicator:
+    skipped = bool(located.get("skipped"))
+    lines = list(located.get("lines") or [])
+    hints = int(located.get("hintsUsed") or 0)
+    hit = [False] * len(ev.debug_regions) if skipped else hit_regions(ev.debug_regions, lines)
+    verdict = _latest_judge(ev, "locate") or {}
+    explained = verdict.get("level") if isinstance(verdict.get("level"), int) else (0 if skipped else None)
+    fixed = _fixed_level(ev)
+    parts = {"located": 0 if skipped else _located_level(hit, hints), "explained": explained, "fixed": fixed,
+             "efficiency": _efficiency(fails) if fixed == 3 else None,
+             "hit": hit, "hints_used": hints, "skipped": skipped}
+    applicable = [parts[k] for k in ("located", "explained", "fixed", "efficiency") if parts[k] is not None]
+    reason = "fixed" if fixed == 3 else "partially_fixed" if fixed == 2 else "not_fixed"
+    where = "skipped" if skipped else f"lines {', '.join(map(str, lines))}"
+    quote = "; ".join(q for q in (where, verdict.get("evidence") or "", f"{fails} failing run(s)") if q)
+    return Indicator(statistics.mean(applicable), quote, reason, parts)
 
 
 def failing_runs(ev: Evidence) -> int:

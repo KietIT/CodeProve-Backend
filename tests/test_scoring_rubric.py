@@ -81,3 +81,89 @@ def test_one_specific_prompt_reaches_level_3():
 def test_prompts_without_a_verdict_are_unrated_not_zero():
     out = prompting(ev(("PROMPT", 1, {})))
     assert out.level is None and out.reason == "unrated"
+
+
+# ---------- Debugging: debug exercises with the locate step (P2.2) ----------
+
+from app.features.scoring.rubric import debugging  # noqa: E402
+
+REGIONS = [[3]]
+
+
+def debug_ev(*events: tuple, regions=REGIONS) -> Evidence:
+    out = ev(*events, kind="debug")
+    out.debug_regions = regions
+    return out
+
+
+def locate(lines, hints=0, skipped=False, minute=1):
+    return ("LOCATE", minute, {"lines": lines, "reason": "r", "skipped": skipped, "hintsUsed": hints})
+
+
+def explained(level):
+    return ("JUDGE", 20, {"kind": "locate", "level": level, "evidence": "stops before n"})
+
+
+def run(minute, ratio):
+    return ("RUN", minute, {"passed": ratio == 1.0, "passRatio": ratio, "isStarter": False})
+
+
+def suite(passed, total, visible_passed=2, visible_total=2):
+    return ("SUBMIT_TESTS", 10, {"passed": passed, "total": total, "passRatio": passed / total,
+                                 "visiblePassed": visible_passed, "visibleTotal": visible_total})
+
+
+def test_a_perfect_debug_session_is_level_3_on_every_part():
+    out = debugging(debug_ev(locate([3]), explained(3), run(3, 1.0), suite(7, 7)))
+    assert out.level == 3 and out.reason == "fixed"
+    assert out.parts == {"located": 3, "explained": 3, "fixed": 3, "efficiency": 3,
+                         "hit": [True], "hints_used": 0, "skipped": False}
+
+
+def test_located_level_follows_hints_and_partial_hits():
+    def located(*events, regions=REGIONS):
+        return debugging(debug_ev(*events, explained(2), suite(7, 7), regions=regions)).parts["located"]
+
+    assert located(locate([3], hints=1)) == 2
+    assert located(locate([3], hints=2)) == 1
+    assert located(locate([4])) == 0
+    two = [[7], [9]]
+    assert located(locate([7]), regions=two) == 2                # one of two issues, no hint
+    assert located(locate([7], hints=1), regions=two) == 1
+    assert located(locate([7, 9], hints=1), regions=two) == 2
+
+
+def test_fixed_and_efficiency_levels():
+    parts = debugging(debug_ev(locate([3]), explained(3), run(3, 0.5), run(4, 0.5), run(5, 1.0),
+                               suite(7, 7))).parts
+    assert parts["fixed"] == 3 and parts["efficiency"] == 2      # 2 failing runs before the fix
+    hidden_fail = debugging(debug_ev(locate([3]), explained(3), run(3, 1.0), suite(6, 7))).parts
+    assert hidden_fail["fixed"] == 2 and hidden_fail["efficiency"] is None  # efficiency only when fixed
+    some_visible = debugging(debug_ev(locate([3]), explained(3), run(3, 0.5), suite(3, 7, visible_passed=1)))
+    assert some_visible.parts["fixed"] == 1 and some_visible.reason == "not_fixed"
+    none_visible = debugging(debug_ev(locate([3]), explained(3), run(3, 0.0), suite(0, 7, visible_passed=0)))
+    assert none_visible.parts["fixed"] == 0
+
+
+def test_the_axis_is_the_mean_of_the_applicable_parts():
+    out = debugging(debug_ev(locate([3], hints=1), explained(1), run(3, 1.0), suite(6, 7)))
+    # located 2, explained 1, fixed 2, efficiency N/A
+    assert out.level == (2 + 1 + 2) / 3 and out.reason == "partially_fixed"
+
+
+def test_a_skip_scores_located_and_explained_0():
+    out = debugging(debug_ev(locate([], skipped=True), explained(0), run(3, 1.0), suite(7, 7)))
+    assert out.parts["located"] == 0 and out.parts["explained"] == 0 and out.parts["skipped"] is True
+    assert out.level == (0 + 0 + 3 + 3) / 4
+
+
+def test_an_unrated_explanation_leaves_that_part_out():
+    out = debugging(debug_ev(locate([3]), explained(None), run(3, 1.0), suite(7, 7)))
+    assert out.parts["explained"] is None and out.level == 3
+
+
+def test_without_a_locate_event_the_p14_indicator_is_unchanged():
+    out = debugging(debug_ev(run(3, 0.5), run(4, 1.0), suite(7, 7)))
+    assert out.level == 3 and out.reason == "fixed" and out.parts is None
+    unfixed = debugging(debug_ev(run(3, 0.5), suite(3, 7, visible_passed=1)))
+    assert unfixed.level == 0 and unfixed.reason == "not_fixed"
