@@ -125,11 +125,31 @@ class JudgeClient:
         return {"score": 12, "level": 2, "evidence": "e", "correct": True, "note": ""}
 
 
-async def _submit_and_explain(client, aid, auth_headers):
-    assert (await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)).status_code == 200
+async def _submit_and_explain(client, aid, auth_headers, locale="en"):
+    submitted = await client.post(f"/api/attempts/{aid}/submit?locale={locale}", headers=auth_headers)
+    assert submitted.status_code == 200
     r = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers,
                           json={"answers": [{"question": "Why?", "answer": "because the range stops before n"}]})
     assert r.status_code == 200
+    return r.json()
+
+
+async def test_the_report_reveals_the_bug_after_submit(client, db_session, auth_headers, monkeypatch):
+    import app.features.attempts.scoring_service as scoring
+    from app.core.config import Settings
+
+    monkeypatch.setattr(scoring, "get_mentor_client", lambda: JudgeClient())
+    monkeypatch.setattr(scoring, "get_settings", lambda: Settings(scoring_engine="v2"))
+    aid = await _attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/debug/hint", headers=auth_headers)
+    await client.post(f"/api/attempts/{aid}/debug/locate", headers=auth_headers,
+                      json={"lines": [2, 3], "reason": "range(1, n) stops before n"})
+    report = await _submit_and_explain(client, aid, auth_headers, locale="vi")
+    assert report["feedback"]["debug"] == {"regions": [[3]], "selected": [2, 3], "hit": [True], "hints_used": 1,
+                                           "skipped": False, "explanation": "Dòng 3 bỏ sót n."}
+    stored = (await client.get(f"/api/attempts/{aid}/report", headers=auth_headers)).json()
+    assert stored["feedback"]["debug"] == report["feedback"]["debug"]
+    assert stored["feedback"]["evidence"]["debugging"]["parts"]["located"] == 2  # all regions hit, 1 hint
 
 
 async def test_the_reason_is_judged_at_explain_back(client, db_session, auth_headers, monkeypatch):

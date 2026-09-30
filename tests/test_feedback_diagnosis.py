@@ -32,9 +32,9 @@ def hyp(minute, level):
                                     "levelEvidence": "dict, O(n)"})
 
 
-def findings(*events, kind="implement", replies=(), snapshots=(), explain_score=12):
+def findings(*events, kind="implement", replies=(), snapshots=(), explain_score=12, regions=None):
     ev = Evidence(exercise_kind=kind, events=sorted(events, key=lambda x: x["ts"]), replies=list(replies),
-                  snapshots=list(snapshots))
+                  snapshots=list(snapshots), debug_regions=regions)
     return diagnose(score_attempt_v2(ev, explain_score), ev)
 
 
@@ -143,3 +143,44 @@ def test_the_list_is_trimmed_and_ranked():
     assert len(risks) == MAX_RISKS and all(f.severity == "high" for f in risks)
     assert risks[0].code == "integrity_flags"  # a compromised session is said first
     assert len([f for f in out if f.kind == "strength"]) <= MAX_STRENGTHS
+
+
+# ---------- Debug exercises with the locate step (P2.2) ----------
+
+def locate(lines, hints=0, skipped=False):
+    return e("LOCATE", 1, {"lines": lines, "reason": "r", "skipped": skipped, "hintsUsed": hints})
+
+
+def located_judge(level):
+    return e("JUDGE", 26, {"kind": "locate", "level": level, "evidence": "stops before n"})
+
+
+def debug_findings(*events):
+    return findings(hyp(0.5, 2), e("CODE_EDIT", 2), explain(2), *events, kind="debug", regions=[[3]])
+
+
+def test_a_located_and_explained_bug_are_strengths():
+    out = debug_findings(locate([3]), located_judge(3), run(3, 1.0), suite(7, 7, 2))
+    # all_tests_passed (testing, same 10% weight, listed first) and bug_located take the 2 strength slots.
+    assert [f.code for f in out if f.kind == "strength"] == ["all_tests_passed", "bug_located"]
+    assert "bug_not_located" not in codes(out)
+
+
+def test_a_missed_or_skipped_location_is_a_risk_with_the_hints_used():
+    missed = debug_findings(locate([4], hints=2), located_judge(1), run(3, 1.0), suite(7, 7, 2))
+    finding = next(f for f in missed if f.code == "bug_not_located")
+    assert finding.severity == "medium" and finding.params == {"hints_used": 2}
+    assert "bug_explanation_weak" in codes(missed)
+    skipped = debug_findings(locate([], skipped=True), located_judge(0), run(3, 1.0), suite(7, 7, 2))
+    assert "bug_not_located" in codes(skipped)
+    assert "bug_explanation_weak" not in codes(skipped)  # nothing was explained: said once, as not located
+
+
+def test_the_fix_findings_follow_the_fixed_and_efficiency_parts():
+    unfixed = debug_findings(locate([3]), located_judge(3), run(3, 0.5), suite(3, 7, 1))
+    assert next(f for f in unfixed if f.code == "bug_not_fixed").params == {"passed": 3, "total": 7}
+    partial = debug_findings(locate([3]), located_judge(3), run(3, 1.0), suite(6, 7, 2, failed=("edge",)))
+    assert "partial_fix" in codes(partial)
+    slow = debug_findings(locate([3]), located_judge(3), *[run(m, 0.5) for m in (3, 4, 5, 6)], run(7, 1.0),
+                          suite(7, 7, 2))
+    assert next(f for f in slow if f.code == "trial_and_error").params == {"failing_runs": 4}

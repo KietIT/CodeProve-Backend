@@ -285,6 +285,51 @@ TEMPLATES: dict[str, dict[str, dict[str, str]]] = {
                  "On harder exercises, note why you think the bug is there before changing it.",
                  "keep this approach on a harder debugging exercise"),
     },
+    # ---------- Debugging: locate step (P2.2) ----------
+    # These never name the bug: the report's reveal block shows where it was and why.
+    "bug_located": {
+        "vi": _t("Ở bước tìm lỗi, bạn chỉ ra đúng chỗ lỗi mà không cần gợi ý.",
+                 "Tìm đúng chỗ trước khi sửa giúp bạn sửa đúng gốc lỗi thay vì đoán.",
+                 "Giữ cách làm này: chạy thử code trong đầu với một input nhỏ và so với kết quả mong đợi.",
+                 "tìm chỗ lỗi trước khi sửa ở một bài debug khó hơn"),
+        "en": _t("In the locate step you pointed at the bug without any hint.",
+                 "Finding the right spot before fixing lets you fix the cause instead of guessing.",
+                 "Keep doing this: trace the code with a small input and compare with the expected result.",
+                 "locate the bug before fixing on a harder debugging exercise"),
+    },
+    "bug_not_located": {
+        "vi": _t("Ở bước tìm lỗi, bạn chưa chỉ ra đúng dòng gây lỗi.",
+                 "Tìm đúng chỗ lỗi là bước đầu của gỡ lỗi; sửa khi chưa biết lỗi ở đâu dễ thành thử-sai.",
+                 "Chọn một input nhỏ, tự tính kết quả mong đợi, rồi lần theo code từng dòng xem kết quả bắt "
+                 "đầu khác ở đâu.",
+                 "lần theo code với một input nhỏ trước khi chọn dòng lỗi"),
+        "en": _t("In the locate step you did not point at the line that causes the bug.",
+                 "Locating the bug is the first step of debugging; fixing before knowing where it is tends to "
+                 "become trial and error.",
+                 "Pick a small input, work out the expected result, then trace the code line by line to see "
+                 "where it starts to differ.",
+                 "trace the code with a small input before choosing the buggy line"),
+    },
+    "bug_explained_well": {
+        "vi": _t("Lời giải thích của bạn nói đúng nguyên nhân lỗi và vì sao nó làm sai kết quả.",
+                 "Hiểu vì sao lỗi xảy ra giúp bạn nhận ra lỗi tương tự ở chỗ khác.",
+                 "Tiếp tục giải thích lỗi theo hai ý: nguyên nhân, và nó làm kết quả sai thế nào.",
+                 "giải thích nguyên nhân lỗi theo hai ý ở một bài debug khác"),
+        "en": _t("Your explanation named the cause of the bug and why it breaks the result.",
+                 "Knowing why a bug happens helps you spot similar bugs elsewhere.",
+                 "Keep explaining bugs in two parts: the cause, and how it makes the result wrong.",
+                 "explain a bug's cause in two parts on another debugging exercise"),
+    },
+    "bug_explanation_weak": {
+        "vi": _t("Lời giải thích lỗi của bạn còn chung chung, chưa nói rõ nguyên nhân.",
+                 "Nói được nguyên nhân cho thấy bạn hiểu lỗi, không chỉ đoán đúng chỗ.",
+                 "Viết theo hai ý: dòng đó làm gì sai, và vì sao điều đó làm kết quả sai.",
+                 "viết lý do lỗi theo hai ý trước khi sửa"),
+        "en": _t("Your explanation of the bug was general and did not say what causes it.",
+                 "Naming the cause shows you understand the bug, not just where it is.",
+                 "Write two parts: what that line does wrong, and why that makes the result wrong.",
+                 "write the bug's reason in two parts before fixing"),
+    },
     # ---------- Integrity ----------
     "integrity_flags": {
         "vi": _t("Hệ thống ghi nhận tín hiệu bất thường trong phiên làm bài ({signals}), nên điểm các trục "

@@ -167,11 +167,47 @@ Code học sinh thấy (dòng đánh dấu ◀ là vùng lỗi):
 - **Gợi ý 2:** Xem kỹ các dòng 6–10.
 - **Giải thích (hiện sau khi nộp):** Dòng 7 ghép tên file của người dùng vào đường dẫn, nên "../" thoát khỏi upload_dir (path traversal). Dòng 9 ghi mọi thứ được gửi: không kiểm tra chữ ký file theo loại và không giới hạn kích thước. Dùng basename, kiểm tra chữ ký, giới hạn kích thước.
 
+## Câu mẫu nhận xét mới (trang Feedback)
+
+4 loại nhận xét mới cho bước tìm lỗi. Câu mẫu **không nói lỗi là gì** (phần giải thích ở trên làm việc đó). Góp ý như phiếu `phan-hoi-can-duyet.md`: có đáng nói không, mức nghiêm trọng hợp lý không, câu chữ dễ hiểu không.
+
+### `bug_located` · Điểm mạnh
+*Xuất hiện khi: Chọn trúng mọi vùng lỗi, không dùng gợi ý.*
+
+- **Chuyện gì đã xảy ra:** Ở bước tìm lỗi, bạn chỉ ra đúng chỗ lỗi mà không cần gợi ý.
+- **Vì sao quan trọng:** Tìm đúng chỗ trước khi sửa giúp bạn sửa đúng gốc lỗi thay vì đoán.
+- **Cách cải thiện:** Giữ cách làm này: chạy thử code trong đầu với một input nhỏ và so với kết quả mong đợi.
+- **Thử tiếp:** Thử bài CP-105 và tìm chỗ lỗi trước khi sửa ở một bài debug khó hơn.
+
+### `bug_not_located` · Cần cải thiện · Vừa
+*Xuất hiện khi: Không chọn trúng vùng lỗi nào, hoặc bỏ qua bước tìm lỗi.*
+
+- **Chuyện gì đã xảy ra:** Ở bước tìm lỗi, bạn chưa chỉ ra đúng dòng gây lỗi.
+- **Vì sao quan trọng:** Tìm đúng chỗ lỗi là bước đầu của gỡ lỗi; sửa khi chưa biết lỗi ở đâu dễ thành thử-sai.
+- **Cách cải thiện:** Chọn một input nhỏ, tự tính kết quả mong đợi, rồi lần theo code từng dòng xem kết quả bắt đầu khác ở đâu.
+- **Thử tiếp:** Thử bài CP-105 và lần theo code với một input nhỏ trước khi chọn dòng lỗi.
+
+### `bug_explained_well` · Điểm mạnh
+*Xuất hiện khi: Lý do được chấm mức 3: nói đúng nguyên nhân và vì sao sai.*
+
+- **Chuyện gì đã xảy ra:** Lời giải thích của bạn nói đúng nguyên nhân lỗi và vì sao nó làm sai kết quả.
+- **Vì sao quan trọng:** Hiểu vì sao lỗi xảy ra giúp bạn nhận ra lỗi tương tự ở chỗ khác.
+- **Cách cải thiện:** Tiếp tục giải thích lỗi theo hai ý: nguyên nhân, và nó làm kết quả sai thế nào.
+- **Thử tiếp:** Thử bài CP-105 và giải thích nguyên nhân lỗi theo hai ý ở một bài debug khác.
+
+### `bug_explanation_weak` · Cần cải thiện · Thấp
+*Xuất hiện khi: Lý do được chấm mức 0–1: sai hoặc chung chung.*
+
+- **Chuyện gì đã xảy ra:** Lời giải thích lỗi của bạn còn chung chung, chưa nói rõ nguyên nhân.
+- **Vì sao quan trọng:** Nói được nguyên nhân cho thấy bạn hiểu lỗi, không chỉ đoán đúng chỗ.
+- **Cách cải thiện:** Viết theo hai ý: dòng đó làm gì sai, và vì sao điều đó làm kết quả sai.
+- **Thử tiếp:** Thử bài CP-105 và viết lý do lỗi theo hai ý trước khi sửa.
+
 ## Bảng góp ý
 
 Người duyệt: ________
 
-| Bài | Vùng lỗi đúng? (C/K) | Giải thích đúng, dễ hiểu? (C/K) | Gợi ý 1 ổn? (C/K) | Góp ý |
+| Bài / mã | Vùng lỗi đúng? (C/K) | Giải thích đúng, dễ hiểu? (C/K) | Gợi ý 1 ổn? (C/K) | Góp ý |
 |---|---|---|---|---|
 | CP-004 | | | | |
 | CP-008 | | | | |
@@ -182,3 +218,7 @@ Người duyệt: ________
 | CP-203 | | | | |
 | CP-206 | | | | |
 | CP-208 | | | | |
+| `bug_located` | — | — | — | |
+| `bug_not_located` | — | — | — | |
+| `bug_explained_well` | — | — | — | |
+| `bug_explanation_weak` | — | — | — | |

@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import service
-from app.features.exercises.debug_regions import hint_range
+from app.features.exercises.debug_regions import hint_range, hit_regions
 from app.features.exercises.starters import student_starter
 from app.models import Attempt, Event, Exercise
 
@@ -32,6 +32,23 @@ def hint_text(ex: Exercise, step: int, locale: str) -> str:
         return meta["hint_vi"] if locale == "vi" else meta["hint_en"]
     lo, hi = hint_range(meta["regions"], _served_line_count(ex))
     return f"Xem kỹ các dòng {lo}–{hi}." if locale == "vi" else f"Look closely at lines {lo}–{hi}."
+
+
+def reveal(ex: Exercise, events: list[dict], locale: str) -> dict | None:
+    """The answer shown on the Feedback page after submit: the real regions, what the
+    student selected (and which regions it hit), and the explanation."""
+    if not has_locate_step(ex):
+        return None
+    located = next((e["payload"] for e in events if e["type"] == "LOCATE"), None)
+    if located is None:
+        return None
+    regions = ex.debug_meta["regions"]
+    selected = list(located.get("lines") or [])
+    skipped = bool(located.get("skipped"))
+    return {"regions": regions, "selected": selected,
+            "hit": [False] * len(regions) if skipped else hit_regions(regions, selected),
+            "hints_used": int(located.get("hintsUsed") or 0), "skipped": skipped,
+            "explanation": ex.debug_meta["explanation_vi" if locale == "vi" else "explanation_en"]}
 
 
 async def _logged(db: AsyncSession, attempt_id: int, type_: str) -> list[dict]:
@@ -79,7 +96,8 @@ async def locate(db: AsyncSession, attempt: Attempt, ex: Exercise, lines: list[i
         lines = sorted(set(lines))
         max_lines = len(ex.debug_meta["regions"]) + 1
         if not 1 <= len(lines) <= max_lines:
-            raise HTTPException(status_code=422, detail=f"Select between 1 and {max_lines} lines")
+            # No number in the message: the maximum would tell how many bugs there are.
+            raise HTTPException(status_code=422, detail="Select at least one line, and only the lines you suspect")
         line_count = _served_line_count(ex)
         if any(not 1 <= line <= line_count for line in lines):
             raise HTTPException(status_code=422, detail=f"Lines must be between 1 and {line_count}")
