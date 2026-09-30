@@ -265,6 +265,14 @@ async def explain_context_for(db: AsyncSession, attempt: Attempt) -> str:
     return explain_context(await attempts_service.latest_code(db, attempt.id), suite.payload if suite else None)
 
 
+async def _update_learner(db: AsyncSession, attempt: Attempt, ex: Exercise, overall: float) -> None:
+    try:
+        await record_attempt(db, attempt, ex, overall)
+    except Exception:
+        # Derived data (learner.rebuild recomputes it): never fail the student's scoring for it.
+        logger.exception("learner model update failed for attempt %s", attempt.id)
+
+
 async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: list[dict]) -> dict:
     client = get_mentor_client()
     context = await explain_context_for(db, attempt)
@@ -290,12 +298,15 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     if get_settings().scoring_engine == "v2":
         ev = await load_evidence(db, attempt)
         result = score_attempt_v2(ev, explain_score)
+        # Before the diagnosis, so its next-exercise suggestions (P3.4) see this attempt.
+        await _update_learner(db, attempt, ex, result["overall"])
         result["diagnosis"] = await build_diagnosis(db, attempt, ex, ev, result, client)
         result["debug_reveal"] = debug.reveal(ex, ev.events, submit_locale(ev))
         result["tests_report"] = await tests_report(db, ev.events, submit_locale(ev))
     else:
         events = await _events_as_dicts(db, attempt.id)
         result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)
+        await _update_learner(db, attempt, ex, result["overall"])
     f = result["features"]
     integrity = integrity_from_features(f)
 
@@ -303,11 +314,6 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     attempt.score = result["overall"]
     attempt.status = "scored"
     attempt.integrity_status = integrity
-    try:
-        await record_attempt(db, attempt, ex, result["overall"])
-    except Exception:
-        # Derived data (learner.rebuild recomputes it): never fail the student's scoring for it.
-        logger.exception("learner model update failed for attempt %s", attempt.id)
     await db.commit()
 
     return _report_payload(result, integrity)

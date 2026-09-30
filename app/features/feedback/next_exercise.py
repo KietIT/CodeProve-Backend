@@ -1,14 +1,15 @@
-"""Which exercises feedback may suggest next (P1.5).
+"""Which exercises feedback may suggest next (P1.5, ranked by the learner model since P3.4).
 
 Deterministic, so the LLM writer can only pick from this list: exercises the
-student has not solved, at the same level or one above, preferring the same
-category, and debug exercises when the session showed a debugging problem.
+student has not solved, at the same level or one above (so a senior exercise
+never leads back to fresher ones), ranked by learner.recommend (predicted
+success near 0.70, weak skills, debug exercises after a debugging problem).
 """
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.features.exercises.service import LEVEL_ORDER, status_by_exercise
+from app.features.exercises.service import LEVEL_ORDER
 from app.features.feedback.diagnosis import Finding
+from app.features.learner.recommend import recommend
 from app.models import Exercise
 
 MAX_CANDIDATES = 3
@@ -21,17 +22,8 @@ def _rank(level: str) -> int:
 
 async def candidates(db: AsyncSession, user_id: int, exercise: Exercise, findings: list[Finding]) -> list[str]:
     current = _rank(exercise.level)
-    allowed = set(LEVEL_ORDER[current:current + 2])
+    levels = set(LEVEL_ORDER[current:current + 2])
     wants_debug = any(f.code in _DEBUG_RISKS for f in findings)
-    solved = {ex_id for ex_id, status in (await status_by_exercise(db, user_id)).items() if status == "solved"}
-    pool = [
-        ex for ex in (await db.execute(select(Exercise).where(Exercise.level.in_(allowed)))).scalars()
-        if ex.id != exercise.id and ex.id not in solved
-    ]
-    pool.sort(key=lambda ex: (
-        wants_debug and (ex.kind or "implement") != "debug",  # debugging problems: debug exercises first
-        ex.category != exercise.category,
-        _rank(ex.level) - current,
-        ex.code,
-    ))
-    return [ex.code for ex in pool[:MAX_CANDIDATES]]
+    ranked = await recommend(db, user_id, current=exercise, levels=levels, wants_debug=wants_debug,
+                             limit=MAX_CANDIDATES)
+    return [r.code for r in ranked]

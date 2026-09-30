@@ -1,6 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.content.skills import TAXONOMY
+from app.features.learner.recommend import recommend
 from app.models import Attempt, Exercise, FluencyReport, User
 
 _AXES = [
@@ -43,9 +45,17 @@ async def build_dashboard(db: AsyncSession, user: User) -> dict:
             "ok": ok,
         })
 
+    recommended = [
+        {"code": r.code, "title": r.title, "level": r.level, "kind": r.kind,
+         "skills": [{"key": k, **TAXONOMY[k]} for k in r.skills if k in TAXONOMY],
+         "reason_skills": [k for k in r.weak_skills if k in TAXONOMY]}
+        for r in await recommend(db, user.id)
+    ]
+
     return {
         "kpis": {"completed": completed, "streak": min(completed, 30), "avg_score": avg_score},
         "radar": radar,
         "trend": trend or [0.0],
         "recent": recent,
+        "recommended": recommended,
     }

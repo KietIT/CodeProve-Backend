@@ -141,3 +141,28 @@ async def test_a_learner_model_error_never_fails_scoring(client, db_session, aut
     assert "overall" in report
     assert (await db_session.execute(select(Attempt))).scalar_one().status == "scored"
     assert "learner model update failed" in caplog.text
+
+
+@pytest.mark.parametrize("engine", ["v1", "v2"])
+async def test_the_learner_model_is_updated_before_the_feedback_is_built(client, db_session, auth_headers,
+                                                                         monkeypatch, engine):
+    import app.features.attempts.scoring_service as scoring
+    from app.core.config import Settings
+
+    calls: list[str] = []
+    real_record, real_diagnosis = scoring.record_attempt, scoring.build_diagnosis
+
+    async def record(*a, **k):
+        calls.append("learner")
+        return await real_record(*a, **k)
+
+    async def diagnosis(*a, **k):
+        calls.append("diagnosis")
+        return await real_diagnosis(*a, **k)
+
+    monkeypatch.setattr(scoring, "record_attempt", record)
+    monkeypatch.setattr(scoring, "build_diagnosis", diagnosis)
+    monkeypatch.setattr(scoring, "get_settings", lambda: Settings(scoring_engine=engine))
+    await _scored_via_api(client, db_session, auth_headers, monkeypatch)
+    assert calls == (["learner", "diagnosis"] if engine == "v2" else ["learner"])
+    assert len((await db_session.execute(select(LearnerSkill))).scalars().all()) == 1
