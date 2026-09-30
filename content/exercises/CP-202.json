@@ -206,6 +206,16 @@
       "note_en": "Binary-searches the longer array, so the other array's index can go negative."
     }
   ],
+  "skills": {
+    "tags": [
+      "binary-search"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

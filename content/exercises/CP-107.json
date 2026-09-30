@@ -146,6 +146,17 @@
       "note_en": "Only searches from the first node, so a cycle in another component is missed."
     }
   ],
+  "skills": {
+    "tags": [
+      "graph",
+      "recursion"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

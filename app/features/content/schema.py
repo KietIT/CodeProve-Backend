@@ -3,7 +3,9 @@ import json
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
+
+from app.features.content.skills import MAX_SKILLS, TAXONOMY
 
 CONTENT_DIR = Path(__file__).resolve().parents[3] / "content" / "exercises"
 
@@ -81,6 +83,25 @@ class ContentDebug(BaseModel):
     review: ContentReview
 
 
+class ContentSkills(BaseModel):
+    """The skills an exercise practises (P3.2), keys of skills.TAXONOMY.
+
+    Own review, like the debug block: tagging does not un-approve the file."""
+
+    tags: list[str] = Field(min_length=1, max_length=MAX_SKILLS)
+    review: ContentReview
+
+    @field_validator("tags")
+    @classmethod
+    def _known_and_unique(cls, tags: list[str]) -> list[str]:
+        unknown = [t for t in tags if t not in TAXONOMY]
+        if unknown:
+            raise ValueError(f"unknown skill(s) {unknown}; allowed: {sorted(TAXONOMY)}")
+        if len(set(tags)) != len(tags):
+            raise ValueError("skills must not repeat")
+        return tags
+
+
 class ExerciseContent(BaseModel):
     code: str = Field(pattern=r"^CP-\d{3}$")
     reference_solution: CodeText
@@ -89,6 +110,7 @@ class ExerciseContent(BaseModel):
     limits: ContentLimits | None = None
     exercise: ExerciseOverrides | None = None
     debug: ContentDebug | None = None
+    skills: ContentSkills | None = None
     review: ContentReview
 
     def starter_for(self, current_starter: str) -> str:

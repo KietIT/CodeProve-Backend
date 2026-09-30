@@ -139,6 +139,16 @@
       "note_en": "The counter starts at 1 instead of 0."
     }
   ],
+  "skills": {
+    "tags": [
+      "concurrency"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

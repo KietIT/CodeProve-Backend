@@ -129,6 +129,16 @@
       "note_en": "Sorts the array first, so the returned indices no longer match the original array."
     }
   ],
+  "skills": {
+    "tags": [
+      "hash-map"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

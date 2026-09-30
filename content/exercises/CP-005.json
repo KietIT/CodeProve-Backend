@@ -126,6 +126,18 @@
       "note_en": "Missing ^ deletes the safe characters and keeps the dangerous ones."
     }
   ],
+  "skills": {
+    "tags": [
+      "input-validation",
+      "string-processing",
+      "security"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

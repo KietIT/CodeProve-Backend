@@ -139,6 +139,16 @@
       "note_en": "Starts at index 1, so the first element of each array is skipped."
     }
   ],
+  "skills": {
+    "tags": [
+      "two-pointers"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

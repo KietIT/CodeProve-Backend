@@ -1,6 +1,7 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.content.skills import TAXONOMY
 from app.features.exercises.starters import student_starter
 from app.models import Attempt, Exercise, TestCase
 
@@ -10,6 +11,11 @@ LEVEL_ORDER = ["fresher", "junior", "senior"]
 
 def _topics(ex: Exercise) -> list[str]:
     return list(ex.domain_keywords or [ex.category])
+
+
+def skill_labels(ex: Exercise) -> list[dict]:
+    """P3.2 skill tags with their labels; a key no longer in the taxonomy is dropped."""
+    return [{"key": k, **TAXONOMY[k]} for k in (ex.skills or []) if k in TAXONOMY]
 
 
 async def status_by_exercise(db: AsyncSession, user_id: int) -> dict[int, str]:
@@ -50,7 +56,7 @@ async def list_grouped(db: AsyncSession, level: str | None, user_id: int | None 
             {
                 "id": ex.id, "num": i, "code": ex.code, "title": ex.title,
                 "difficulty": ex.difficulty, "acceptance": ex.acceptance,
-                "topics": _topics(ex), "level": ex.level,
+                "topics": _topics(ex), "skills": skill_labels(ex), "level": ex.level,
                 "status": status_map.get(ex.id, "todo"),
             }
             for i, ex in enumerate(groups[lv], start=1)
@@ -78,7 +84,7 @@ async def get_detail(db: AsyncSession, code: str) -> dict | None:
     starter = student_starter(ex.starter_code, ex.kind)
     return {
         "id": ex.id, "num": num, "code": ex.code, "title": ex.title, "difficulty": ex.difficulty,
-        "acceptance": ex.acceptance, "topics": _topics(ex), "level": ex.level, "kind": ex.kind,
+        "acceptance": ex.acceptance, "topics": _topics(ex), "skills": skill_labels(ex), "level": ex.level, "kind": ex.kind,
         "summary": ex.summary, "language": ex.language, "starter": starter,
         "hint": ex.hint, "tests": [t.description for t in tests],
     }

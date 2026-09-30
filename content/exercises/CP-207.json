@@ -243,6 +243,18 @@
       "    pass"
     ]
   },
+  "skills": {
+    "tags": [
+      "recursion",
+      "linked-structures",
+      "string-processing"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

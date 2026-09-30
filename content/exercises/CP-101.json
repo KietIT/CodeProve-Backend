@@ -196,6 +196,18 @@
       "note_en": "Overwrites an existing key without refreshing its usage order."
     }
   ],
+  "skills": {
+    "tags": [
+      "hash-map",
+      "linked-structures",
+      "caching"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

@@ -119,6 +119,17 @@
       "note_en": "The default of 1 makes every word counted once too many."
     }
   ],
+  "skills": {
+    "tags": [
+      "hash-map",
+      "string-processing"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

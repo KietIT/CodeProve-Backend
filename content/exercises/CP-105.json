@@ -146,6 +146,18 @@
       "note_en": "Uses >, so a repeat sitting exactly at the window start is missed."
     }
   ],
+  "skills": {
+    "tags": [
+      "sliding-window",
+      "hash-map",
+      "string-processing"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

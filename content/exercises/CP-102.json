@@ -149,6 +149,17 @@
       "reviewer": "Kiệt, Phát, Trung"
     }
   },
+  "skills": {
+    "tags": [
+      "caching",
+      "data-structure-design"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

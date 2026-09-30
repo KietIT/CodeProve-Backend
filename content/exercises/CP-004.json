@@ -110,6 +110,16 @@
       "reviewer": "Kiệt, Phát, Trung"
     }
   },
+  "skills": {
+    "tags": [
+      "control-flow"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",
