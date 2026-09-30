@@ -87,3 +87,27 @@ async def test_exercises_without_the_tab_record_nothing(client, db_session, auth
     aid = await _attempt(client, db_session, auth_headers, tab=False)
     await _submit(client, aid, auth_headers)
     assert await _student_tests(db_session, aid) == []
+
+
+async def test_the_report_lists_the_tests_and_what_they_missed(client, db_session, auth_headers, monkeypatch):
+    import app.features.attempts.scoring_service as scoring
+    from app.core.config import Settings
+
+    class Judge(NoLLM):
+        async def judge(self, system, user, max_tokens=300):
+            if "explain-back" in system:
+                return {"questions": ["Why?"]}
+            return {"score": 12, "level": 2, "evidence": "e", "correct": True, "note": "", "items": []}
+
+    monkeypatch.setattr(scoring, "get_mentor_client", lambda: Judge())
+    monkeypatch.setattr(scoring, "get_settings", lambda: Settings(scoring_engine="v2"))
+    aid = await _attempt(client, db_session, auth_headers)
+    await _submit(client, aid, auth_headers, [t("add(1, 2)", "3"), t("add(0, 5)", "5", "boundary")])
+    r = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers,
+                          json={"answers": [{"question": "Why?", "answer": "because a + b adds the two numbers"}]})
+    report = r.json()["feedback"]
+    assert report["tests"]["killed"] == 2 and report["tests"]["total"] == 3
+    assert report["tests"]["missed"] == ["bug 2"]            # the note, in the report locale (en), never the code
+    assert [x["valid"] for x in report["tests"]["tests"]] == [True, True]
+    assert report["evidence"]["testing"]["parts"]["mutation"] == 2
+    assert "mutants_survived" in [f["code"] for f in report["diagnosis"]["findings"]]

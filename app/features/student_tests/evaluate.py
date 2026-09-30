@@ -19,6 +19,21 @@ from app.features.student_tests.service import as_case, saved_tests
 from app.models import Attempt, Exercise, ExerciseMutant, TestCase
 
 
+async def report_block(db: AsyncSession, events: list[dict], locale: str) -> dict | None:
+    """`feedback.tests` after submit: the tests with their validity, coverage, the mutation
+    score and, for each mutant the tests missed, its note (the kind of bug, never its code)."""
+    student = next((e["payload"] for e in reversed(events) if e["type"] == "STUDENT_TESTS"), None)
+    if student is None:
+        return None
+    missed_ids = [m["id"] for m in student.get("mutants") or [] if not m.get("killed")]
+    notes = {m.id: (m.note_vi if locale == "vi" else m.note_en) for m in (await db.execute(
+        select(ExerciseMutant).where(ExerciseMutant.id.in_(missed_ids)))).scalars()} if missed_ids else {}
+    return {"tests": student.get("tests") or [], "categories": student.get("categories") or [],
+            "exercise_categories": student.get("exercise_categories") or [],
+            "killed": student.get("killed", 0), "total": student.get("total", 0),
+            "missed": [notes[i] for i in missed_ids if i in notes]}
+
+
 async def evaluate(db: AsyncSession, attempt: Attempt, ex: Exercise) -> dict | None:
     if not ex.student_tests or not ex.reference_solution:
         return None

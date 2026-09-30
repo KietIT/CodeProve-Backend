@@ -197,3 +197,39 @@ def test_correctness_findings_read_the_correctness_part_not_the_axis_mean():
     out = diagnose(score_attempt_v2(ev_, 12), ev_)
     # Axis mean is (0 + 0 + 0 + 3) / 4, but the suite passed: still "all tests passed", not "submitted failing".
     assert "submitted_failing" not in codes(out) and "all_tests_passed" in codes(out)
+
+
+def student_findings(tests, categories, killed, total=3, level="junior", survived=()):
+    mutants = [{"id": i, "bug_type": "b", "killed": i not in survived} for i in range(total)]
+    student = e("STUDENT_TESTS", 19, {"tests": tests, "categories": list(categories),
+                                      "exercise_categories": ["boundary", "edge", "happy"],
+                                      "mutants": mutants, "killed": killed, "total": total})
+    ev_ = Evidence(exercise_kind="implement", events=sorted(
+        [hyp(1, 2), e("CODE_EDIT", 2), run(3, 1.0), suite(8, 8, 2), explain(2), student], key=lambda x: x["ts"]),
+        exercise_level=level)
+    return diagnose(score_attempt_v2(ev_, 12), ev_)
+
+
+def a_test(valid=True, category="happy"):
+    return {"category": category, "input": "f()", "expected": "1", "why": "", "valid": valid, "reason": None}
+
+
+def test_no_tests_on_junior_is_a_high_risk_but_not_on_fresher():
+    junior = student_findings([], [], 0)
+    assert next(f for f in junior if f.code == "no_student_tests").severity == "high"
+    assert "no_student_tests" not in codes(student_findings([], [], 0, level="fresher"))
+
+
+def test_invalid_tests_missing_categories_and_surviving_mutants():
+    out = student_findings([a_test(), a_test(valid=False), a_test(category="boundary")], ["boundary", "happy"],
+                           killed=1, survived=(1, 2))
+    assert next(f for f in out if f.code == "invalid_tests").params == {"count": 1}
+    assert next(f for f in out if f.code == "mutants_survived").params == {"survived": 2, "total": 3}
+    # Only MAX_RISKS risks are shown: the low-severity missing category is shown when there is room.
+    few = student_findings([a_test(), a_test(), a_test(category="boundary")], ["boundary", "happy"], killed=3)
+    assert next(f for f in few if f.code == "missing_test_categories").params == {"categories": ["edge"]}
+
+
+def test_a_complete_killing_test_set_is_a_strength():
+    tests = [a_test(category=c) for c in ("happy", "boundary", "edge")]
+    assert "strong_tests" in codes(student_findings(tests, ["boundary", "edge", "happy"], killed=3))

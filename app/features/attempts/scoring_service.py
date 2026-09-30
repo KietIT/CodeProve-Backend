@@ -8,6 +8,7 @@ from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
 from app.core.config import get_settings
 from app.features.feedback.service import build_diagnosis, submit_locale
+from app.features.student_tests.evaluate import report_block as tests_report
 from app.features.scoring.engine import score_attempt
 from app.features.scoring.engine_v2 import score_attempt_v2
 from app.features.scoring.evidence import load_evidence
@@ -135,6 +136,8 @@ def result_feedback(result: dict) -> dict:
         feedback["diagnosis"] = result["diagnosis"]
     if result.get("debug_reveal"):
         feedback["debug"] = result["debug_reveal"]
+    if result.get("tests_report"):
+        feedback["tests"] = result["tests_report"]
     return feedback
 
 
@@ -258,6 +261,7 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
         result = score_attempt_v2(ev, explain_score)
         result["diagnosis"] = await build_diagnosis(db, attempt, ex, ev, result, client)
         result["debug_reveal"] = debug.reveal(ex, ev.events, submit_locale(ev))
+        result["tests_report"] = await tests_report(db, ev.events, submit_locale(ev))
     else:
         events = await _events_as_dicts(db, attempt.id)
         result = score_attempt(events, explain_score=explain_score, exercise_kind=ex.kind)

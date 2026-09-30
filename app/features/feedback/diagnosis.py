@@ -28,6 +28,8 @@ FINDING_CODES = (
     "integrity_flags",
     # P2.2, debug exercises with the locate step
     "bug_located", "bug_not_located", "bug_explained_well", "bug_explanation_weak",
+    # P2.3, student-written tests
+    "no_student_tests", "invalid_tests", "missing_test_categories", "mutants_survived", "strong_tests",
 )
 _SEVERITY_RANK = {"high": 0, "medium": 1, "low": 2}
 # Integrity problems are said first: they undermine every other axis.
@@ -116,10 +118,35 @@ def _failed_hidden(suite: dict) -> dict:
             "failed_tests": names[:MAX_FAILED_TESTS]}
 
 
+def _student_tests(parts: dict, ev: Evidence) -> list[Finding]:
+    """Findings about the tests the student wrote (P2.3)."""
+    if parts["valid"] is None:  # fresher who wrote none: the tab was optional
+        return []
+    if parts["written"] == 0:
+        return [_risk("no_student_tests", "testing", "high")]
+    student = next(e["payload"] for e in reversed(ev.events) if e["type"] == "STUDENT_TESTS")
+    out = []
+    if parts["valid_count"] < parts["written"]:
+        out.append(_risk("invalid_tests", "testing", "medium", count=parts["written"] - parts["valid_count"]))
+    missing = sorted(set(student.get("exercise_categories") or []) - set(student.get("categories") or []))
+    if parts["valid_count"] and missing:
+        out.append(_risk("missing_test_categories", "testing", "low", categories=missing))
+    if parts["valid_count"] and parts["mutation"] is not None and parts["mutation"] < 3:
+        out.append(_risk("mutants_survived", "testing", "medium",
+                         survived=parts["total"] - parts["killed"], total=parts["total"]))
+    if parts["valid"] == 3 and parts["coverage"] in (3, None) and parts["mutation"] in (3, None):
+        out.append(_strength("strong_tests", "testing"))
+    return out
+
+
 def _testing(level, quote, reason, ev: Evidence, parts: dict | None = None) -> list[Finding]:
+    if parts:  # P2.3: the axis also covers the student's tests; the rest is about correctness
+        return _student_tests(parts, ev) + _correctness(parts["correctness"], quote, reason, ev)
+    return _correctness(level, quote, reason, ev)
+
+
+def _correctness(level, quote, reason, ev: Evidence) -> list[Finding]:
     suite = ev.submit_suite or {}
-    if parts:  # P2.3: the axis also covers the student's tests; these findings are about correctness
-        level = parts["correctness"]
     if reason == "never_ran":
         return [_risk("never_ran_tests", "testing", "high")]
     if level in (0, 1):

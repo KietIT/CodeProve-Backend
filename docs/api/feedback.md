@@ -80,6 +80,7 @@ the diagnosis texts are written in it. Send the UI language the student is using
 | verification | `pasted_ai_failing`, `pasted_ai_unchecked` | `adapted_ai_code`, `questioned_ai_code` |
 | testing | `never_ran_tests`, `submitted_failing` (`passed`, `total`), `hidden_edge_failed` (`failed_categories`, `failed_tests`) | `all_tests_passed` |
 | debugging | `bug_not_fixed` (`passed`, `total`), `partial_fix` (`failed_categories`, `failed_tests`), `trial_and_error` (`failing_runs`), `bug_not_located` (`hints_used`), `bug_explanation_weak` | `quick_fix`, `bug_located`, `bug_explained_well` |
+| testing (P2.3) | `no_student_tests`, `invalid_tests` (`count`), `missing_test_categories` (`categories`), `mutants_survived` (`survived`, `total`) | `strong_tests` |
 | overall | `integrity_flags` (`paste`, `focus_lost`) | |
 
 `failed_categories` values: `happy`, `boundary`, `edge`, `error`, `uncategorized`.
@@ -134,3 +135,44 @@ explanation.
 `feedback.evidence.debugging.parts` (for analytics; the UI needs only the level and the findings):
 `{"located": 0-3, "explained": 0-3 | null, "fixed": 0-3, "efficiency": 0-3 | null, "hit": [...],
 "hints_used": n, "skipped": bool}`. The Debugging level is their mean.
+
+## Student-written tests: the Tests tab (P2.3)
+
+Exercises with `GET /api/attempts/{id}` → `tests` non-null have the tab (20 of 30; the others keep
+`tests: null` and Testing is scored on the hidden suite only).
+
+### Before submit
+
+- `tests: {"enabled": true, "required": bool, "tests": [StudentTest]}`. `required` is true on
+  junior/senior: there, fewer than 3 valid tests lowers Testing; on fresher the tab is optional (show a
+  learning mode: one worked example from a **visible** test, hints on the missing categories).
+- `StudentTest = {"category": "happy"|"boundary"|"edge"|"error", "input": str (≤ 300), "expected": str
+  (≤ 300), "why": str (≤ 200)}`. `input` is one Python expression calling the exercise's own
+  functions/classes (e.g. `two_sum([3, 3], 6)`, `(lambda c: (c.put(1, 1), c.get(1))[-1])(LRUCache(2))`);
+  `expected` is the value as Python would print it (`[0, 1]`, `'abc'`, `None`; spacing does not matter).
+- `PUT /api/attempts/{id}/tests` body `{"tests": [StudentTest]}` (≤ 10) → `{"ok": true}`; latest save
+  wins; save on every edit (debounced). 400 without the tab, 409 after submit, 422 on bad fields.
+- `POST /api/attempts/{id}/tests/check` body one `StudentTest` → `{"status": "valid" | "wrong_expected"
+  | "error", "reason": str | null}` against the reference solution. It never returns the reference's
+  output. `reason` for `error` is either why the input is not allowed ("name '__import__' is not
+  allowed in a test") or the exception type ("TypeError"). Shares the Run rate limit (429).
+- `POST /api/attempts/{id}/tests/run` body `{"source_code": str}` → `{"results": [{"passed", "actual",
+  "error"}]}`: the **saved** tests on the student's own code (actual values shown: it is their code).
+
+### After submit: `feedback.tests`
+
+```json
+"tests": {
+  "tests": [{"category": "happy", "input": "add(1, 2)", "expected": "3", "why": "", "valid": true,
+             "reason": null}],
+  "categories": ["boundary", "happy"],
+  "exercise_categories": ["boundary", "edge", "happy"],
+  "killed": 2, "total": 3,
+  "missed": ["Quên trường hợp ..."]
+}
+```
+
+`reason` for an invalid test: `wrong_expected`, `error` or the allow-list reason. `missed`: one note
+per planted bug the valid tests did not catch, in the report locale (the kind of bug, never code).
+`feedback.evidence.testing.parts`: `{"valid", "coverage", "mutation", "correctness"}` levels (0–3 or
+null) plus `written`, `valid_count`, `killed`, `total`; the Testing level is their mean.
