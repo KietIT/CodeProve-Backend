@@ -12,8 +12,11 @@ from app.features.attempts import debug, scoring_service, service, submit_tests
 from app.features.exercises.starters import is_untouched, student_starter
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
+from app.features.student_tests import service as student_tests
+from app.features.student_tests.evaluate import evaluate as evaluate_student_tests
 from app.schemas.attempt import (
-    AttemptOut, AttemptState, CreateAttemptIn, HintOut, LocateIn, RunIn, RunResult, SnapshotIn,
+    AttemptOut, AttemptState, CheckOut, CreateAttemptIn, HintOut, LocateIn, OwnRunIn, RunIn, RunResult, SnapshotIn,
+    StudentTestIn, StudentTestsIn,
 )
 from app.schemas.event import EventsIn
 from app.schemas.report import ExplainBackIn, ReportOut
@@ -35,7 +38,40 @@ async def get_state(attempt_id: int, locale: str = "en", db: AsyncSession = Depe
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     return AttemptState(id=attempt.id, exercise_code=ex.code, status=attempt.status,
                         score=attempt.score, latest_code=await service.latest_code(db, attempt.id),
-                        debug=await debug.state(db, attempt, ex, locale))
+                        debug=await debug.state(db, attempt, ex, locale),
+                        tests=await student_tests.state(db, attempt, ex))
+
+
+async def _attempt_and_exercise(db: AsyncSession, attempt_id: int, user: User):
+    attempt = await service.require_attempt(db, attempt_id, user)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    return attempt, ex
+
+
+@router.put("/{attempt_id}/tests")
+async def save_tests(attempt_id: int, data: StudentTestsIn, db: AsyncSession = Depends(get_db),
+                     user: User = Depends(get_current_user)) -> dict:
+    attempt, ex = await _attempt_and_exercise(db, attempt_id, user)
+    await student_tests.save(db, attempt, ex, [t.model_dump() for t in data.tests])
+    return {"ok": True}
+
+
+@router.post("/{attempt_id}/tests/check", response_model=CheckOut)
+async def check_test(attempt_id: int, data: StudentTestIn, db: AsyncSession = Depends(get_db),
+                     user: User = Depends(get_current_user)) -> CheckOut:
+    settings = get_settings()
+    rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
+    attempt, ex = await _attempt_and_exercise(db, attempt_id, user)
+    return CheckOut(**await student_tests.check(db, attempt, ex, data.model_dump()))
+
+
+@router.post("/{attempt_id}/tests/run")
+async def run_student_tests(attempt_id: int, data: OwnRunIn, db: AsyncSession = Depends(get_db),
+                            user: User = Depends(get_current_user)) -> dict:
+    settings = get_settings()
+    rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
+    attempt, ex = await _attempt_and_exercise(db, attempt_id, user)
+    return {"results": await student_tests.run_on_own_code(db, attempt, ex, data.source_code)}
 
 
 @router.post("/{attempt_id}/debug/hint", response_model=HintOut)
@@ -126,6 +162,8 @@ async def submit(
     settings = get_settings()
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     suite = await submit_tests.run_submit_suite(db, attempt)
+    ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
+    await evaluate_student_tests(db, attempt, ex)
     # The report's feedback is written in the language the student submitted in.
     await service.add_event(db, attempt_id, "SUBMIT", {"locale": "vi" if locale == "vi" else "en"})
     attempt.status = "submitted"

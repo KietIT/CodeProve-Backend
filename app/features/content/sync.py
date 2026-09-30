@@ -20,6 +20,7 @@ from app.features.content.schema import CONTENT_DIR, ExerciseContent, load_conte
 from app.features.content.validate import validate_content
 from app.features.exercises.debug_regions import derive
 from app.features.exercises.starters import student_starter
+from app.features.student_tests.safety import ENABLE_SHARE, enabled_share
 from app.models import Exercise, ExerciseMutant, TestCase
 
 
@@ -40,6 +41,7 @@ async def _write(db: AsyncSession, ex: Exercise, content: ExerciseContent) -> No
     if content.debug and content.debug.review.approved:
         # A draft block leaves the stored metadata as it is.
         ex.debug_meta = debug_meta(content, ex.starter_code)
+    ex.student_tests = enabled_share(content) >= ENABLE_SHARE
 
 
 def debug_meta(content: ExerciseContent, current_starter: str) -> dict:
@@ -83,6 +85,7 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
                         "reviewer": content.review.reviewer,
                         "overrides": content.exercise.fields_set() if content.exercise else [],
                         "debug": _debug_status(content),
+                        "student_tests": round(enabled_share(content), 2),
                         "debug_reviewer": content.debug.review.reviewer if content.debug else None})
         if apply:
             await _write(db, ex, content)
@@ -106,6 +109,8 @@ async def _main(codes: list[str], apply: bool) -> int:
             if r["overrides"]:
                 # Student-facing text/code changes: make them impossible to miss in the dry run.
                 print(f"    ! overrides the exercise's {', '.join(r['overrides'])}")
+            tab = "on" if r["student_tests"] >= ENABLE_SHARE else "off"
+            print(f"    tests tab {tab} ({r['student_tests']:.0%} of its tests fit the student-test rules)")
             if r["debug"] == "approved":
                 print(f"    debug block approved by {r['debug_reviewer']}: bug regions, explanation and hint written")
             elif r["debug"] == "draft":

@@ -285,6 +285,60 @@ TEMPLATES: dict[str, dict[str, dict[str, str]]] = {
                  "On harder exercises, note why you think the bug is there before changing it.",
                  "keep this approach on a harder debugging exercise"),
     },
+    # ---------- Testing: student-written tests (P2.3) ----------
+    "no_student_tests": {
+        "vi": _t("Bạn nộp bài mà chưa viết test nào trong tab Tests.",
+                 "Tự viết test là cách chính để biết code đúng ở những trường hợp đề không cho sẵn.",
+                 "Viết ít nhất 3 test thuộc các loại khác nhau (thông thường, giá trị biên, tình huống đặc "
+                 "biệt) và kiểm tra từng test trước khi Submit.",
+                 "viết ít nhất 3 test thuộc các loại khác nhau trước khi Submit"),
+        "en": _t("You submitted without writing any test in the Tests tab.",
+                 "Writing your own tests is the main way to know your code works on cases the problem does not "
+                 "give you.",
+                 "Write at least 3 tests of different kinds (typical, boundary, edge) and check each one before "
+                 "submitting.",
+                 "write at least 3 tests of different kinds before submitting"),
+    },
+    "invalid_tests": {
+        "vi": _t("{count} test của bạn có kết quả mong đợi chưa đúng với đề.",
+                 "Test có kết quả mong đợi sai sẽ báo lỗi nhầm hoặc bỏ sót lỗi thật.",
+                 "Tự tính kết quả mong đợi từ đề, không chép từ output của code mình, rồi bấm kiểm tra từng test.",
+                 "tự tính kết quả mong đợi từ đề cho mỗi test"),
+        "en": _t("{count} of your tests expect a result that does not match the problem.",
+                 "A test with a wrong expected value raises false alarms or misses real bugs.",
+                 "Work out the expected result from the problem, not from your code's output, and check each test.",
+                 "work out each test's expected result from the problem"),
+    },
+    "missing_test_categories": {
+        "vi": _t("Bộ test của bạn chưa có loại: {categories}.",
+                 "Mỗi loại test bắt một kiểu lỗi khác nhau; thiếu loại nào thì lỗi kiểu đó dễ lọt qua.",
+                 "Thêm ít nhất một test cho mỗi loại còn thiếu, dựa vào giới hạn và yêu cầu trong đề.",
+                 "viết test đủ các loại trước khi Submit"),
+        "en": _t("Your tests have no {categories} case.",
+                 "Each kind of test catches a different kind of bug; a missing kind lets those bugs through.",
+                 "Add at least one test for each missing kind, based on the limits and requirements in the problem.",
+                 "write tests of every kind before submitting"),
+    },
+    "mutants_survived": {
+        "vi": _t("Bộ test của bạn chưa phát hiện {survived}/{total} phiên bản code có lỗi cài sẵn.",
+                 "Test tốt phải làm fail code sai; test chỉ kiểm tra trường hợp dễ thì lỗi tinh vi vẫn lọt.",
+                 "Xem các loại lỗi mà test chưa bắt trong phần kết quả test, rồi viết test nhắm vào đúng chỗ đó.",
+                 "viết test nhắm vào các giá trị biên và điều kiện dễ sai"),
+        "en": _t("Your tests did not catch {survived} of {total} versions of the code with a planted bug.",
+                 "Good tests make wrong code fail; tests that only check easy cases let subtle bugs through.",
+                 "See which kinds of bug your tests missed in the test results, then write tests aimed at them.",
+                 "write tests aimed at boundary values and easy-to-get-wrong conditions"),
+    },
+    "strong_tests": {
+        "vi": _t("Bộ test của bạn hợp lệ, đủ các loại và bắt được mọi phiên bản code có lỗi cài sẵn.",
+                 "Viết được bộ test như vậy là một kỹ năng quan trọng khi làm việc với code, kể cả code do AI viết.",
+                 "Ở bài sau, thử viết test trước khi viết code.",
+                 "viết bộ test đủ loại ở một bài khó hơn"),
+        "en": _t("Your tests are valid, cover every kind and caught every version of the code with a planted bug.",
+                 "Writing tests like these is an important skill when working with code, AI-written code included.",
+                 "Next time, try writing the tests before the code.",
+                 "write a full set of tests on a harder exercise"),
+    },
     # ---------- Debugging: locate step (P2.2) ----------
     # These never name the bug: the report's reveal block shows where it was and why.
     "bug_located": {
@@ -357,10 +411,11 @@ class _Params(dict):
 def _params(finding: Finding, locale: str) -> _Params:
     """The finding's params, with lists and counts turned into words for the sentence."""
     raw = finding.params
-    params = _Params({k: v for k, v in raw.items() if k not in ("failed_categories", "failed_tests")})
+    params = _Params({k: v for k, v in raw.items() if k not in ("failed_categories", "failed_tests", "categories")})
     names = _CATEGORIES[locale]
-    categories = [names.get(c, c) for c in raw.get("failed_categories") or []]
-    params["failed_categories"] = _join(categories, locale) or _SOME_CASES[locale]
+    for key in ("failed_categories", "categories"):
+        categories = [names.get(c, c) for c in raw.get(key) or []]
+        params[key] = _join(categories, locale) or _SOME_CASES[locale]
     tests = [f"“{name}”" for name in raw.get("failed_tests") or []]
     params["failed_tests"] = _FAILED_TESTS[locale].format(names=", ".join(tests)) if tests else ""
     paste, focus = _SIGNALS[locale]
