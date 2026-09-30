@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +10,7 @@ from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
 from app.core.config import get_settings
 from app.features.feedback.service import build_diagnosis, submit_locale
+from app.features.learner.service import record_attempt
 from app.features.student_tests.evaluate import report_block as tests_report
 from app.features.scoring.engine import score_attempt
 from app.features.scoring.engine_v2 import score_attempt_v2
@@ -15,6 +18,8 @@ from app.features.scoring.evidence import load_evidence
 from app.features.scoring.features import AxisFeatures
 from app.features.scoring.judges import judge_explain, judge_locate, judge_prompts
 from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, VerificationAnswer
+
+logger = logging.getLogger(__name__)
 
 _AXIS_LABELS = {
     "understanding": "Understanding",
@@ -298,6 +303,11 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
     attempt.score = result["overall"]
     attempt.status = "scored"
     attempt.integrity_status = integrity
+    try:
+        await record_attempt(db, attempt, ex, result["overall"])
+    except Exception:
+        # Derived data (learner.rebuild recomputes it): never fail the student's scoring for it.
+        logger.exception("learner model update failed for attempt %s", attempt.id)
     await db.commit()
 
     return _report_payload(result, integrity)

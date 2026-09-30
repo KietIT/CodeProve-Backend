@@ -38,5 +38,7 @@ class Exercise(Base):
     # P3.2: skills practised (keys of content.skills.TAXONOMY), from the reviewed content file.
     skills: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON, "sqlite"), default=list,
                                               server_default="[]")
+    # P3.3: Elo difficulty (None = not rated yet, learner.elo uses the level default). Derived data.
+    difficulty_elo: Mapped[float | None] = mapped_column(Float, nullable=True)
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
