@@ -44,6 +44,14 @@ TEXT = {
 }
 
 
+def strong_and_weak(skills: list[SkillRating]) -> tuple[list[SkillRating], list[SkillRating]]:
+    """Up to 2 strongest and 2 weakest (weakest first) of the rated skills; never both.
+    Shared with the recommendation (P3.4) so both name the same weak skills."""
+    rated = sorted((s for s in skills if s.attempts >= MIN_SKILL_ATTEMPTS), key=lambda s: (-s.rating, s.key))
+    strong = rated[:MAX_NAMED_SKILLS]
+    return strong, [s for s in reversed(rated) if s not in strong][:MAX_NAMED_SKILLS]
+
+
 def _word(rating: float, locale: str) -> str:
     good, average, weak = TEXT[locale]["words"]
     return good if rating >= GOOD else weak if rating < WEAK else average
@@ -60,12 +68,10 @@ def learner_brief(p: LearnerProfile, locale: str = "vi") -> str:
         return t["empty"]
     lines = [t["count"].format(n=p.scored_attempts)]
 
-    rated = [s for s in p.skills if s.attempts >= MIN_SKILL_ATTEMPTS]  # already highest first
-    if not rated:
+    strong, weak = strong_and_weak(p.skills)
+    if not strong:
         lines.append(t["too_little"].format(m=MIN_SKILL_ATTEMPTS))
     else:
-        strong = rated[:MAX_NAMED_SKILLS]
-        weak = [s for s in reversed(rated) if s not in strong][:MAX_NAMED_SKILLS]  # weakest first
         lines.append(t["strong"].format(skills=_skills(strong, locale)))
         if weak:
             lines.append(t["weak"].format(skills=_skills(weak, locale)))
