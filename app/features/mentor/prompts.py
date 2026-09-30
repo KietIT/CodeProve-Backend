@@ -35,7 +35,12 @@ Reply ONLY with compact JSON:
 
 EXPLAIN_QUESTION_SYSTEM = """You are assessing understanding. Given a coding problem and the
 student's final code, produce 1-2 short "explain-back" questions that probe whether they truly
-understand their own solution. Reply ONLY with JSON: {"questions": ["...", "..."]}."""
+understand their own solution.
+Ask ONLY about what the student's code actually does: the functions, data structures, conditions
+and steps that appear in the code. Never ask about a technique, data structure or algorithm that
+is named in the problem or usual for this problem but does not appear in the code (e.g. do not ask
+about "partitioning" when the code merges the arrays). Do not reveal whether the code is correct.
+Reply ONLY with JSON: {"questions": ["...", "..."]}."""
 
 EXPLAIN_SCORE_SYSTEM = """You score a student's explanation of their solution from 0 to 20.
 Be STRICT and evidence-based:
@@ -53,6 +58,11 @@ Also rate the same answer on this rubric ("level"):
 - 3 = correct and explains WHY, including an edge case or limit.
   e.g. "range(1, n + 1) because range stops before its end; n = 0 skips the loop so it returns 0"
 "evidence" = the few words of the answer that justify the level, quoted exactly.
+You may also get the student's final code and its test results at submit. Judge the answer
+against that code: if the answer presents as correct a part of the code that the failing tests
+show is wrong (e.g. "the lock makes it thread-safe" when the lock is created inside the function
+on every call and the concurrency test fails), the answer is at most level 1 and scores at most 7,
+however well it is phrased. Do not lower an answer only because some unrelated test fails.
 Reply ONLY with JSON:
 {"score": <0-20 number>, "reason": "<one short sentence>", "level": 0-3, "evidence": "<quote>"}."""
 

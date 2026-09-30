@@ -235,12 +235,38 @@ async def judge_and_store_locate(db: AsyncSession, attempt: Attempt, ex: Exercis
     return True
 
 
+EXPLAIN_CONTEXT_LINES = 60
+EXPLAIN_CONTEXT_FAILURES = 3
+
+
+def explain_context(code: str | None, suite: dict | None) -> str:
+    """What the explain judge must check the answer against (P2.5): the final code and
+    whether the tests passed. Failing tests are named, never their inputs."""
+    if not code or not code.strip():
+        return ""
+    lines = code.replace("\r\n", "\n").split("\n")[:EXPLAIN_CONTEXT_LINES]
+    parts = ["Student's final code:\n```\n" + "\n".join(lines) + "\n```"]
+    if suite and suite.get("total"):
+        parts.append(f"Test results at submit: {suite.get('passed', 0)}/{suite['total']} passed.")
+        failing = [f.get("description") for f in suite.get("failures") or [] if f.get("description")]
+        if failing:
+            parts.append("Failing tests: " + "; ".join(failing[:EXPLAIN_CONTEXT_FAILURES]) + ".")
+    return "\n".join(parts)
+
+
+async def explain_context_for(db: AsyncSession, attempt: Attempt) -> str:
+    suite = (await db.execute(select(Event).where(Event.attempt_id == attempt.id, Event.type == "SUBMIT_TESTS")
+                              .order_by(Event.id.desc()))).scalars().first()
+    return explain_context(await attempts_service.latest_code(db, attempt.id), suite.payload if suite else None)
+
+
 async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: list[dict]) -> dict:
     client = get_mentor_client()
+    context = await explain_context_for(db, attempt)
     verdicts = []
     for a in answers:
         # Non-answers ("no", "idk", one word) score 0 without asking the judge.
-        verdict = await judge_explain(client, a["question"], a.get("answer") or "")
+        verdict = await judge_explain(client, a["question"], a.get("answer") or "", context)
         verdicts.append(verdict)
         db.add(VerificationAnswer(attempt_id=attempt.id, question=a["question"], answer=a["answer"],
                                   score=verdict["score"]))
