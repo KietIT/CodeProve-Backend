@@ -116,3 +116,23 @@ def test_the_brief_contains_no_personal_data():
     for locale in ("vi", "en"):
         brief = learner_brief(p, locale)
         assert "@" not in brief and "```" not in brief
+
+
+async def test_learner_api_needs_auth_and_returns_only_my_data(client, db_session, auth_headers):
+    assert (await client.get("/api/learner/me")).status_code == 401
+    me = (await client.get("/api/learner/me", headers=auth_headers)).json()
+    assert me == {"scored_attempts": 0, "skills": [], "axes": NO_AXES, "recurring": [], "window": 0,
+                  "brief": "Chưa có bài nào được chấm."}
+
+    from sqlalchemy import select
+    my_id = (await db_session.execute(select(User.id).where(User.email == "testuser@example.com"))).scalar_one()
+    someone = User(full_name="B", email="b@student.vn", password_hash="x")
+    db_session.add(someone); await db_session.flush()
+    db_session.add_all([LearnerSkill(user_id=my_id, skill="hash-map", rating=1060.0, attempts=2),
+                        LearnerSkill(user_id=someone.id, skill="graph", rating=1300.0, attempts=4)])
+    await db_session.commit()
+    me = (await client.get("/api/learner/me?locale=en", headers=auth_headers)).json()
+    assert me["skills"] == [{"key": "hash-map", "vi": "Bảng băm (dict)", "en": "Hash map", "rating": 1060.0,
+                             "attempts": 2}]
+    assert me["brief"] == "No scored exercise yet."  # the brief follows scored reports, none yet
+    assert (await client.get("/api/learner/me?locale=fr", headers=auth_headers)).status_code == 422
