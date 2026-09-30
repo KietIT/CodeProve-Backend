@@ -35,3 +35,28 @@ Requires auth and returns only the caller's own data. `locale` picks the languag
 - After each scored attempt, the student's rating on every skill tag of the exercise moves by `32 × (overall/100 − expected)`. `expected = 1 / (1 + 10^((difficulty − rating) / 400))`.
 - The exercise difficulty starts at 900 / 1100 / 1300 (fresher / junior / senior). It moves by 8 in the opposite direction, but only on each student's first scored attempt of that exercise, and never for simulated calibration accounts.
 - Ratings are derived data. `python -m app.features.learner.rebuild --apply` recomputes them from all reports, for example after a rescore.
+
+## Recommendations
+
+Since P3.4, `GET /api/dashboard` has a `recommended` list: up to 3 next exercises for the signed-in student, best first. It is empty when every exercise is solved.
+
+```json
+"recommended": [
+  {"code": "CP-006", "title": "Count Word Frequency", "level": "fresher", "kind": "implement",
+   "skills": [{"key": "hash-map", "vi": "Bảng băm (dict)", "en": "Hash map"},
+              {"key": "string-processing", "vi": "Xử lý chuỗi", "en": "String processing"}],
+   "reason_skills": ["string-processing"]}
+]
+```
+
+- `skills`: the exercise's skill tags, with labels in both languages.
+- `reason_skills`: the keys of `skills` that are among the student's weak skills (the same rule as the brief: rated skills with ≥ 2 attempts, excluding the 2 strongest). When it is not empty, show "Luyện: <labels>" / "Practise: <labels>". When it is empty, show no reason.
+- The predicted success chance is used for ranking only and is not sent.
+
+**Ranking.** Only exercises the student has not solved are considered, never an exercise already scored. Lower score is better:
+
+`|p − 0.70| − 0.10 × (weak skills practised) − 0.10 × [debug exercise after a debugging risk] + 0.30 × [unfinished attempt started < 24 h ago]`
+
+- `p` is the Elo expected result of the student's mean rating over the exercise's skills against the exercise difficulty.
+- Ties go to the exercise code.
+- The Feedback page's `diagnosis.candidates` uses the same ranking. It is limited to the level of the exercise just done or one above, and the debug bonus applies only there. The Dashboard ranks every unsolved exercise.

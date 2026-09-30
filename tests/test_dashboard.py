@@ -56,3 +56,34 @@ async def test_radar_axis_is_null_when_never_observed(client, db_session, auth_h
     assert radar["Prompting"] is None
     assert radar["Debugging"] is None
     assert radar["Testing"] == 100.0
+
+
+async def test_dashboard_recommends_unsolved_exercises_nearest_the_target(client, db_session, auth_headers):
+    from sqlalchemy import select
+
+    from app.models import Attempt, Exercise, LearnerSkill, User
+
+    assert (await client.get("/api/dashboard", headers=auth_headers)).json()["recommended"] == []  # no exercises
+
+    user = (await db_session.execute(select(User))).scalars().first()
+    rows = [("CP-001", "fresher", ["hash-map"]), ("CP-003", "fresher", ["two-pointers"]),
+            ("CP-004", "fresher", ["control-flow"]), ("CP-006", "fresher", ["hash-map", "string-processing"]),
+            ("CP-101", "junior", ["hash-map"]), ("CP-201", "senior", ["concurrency"])]
+    exercises = {code: Exercise(code=code, title=code, difficulty="Easy", category="c", level=level,
+                                language="python", summary="s", starter_code="x", hint="h", domain_keywords=[],
+                                skills=skills) for code, level, skills in rows}
+    db_session.add_all(exercises.values()); await db_session.flush()
+    db_session.add(Attempt(user_id=user.id, exercise_id=exercises["CP-001"].id, status="scored", score=70.0))
+    db_session.add_all([LearnerSkill(user_id=user.id, skill="two-pointers", rating=1000.0, attempts=2),
+                        LearnerSkill(user_id=user.id, skill="control-flow", rating=1000.0, attempts=2),
+                        LearnerSkill(user_id=user.id, skill="string-processing", rating=960.0, attempts=2)])
+    await db_session.commit()
+
+    body = (await client.get("/api/dashboard", headers=auth_headers)).json()
+    assert [r["code"] for r in body["recommended"]] == ["CP-006", "CP-003", "CP-004"]  # CP-001 is solved
+    first = body["recommended"][0]
+    assert first == {"code": "CP-006", "title": "CP-006", "level": "fresher", "kind": "implement",
+                     "skills": [{"key": "hash-map", "vi": "Bảng băm (dict)", "en": "Hash map"},
+                                {"key": "string-processing", "vi": "Xử lý chuỗi", "en": "String processing"}],
+                     "reason_skills": ["string-processing"]}
+    assert "p" not in first  # the success chance is never sent
