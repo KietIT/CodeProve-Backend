@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
 from app.features.mentor import guard
 from app.features.mentor.client import code_loc, get_mentor_client
@@ -70,17 +71,30 @@ async def mentor_reply(
 
     context = build_exercise_context(ex, code)
     client = get_mentor_client()
-    result = await client.chat(message, history=[], inject_error=inject, context=context)
+    # Debug exercise whose bug the student has not located yet: Ciel may only help them find it.
+    hidden_bug = await debug.hidden_bug(db, attempt, ex)
+    locate_rule = guard.LOCATE_INSTRUCTION if hidden_bug else ""
+
+    async def problems(text: str) -> tuple[bool, bool]:
+        solves = await guard.solves_exercise(db, ex.id, text)
+        return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
+
+    result = await client.chat(message, history=[], inject_error=inject, context=context,
+                               extra_instruction=locate_rule)
     prompt_tokens, completion_tokens = result["prompt_tokens"], result["completion_tokens"]
-    withheld = await guard.solves_exercise(db, ex.id, result["text"])
-    if withheld:
+    withheld, revealed = await problems(result["text"])
+    if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
+        stricter = "\n\n".join(part for part in (
+            locate_rule, guard.RETRY_INSTRUCTION if withheld else "",
+            guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
         retry = await client.chat(message, history=[], inject_error=False, context=context,
-                                  extra_instruction=guard.RETRY_INSTRUCTION)
+                                  extra_instruction=stricter)
         prompt_tokens += retry["prompt_tokens"]
         completion_tokens += retry["completion_tokens"]
-        text = guard.FALLBACK if await guard.solves_exercise(db, ex.id, retry["text"]) else retry["text"]
+        still_solves, still_reveals = await problems(retry["text"])
+        text = guard.BUG_FALLBACK if still_reveals else guard.FALLBACK if still_solves else retry["text"]
         result = {**retry, "text": text, "code_loc": code_loc(text)}
 
     flags = ["PRIMING"] if looks_like_priming(message) else []
@@ -105,6 +119,7 @@ async def mentor_reply(
             "aiCode": [{"loc": result["code_loc"]}] if result["code_loc"] else [],
             "injectedError": inject,
             "withheldSolution": withheld,
+            "withheldBugLocation": revealed,
         },
     )
     # Only what the student saw is stored: the Verification axis and the raters read these replies.

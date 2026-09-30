@@ -40,6 +40,50 @@ FALLBACK = (
 )
 
 
+# Debug exercises (P2.2): until the student has located the bug, Ciel only helps them find it.
+LOCATE_INSTRUCTION = (
+    "This is a debug exercise and the student has NOT found the bug yet. Do NOT say which line, statement "
+    "or expression is wrong, do not quote or rewrite the buggy code, do not give line numbers, and do not "
+    "describe the fix. Only help them find it themselves: suggest tracing the code with a small input (the "
+    "Visualizer shows every step), comparing the actual result with the expected one, and ask guiding "
+    "questions about what each part of the code should do."
+)
+LOCATE_RETRY_INSTRUCTION = (
+    "IMPORTANT: your previous draft pointed at the buggy line, so it was not shown. Answer again with "
+    "guiding hints only: no line numbers, no quoted code from the exercise, no fix."
+)
+BUG_FALLBACK = (
+    "Mình chưa thể chỉ ra dòng lỗi khi bạn chưa tìm ra nó. Hãy thử một input nhỏ, tự tính kết quả mong đợi, "
+    "rồi chạy code trong Visualizer để xem từ bước nào kết quả bắt đầu khác.\n\n"
+    "I can't point at the buggy line before you have found it. Try a small input, work out the expected "
+    "result, then run the code in the Visualizer to see at which step the result starts to differ."
+)
+QUOTE_MIN_CHARS = 8  # shorter lines (e.g. "else:") are too common to count as quoting the bug
+_LINE_REF = re.compile(r"\b(?:lines?|dòng)\s+(\d+)(?:\s*(?:-|–|to|đến|and|và|,)\s*(\d+))?", re.IGNORECASE)
+
+
+def _squash(text: str) -> str:
+    return " ".join(text.split())
+
+
+def reveals_bug(text: str, served_starter: str, regions: list[list[int]]) -> bool:
+    """True when a reply quotes a line of the bug region or refers to one by number
+    (including a range that covers it)."""
+    bug_lines = {line for region in regions for line in region}
+    starter = served_starter.replace("\r\n", "\n").split("\n")
+    reply = _squash(text)
+    for n in bug_lines:
+        quoted = _squash(starter[n - 1]) if 1 <= n <= len(starter) else ""
+        if len(quoted) >= QUOTE_MIN_CHARS and quoted in reply:
+            return True
+    for match in _LINE_REF.finditer(text):
+        lo = int(match.group(1))
+        hi = int(match.group(2)) if match.group(2) else lo
+        if any(min(lo, hi) <= n <= max(lo, hi) for n in bug_lines):
+            return True
+    return False
+
+
 def code_blocks(text: str) -> list[str]:
     return _CODE_BLOCK.findall(text)
 

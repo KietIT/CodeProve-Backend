@@ -51,6 +51,19 @@ def reveal(ex: Exercise, events: list[dict], locale: str) -> dict | None:
             "explanation": ex.debug_meta["explanation_vi" if locale == "vi" else "explanation_en"]}
 
 
+async def hidden_bug(db: AsyncSession, attempt: Attempt, ex: Exercise) -> tuple[str, list[list[int]]] | None:
+    """(served starter, regions) while the student has not located the bug correctly (no
+    location yet, a skip, or a selection missing a region); None once located or on other
+    exercises. Ciel must not point at the bug until then."""
+    if not has_locate_step(ex):
+        return None
+    regions = ex.debug_meta["regions"]
+    for located in await _logged(db, attempt.id, "LOCATE"):
+        if not located.get("skipped") and all(hit_regions(regions, located.get("lines") or [])):
+            return None
+    return student_starter(ex.starter_code, "debug"), regions
+
+
 async def _logged(db: AsyncSession, attempt_id: int, type_: str) -> list[dict]:
     rows = (await db.execute(select(Event).where(Event.attempt_id == attempt_id, Event.type == type_)
                              .order_by(Event.id))).scalars().all()
