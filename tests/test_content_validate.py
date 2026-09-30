@@ -43,8 +43,36 @@ def _content(**over):
     return ExerciseContent.model_validate(raw)
 
 
+DEBUG = {"explanation_vi": "Dòng 3: range(1, n) bỏ sót n.", "explanation_en": "Line 3: range(1, n) skips n.",
+         "hint_vi": "Lỗi ở biên của vòng lặp.", "hint_en": "A loop-boundary bug.",
+         "review": {"status": "draft", "author": "claude", "reviewer": None}}
+
+
 async def test_valid_content_has_no_errors():
-    assert await validate_content(_content(), "debug", BUGGY_STARTER) == []
+    assert await validate_content(_content(debug=DEBUG), "debug", BUGGY_STARTER) == []
+    assert await validate_content(_content(), "implement", "") == []
+
+
+async def test_a_debug_exercise_needs_a_debug_block_and_only_it_may_have_one():
+    assert any("needs a 'debug' block" in e for e in await validate_content(_content(), "debug", BUGGY_STARTER))
+    errors = await validate_content(_content(debug=DEBUG), "implement", "")
+    assert any("only debug exercises" in e for e in errors)
+
+
+async def test_debug_regions_must_point_at_changed_lines_of_the_served_starter():
+    commented = BUGGY_STARTER.replace("range(1, n):", "range(1, n):   # bug: never adds n")
+    # The comment is stripped before serving, so the derived region is still line 3.
+    assert await validate_content(_content(debug=DEBUG), "debug", commented) == []
+    for regions, message in (([[9]], "outside the starter"), ([[1]], "not a changed line"),
+                             ([[1, 2, 3, 4]], "more than 3 lines"), ([[3], [3], [3], [3]], "need 1-3")):
+        errors = await validate_content(_content(debug={**DEBUG, "regions": regions}), "debug", BUGGY_STARTER)
+        assert any(message in e for e in errors), (regions, errors)
+
+
+async def test_a_hint_may_not_quote_the_starter():
+    leaky = {**DEBUG, "hint_en": "Look at: for i in range(1, n):"}
+    errors = await validate_content(_content(debug=leaky), "debug", BUGGY_STARTER)
+    assert any("hint_en quotes the starter" in e for e in errors)
 
 
 async def test_reference_must_pass_every_test():

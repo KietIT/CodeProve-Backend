@@ -99,6 +99,17 @@
       "note_en": "Assigns total = i instead of accumulating total += i."
     }
   ],
+  "debug": {
+    "explanation_vi": "Dòng 3: range(1, n) dừng trước n nên n không bao giờ được cộng vào (sum_to_n(3) trả 3 thay vì 6). Cận trên phải là n + 1.",
+    "explanation_en": "Line 3: range(1, n) stops before n, so n itself is never added (sum_to_n(3) returns 3 instead of 6). The upper bound must be n + 1.",
+    "hint_vi": "Lỗi nằm ở biên của một vòng lặp (off-by-one).",
+    "hint_en": "It is a loop-boundary (off-by-one) bug.",
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

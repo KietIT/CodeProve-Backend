@@ -170,6 +170,17 @@
       "    return deny()"
     ]
   },
+  "debug": {
+    "explanation_vi": "Dòng 11 chỉ kiểm tra token có tồn tại, nên token giả bất kỳ cũng tới được handler. Token phải qua verify(token) trước khi gọi handler(request).",
+    "explanation_en": "Line 11 only checks that a token is present, so any forged value reaches the handler. The token must also pass verify(token) before handler(request) is called.",
+    "hint_vi": "Một bước kiểm tra bảo mật chưa đủ.",
+    "hint_en": "A security check is incomplete.",
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

@@ -112,7 +112,7 @@ Commit `feat(feedback): locate findings and the bug reveal`.
 
 ### Task 7: Frontend (CodeProve-UI session, via a spawn_task chip)
 
-Contract: `docs/api/feedback.md` + the endpoints of Task 3. Locate view reusing the Daily Bug Hunt clickable-line component (read-only, multi-select up to regions + 1), reason box, two hint buttons with their cost stated, "skip" with a confirm; the editor unlocks after locating; a reload restores the step from `AttemptState.debug`; the Feedback page shows the reveal (the student's lines vs the real ones, explanation). Tests and screenshots as in P1.6.
+Contract: `docs/api/feedback.md` + the endpoints of Task 3. Locate view reusing the Daily Bug Hunt clickable-line component (read-only, multi-select up to regions + 1), reason box, two hint buttons with their cost stated, "skip" with a confirm; the editor unlocks after locating; a reload restores the step from `AttemptState.debug`; the Feedback page shows the reveal (the student's lines vs the real ones, explanation). **On debug exercises the free "Gợi ý / Hint" accordion (`SolveWorkspace`, the exercise's `hint`) is hidden until the student has located**: several of those hints name the bug (CP-102: "An unbounded dict is the leak") and would bypass the paid hint ladder. Tests and screenshots as in P1.6.
 
 ### Task 8: Ship
 
@@ -120,6 +120,8 @@ Contract: `docs/api/feedback.md` + the endpoints of Task 3. Locate view reusing 
 - Claude: a dry-run `rescore --engine v2` must show **no change** (no old session has `LOCATE`); then one end-to-end debug attempt on production by Kiệt (locate → hint → fix → submit → Feedback reveal).
 
 ## Decisions for Kiệt
+
+**Approved 2026-09-30:** all three as proposed.
 
 1. The **rules** above (locate first, no live correctness, ≤ regions + 1 lines, 2 hints without the exact line, the level tables).
 2. The **regions** for CP-012 and CP-102 (table): single region [5] and merged region [1, 4, 5].

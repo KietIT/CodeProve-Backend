@@ -211,6 +211,17 @@
       "    return path"
     ]
   },
+  "debug": {
+    "explanation_vi": "Dòng 7 ghép tên file của người dùng vào đường dẫn, nên \"../\" thoát khỏi upload_dir (path traversal). Dòng 9 ghi mọi thứ được gửi: không kiểm tra chữ ký file theo loại và không giới hạn kích thước. Dùng basename, kiểm tra chữ ký, giới hạn kích thước.",
+    "explanation_en": "Line 7 joins the user's filename into the path, so \"../\" escapes upload_dir (path traversal). Line 9 writes whatever was sent: the file signature is never checked against its type and the size is unlimited. Use basename, check the signature, cap the size.",
+    "hint_vi": "Có hơn một lỗ hổng, đều do tin tưởng dữ liệu người dùng tải lên.",
+    "hint_en": "There is more than one hole, all from trusting what the user uploads.",
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 
 from app.features.content.sync import sync_content
-from tests.test_content_validate import BUGGY_STARTER, _content
+from tests.test_content_validate import BUGGY_STARTER, DEBUG, _content
 
 pytestmark = pytest.mark.asyncio
 
@@ -22,7 +22,7 @@ async def _exercise(db_session):
 
 
 def _write(tmp_path, review):
-    c = _content(review=review)
+    c = _content(review=review, debug=DEBUG)  # CP-004 is a debug exercise
     raw = json.loads(c.model_dump_json())
     p = tmp_path / "CP-004.json"
     p.write_text(json.dumps(raw), encoding="utf-8")

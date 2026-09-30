@@ -102,6 +102,17 @@
       "note_en": "Still uses user[\"profile\"], so it crashes when the key is missing."
     }
   ],
+  "debug": {
+    "explanation_vi": "Dòng 2 truy cập thẳng user[\"profile\"][\"name\"], nên user không có \"profile\" (hoặc profile là None) gây lỗi thay vì trả \"Unknown\". Cần .get() với giá trị mặc định.",
+    "explanation_en": "Line 2 indexes user[\"profile\"][\"name\"] directly, so a user without \"profile\" (or with profile None) raises instead of returning \"Unknown\". Use .get() with a default.",
+    "hint_vi": "Hàm lỗi khi dữ liệu vào thiếu một khoá.",
+    "hint_en": "It fails when the input is missing a key.",
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

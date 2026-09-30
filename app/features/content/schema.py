@@ -60,6 +60,26 @@ class ContentReview(BaseModel):
     author: str = Field(min_length=1)
     reviewer: str | None = None
 
+    @property
+    def approved(self) -> bool:
+        return self.status == "approved" and bool(self.reviewer) and self.reviewer != self.author
+
+
+class ContentDebug(BaseModel):
+    """Where the bug of a debug exercise is and how to explain it (P2.2).
+
+    `regions` (1-based lines of the starter as served, comments stripped)
+    overrides the regions derived from the starter/reference diff when that
+    diff does not match the bug. It has its own review so adding it does not
+    un-approve the rest of the file."""
+
+    regions: list[list[Annotated[int, Field(ge=1)]]] | None = None
+    explanation_vi: str = Field(min_length=1, max_length=400)
+    explanation_en: str = Field(min_length=1, max_length=400)
+    hint_vi: str = Field(min_length=1, max_length=120)
+    hint_en: str = Field(min_length=1, max_length=120)
+    review: ContentReview
+
 
 class ExerciseContent(BaseModel):
     code: str = Field(pattern=r"^CP-\d{3}$")
@@ -68,6 +88,7 @@ class ExerciseContent(BaseModel):
     mutants: list[ContentMutant]
     limits: ContentLimits | None = None
     exercise: ExerciseOverrides | None = None
+    debug: ContentDebug | None = None
     review: ContentReview
 
     def starter_for(self, current_starter: str) -> str:
@@ -87,8 +108,7 @@ class ExerciseContent(BaseModel):
         --apply. This check just stops drafts from being synced by accident.
         Content code runs in the same hardened sandbox as student code.
         """
-        r = self.review
-        return r.status == "approved" and bool(r.reviewer) and r.reviewer != r.author
+        return self.review.approved
 
 
 def load_content_file(path: Path) -> ExerciseContent:
