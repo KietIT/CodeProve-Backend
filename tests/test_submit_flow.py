@@ -37,13 +37,11 @@ async def _seed_attempt(client, db_session, auth_headers):
     aid = (
         await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=auth_headers)
     ).json()["attempt_id"]
-    await client.post(
-        f"/api/attempts/{aid}/events",
-        headers=auth_headers,
-        json={"events": [
-            {"type": "HYPOTHESIS", "ts": 1000, "payload": {"proposedBy": "user", "correct": True}},
-        ]},
-    )
+    # HYPOTHESIS is server-owned (written by /hypothesis after judging), so seed it directly.
+    from app.features.attempts.service import add_event
+
+    await add_event(db_session, aid, "HYPOTHESIS", {"proposedBy": "user", "correct": True}, ts=1000)
+    await db_session.commit()
     return aid
 
 

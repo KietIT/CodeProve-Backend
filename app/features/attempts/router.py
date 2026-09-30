@@ -39,6 +39,9 @@ async def get_state(attempt_id: int, db: AsyncSession = Depends(get_db),
 async def ingest_events(attempt_id: int, data: EventsIn, db: AsyncSession = Depends(get_db),
                         user: User = Depends(get_current_user)) -> dict:
     await service.require_attempt(db, attempt_id, user)
+    forged = sorted({e.type for e in data.events} & service.SERVER_EVENT_TYPES)
+    if forged:
+        raise HTTPException(status_code=422, detail=f"Server-owned event types cannot be sent: {', '.join(forged)}")
     for e in data.events:
         await service.add_event(db, attempt_id, e.type, e.payload, e.ts, e.integrity_flags)
     await db.commit()
