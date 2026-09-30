@@ -104,3 +104,55 @@ async def test_responses_never_contain_the_answer(client, db_session, auth_heade
     state = await client.get(f"/api/attempts/{aid}", headers=auth_headers)
     body = state.text
     assert "regions" not in body and "skips n" not in body and "explanation" not in body
+
+
+class JudgeClient:
+    """Fake LLM for the submit + explain-back flow; records which judges were asked."""
+    _model = "fake"
+
+    def __init__(self):
+        self.systems = []
+
+    async def chat(self, *a, **k):
+        return {"text": "", "prompt_tokens": 0, "completion_tokens": 0, "code_loc": 0}
+
+    async def judge(self, system, user, max_tokens=300):
+        self.systems.append(system)
+        if "debug exercise" in system:
+            return {"level": 2, "evidence": "stops before n"}
+        if "explain-back" in system:
+            return {"questions": ["Why?"]}
+        return {"score": 12, "level": 2, "evidence": "e", "correct": True, "note": ""}
+
+
+async def _submit_and_explain(client, aid, auth_headers):
+    assert (await client.post(f"/api/attempts/{aid}/submit", headers=auth_headers)).status_code == 200
+    r = await client.post(f"/api/attempts/{aid}/explain-back", headers=auth_headers,
+                          json={"answers": [{"question": "Why?", "answer": "because the range stops before n"}]})
+    assert r.status_code == 200
+
+
+async def test_the_reason_is_judged_at_explain_back(client, db_session, auth_headers, monkeypatch):
+    import app.features.attempts.scoring_service as scoring
+
+    fake = JudgeClient()
+    monkeypatch.setattr(scoring, "get_mentor_client", lambda: fake)
+    aid = await _attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/debug/locate", headers=auth_headers,
+                      json={"lines": [3], "reason": "range(1, n) stops before n"})
+    await _submit_and_explain(client, aid, auth_headers)
+    judged = [p for p in await _events(db_session, aid, "JUDGE") if p["kind"] == "locate"]
+    assert judged == [{"kind": "locate", "model": "fake", "level": 2, "evidence": "stops before n"}]
+
+
+async def test_a_skipped_location_is_level_0_without_asking(client, db_session, auth_headers, monkeypatch):
+    import app.features.attempts.scoring_service as scoring
+
+    fake = JudgeClient()
+    monkeypatch.setattr(scoring, "get_mentor_client", lambda: fake)
+    aid = await _attempt(client, db_session, auth_headers)
+    await client.post(f"/api/attempts/{aid}/debug/locate", headers=auth_headers, json={"skipped": True})
+    await _submit_and_explain(client, aid, auth_headers)
+    judged = [p for p in await _events(db_session, aid, "JUDGE") if p["kind"] == "locate"]
+    assert judged[0]["level"] == 0
+    assert not any("debug exercise" in s for s in fake.systems)

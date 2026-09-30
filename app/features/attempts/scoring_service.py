@@ -1,7 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
+from app.features.exercises.starters import student_starter
 from app.features.mentor.client import get_mentor_client
 from app.features.mentor.prompts import EXPLAIN_QUESTION_SYSTEM
 from app.core.config import get_settings
@@ -10,7 +12,7 @@ from app.features.scoring.engine import score_attempt
 from app.features.scoring.engine_v2 import score_attempt_v2
 from app.features.scoring.evidence import load_evidence
 from app.features.scoring.features import AxisFeatures
-from app.features.scoring.judges import judge_explain, judge_prompts
+from app.features.scoring.judges import judge_explain, judge_locate, judge_prompts
 from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, VerificationAnswer
 
 _AXIS_LABELS = {
@@ -209,6 +211,25 @@ async def judge_and_store_prompts(db: AsyncSession, attempt: Attempt, problem: s
     return True
 
 
+async def judge_and_store_locate(db: AsyncSession, attempt: Attempt, ex: Exercise, client,
+                                 backfilled: bool = False) -> bool:
+    """Rate the reason of the debug locate step (P2.2) and store the verdict.
+    Returns whether there was a location to judge."""
+    if not debug.has_locate_step(ex):
+        return False
+    located = (await db.execute(select(Event).where(Event.attempt_id == attempt.id, Event.type == "LOCATE")
+                                .order_by(Event.id))).scalars().first()
+    if located is None:
+        return False
+    p = located.payload or {}
+    verdict = await judge_locate(client, student_starter(ex.starter_code, "debug"),
+                                 ex.debug_meta["explanation_en"], p.get("lines") or [], p.get("reason") or "")
+    await attempts_service.add_event(db, attempt.id, "JUDGE", {
+        "kind": "locate", "model": client._model, **({"backfilled": True} if backfilled else {}),
+        "level": verdict["level"], "evidence": verdict["evidence"]})
+    return True
+
+
 async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: list[dict]) -> dict:
     client = get_mentor_client()
     verdicts = []
@@ -229,6 +250,7 @@ async def score_with_explanations(db: AsyncSession, attempt: Attempt, answers: l
 
     ex = (await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))).scalar_one()
     await judge_and_store_prompts(db, attempt, ex.summary, client)
+    await judge_and_store_locate(db, attempt, ex, client)
     if get_settings().scoring_engine == "v2":
         ev = await load_evidence(db, attempt)
         result = score_attempt_v2(ev, explain_score)
