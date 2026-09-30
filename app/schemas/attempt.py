@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 MAX_REASON_CHARS = 500  # the one-sentence "why" of the debug locate step
@@ -28,6 +30,35 @@ class AttemptState(BaseModel):
     score: float | None
     latest_code: str | None
     debug: DebugState | None = None
+    tests: "TestsState | None" = None
+
+
+class StudentTestIn(BaseModel):
+    """One student-written test (P2.3): an input expression and the value it should give."""
+    category: Literal["happy", "boundary", "edge", "error"]
+    input: str = Field(min_length=1, max_length=300)
+    expected: str = Field(max_length=300)
+    why: str = Field(default="", max_length=200)
+
+
+class StudentTestsIn(BaseModel):
+    tests: list[StudentTestIn] = Field(max_length=10)
+
+
+class TestsState(BaseModel):
+    __test__ = False  # not a pytest test class
+    enabled: bool
+    required: bool  # junior/senior: tests count towards Testing even when missing
+    tests: list[StudentTestIn]
+
+
+class CheckOut(BaseModel):
+    status: Literal["valid", "wrong_expected", "error"]
+    reason: str | None = None
+
+
+class OwnRunIn(BaseModel):
+    source_code: str = Field(max_length=20000)
 
 
 class LocateIn(BaseModel):
@@ -64,3 +95,7 @@ class RunResult(BaseModel):
     coverage: float
     cases: list[RunCase]
     runtime_error: str | None = None
+
+
+# AttemptState refers to TestsState, defined after it.
+AttemptState.model_rebuild()

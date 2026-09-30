@@ -13,7 +13,7 @@ from app.models import Attempt, CodeSnapshot, Event, Exercise, User
 # and scoring reads the first OPEN, which the server writes when the attempt is created.
 SERVER_EVENT_TYPES = frozenset({
     "RUN", "TEST_RUN", "SUBMIT", "SUBMIT_TESTS", "PROMPT", "AI_REPLY", "HYPOTHESIS", "JUDGE", "EXPLAIN_BACK",
-    "LOCATE", "DEBUG_HINT",
+    "LOCATE", "DEBUG_HINT", "TESTS_SAVED", "TEST_CHECK", "STUDENT_TESTS",
 })
 
 
