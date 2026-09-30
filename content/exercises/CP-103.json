@@ -129,6 +129,17 @@
       "note_en": "Allows the 'none' algorithm, so an unsigned token errors instead of being rejected."
     }
   ],
+  "skills": {
+    "tags": [
+      "security",
+      "input-validation"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

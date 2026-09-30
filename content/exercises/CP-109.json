@@ -110,6 +110,16 @@
       "reviewer": "Kiệt, Phát, Trung"
     }
   },
+  "skills": {
+    "tags": [
+      "error-handling"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

@@ -197,6 +197,16 @@
     ],
     "hint": "Queue.get() blocks for you. Put (index, item) pairs so results can be placed back in order, and send one stop signal per consumer."
   },
+  "skills": {
+    "tags": [
+      "concurrency"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

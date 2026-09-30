@@ -134,6 +134,16 @@
       "note_en": "Initialising prev to head creates a cycle: the first node points to itself."
     }
   ],
+  "skills": {
+    "tags": [
+      "linked-structures"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

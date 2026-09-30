@@ -181,6 +181,16 @@
       "reviewer": "Kiệt, Phát, Trung"
     }
   },
+  "skills": {
+    "tags": [
+      "security"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

@@ -154,6 +154,16 @@
       "note_en": "Swaps the conditions, so multiples of 5 print Fizz."
     }
   ],
+  "skills": {
+    "tags": [
+      "control-flow"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

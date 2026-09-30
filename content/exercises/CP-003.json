@@ -109,6 +109,17 @@
       "note_en": "Uses isalpha, so digits are dropped."
     }
   ],
+  "skills": {
+    "tags": [
+      "two-pointers",
+      "string-processing"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

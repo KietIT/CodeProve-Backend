@@ -42,6 +42,8 @@ async def _write(db: AsyncSession, ex: Exercise, content: ExerciseContent) -> No
         # A draft block leaves the stored metadata as it is.
         ex.debug_meta = debug_meta(content, ex.starter_code)
     ex.student_tests = enabled_share(content) >= ENABLE_SHARE
+    if content.skills and content.skills.review.approved:
+        ex.skills = list(content.skills.tags)  # a draft leaves the stored tags as they are
 
 
 def debug_meta(content: ExerciseContent, current_starter: str) -> dict:
@@ -51,6 +53,12 @@ def debug_meta(content: ExerciseContent, current_starter: str) -> dict:
     return {"regions": d.regions or derive(served, content.reference_solution),
             "explanation_vi": d.explanation_vi, "explanation_en": d.explanation_en,
             "hint_vi": d.hint_vi, "hint_en": d.hint_en}
+
+
+def _skills_status(content: ExerciseContent) -> str | None:
+    if content.skills is None:
+        return None
+    return "approved" if content.skills.review.approved else "draft"
 
 
 def _debug_status(content: ExerciseContent) -> str | None:
@@ -86,7 +94,10 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
                         "overrides": content.exercise.fields_set() if content.exercise else [],
                         "debug": _debug_status(content),
                         "student_tests": round(enabled_share(content), 2),
-                        "debug_reviewer": content.debug.review.reviewer if content.debug else None})
+                        "debug_reviewer": content.debug.review.reviewer if content.debug else None,
+                        "skills": _skills_status(content),
+                        "skill_tags": content.skills.tags if content.skills else [],
+                        "skills_reviewer": content.skills.review.reviewer if content.skills else None})
         if apply:
             await _write(db, ex, content)
     if apply:
@@ -115,6 +126,10 @@ async def _main(codes: list[str], apply: bool) -> int:
                 print(f"    debug block approved by {r['debug_reviewer']}: bug regions, explanation and hint written")
             elif r["debug"] == "draft":
                 print("    debug block is a draft: not written")
+            if r["skills"] == "approved":
+                print(f"    skills {', '.join(r['skill_tags'])} approved by {r['skills_reviewer']}: written")
+            elif r["skills"] == "draft":
+                print(f"    skills {', '.join(r['skill_tags'])} are a draft: not written")
         elif r["status"] == "skipped":
             print(f"{r['code']}  skipped  {r['reason']}")
         else:

@@ -124,6 +124,17 @@
       "note_en": "Uses the string \"client_id\" as the key instead of the client_id variable."
     }
   ],
+  "skills": {
+    "tags": [
+      "hash-map",
+      "data-structure-design"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

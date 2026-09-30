@@ -112,6 +112,17 @@
   "exercise": {
     "summary": "Implement is_allowed(redis, key, limit, window): a fixed-window rate limiter shared by every app server through Redis. Allow at most `limit` requests per key in each `window` seconds; the window starts at the key's first request and is not extended by later ones. The `redis` client supports incr(key), expire(key, seconds), set(key, value, ex=None, nx=False), get(key) and ttl(key). Discuss the consistency vs latency trade-off, and the race between INCR and EXPIRE."
   },
+  "skills": {
+    "tags": [
+      "concurrency",
+      "data-structure-design"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

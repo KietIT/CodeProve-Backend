@@ -107,6 +107,17 @@
       "note_en": "Skips the last element, so a duplicate at the end is missed."
     }
   ],
+  "skills": {
+    "tags": [
+      "hash-map",
+      "two-pointers"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

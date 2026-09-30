@@ -35,5 +35,8 @@ class Exercise(Base):
     # P2.3: the student writes tests (Tests tab). Set by content sync where the exercise's own tests
     # fit the student-test input rules (student_tests.safety).
     student_tests: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # P3.2: skills practised (keys of content.skills.TAXONOMY), from the reviewed content file.
+    skills: Mapped[list[str]] = mapped_column(JSONB().with_variant(JSON, "sqlite"), default=list,
+                                              server_default="[]")
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

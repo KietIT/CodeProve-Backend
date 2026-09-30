@@ -169,6 +169,17 @@
   "exercise": {
     "summary": "Return the maximum of every window of size k in O(n) time overall. A hidden test runs a large input whose values only support comparisons (<, <=, >, >=, ==) and counts them, so scanning every window (O(n*k)) will fail it; do not convert or do arithmetic on the values."
   },
+  "skills": {
+    "tags": [
+      "sliding-window",
+      "data-structure-design"
+    ],
+    "review": {
+      "status": "draft",
+      "author": "claude",
+      "reviewer": null
+    }
+  },
   "review": {
     "status": "approved",
     "author": "claude",

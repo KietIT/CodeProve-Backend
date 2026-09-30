@@ -6,6 +6,12 @@ RUBRIC: list[list[str]] = [
 ]
 
 
+class SkillTag(BaseModel):
+    key: str  # stable key from content.skills.TAXONOMY (P3.2)
+    vi: str
+    en: str
+
+
 class ExerciseSummary(BaseModel):
     id: int
     num: int  # 1-based position within its level (for display)
@@ -14,6 +20,7 @@ class ExerciseSummary(BaseModel):
     difficulty: str
     acceptance: float
     topics: list[str]
+    skills: list[SkillTag] = []
     level: str
     # Per-user progress: "solved" (a scored attempt exists), "attempted" (an
     # attempt exists but none scored), or "todo". Matches the dashboard's
