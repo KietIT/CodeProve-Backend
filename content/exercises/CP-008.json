@@ -108,9 +108,9 @@
     "hint_vi": "Hàm lỗi khi dữ liệu vào thiếu một khoá.",
     "hint_en": "It fails when the input is missing a key.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

@@ -105,9 +105,9 @@
     "hint_vi": "Khi có lỗi, thông tin cần để điều tra bị mất.",
     "hint_en": "When it fails, the information you need to investigate is lost.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

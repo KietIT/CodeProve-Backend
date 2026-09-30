@@ -109,9 +109,9 @@
     "hint_vi": "Lỗi chỉ xảy ra khi hai giao dịch ngược chiều chạy cùng lúc.",
     "hint_en": "It only happens when two opposite transfers run at the same time.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

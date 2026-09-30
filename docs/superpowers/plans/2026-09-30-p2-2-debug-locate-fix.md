@@ -123,6 +123,10 @@ Contract: `docs/api/feedback.md` + the endpoints of Task 3. Locate view reusing 
 
 **Approved 2026-09-30:** all three as proposed.
 
+**Team review (2026-09-30, `docs/calibration/debug-meta-can-duyet.md`):** Kiệt, Phát and Trung marked all 9 debug blocks correct on regions, explanation and hint 1, with no comments; no comments on the 4 finding templates. The blocks are approved (reviewer "Kiệt, Phát, Trung"); the filled sheets are kept outside git.
+
+**Follow-up requested by Kiệt (2026-09-30):** until the student has located the bug correctly (a location hitting every region), Ciel only gives hints on a debug exercise: it gets a hint-only instruction, and a reply quoting a bug line or naming its line number is asked again, then replaced by a fixed message (`mentor/guard.py`, `attempts/debug.hidden_bug`). The Visualizer stays usable during the locate step (frontend).
+
 1. The **rules** above (locate first, no live correctness, ≤ regions + 1 lines, 2 hints without the exact line, the level tables).
 2. The **regions** for CP-012 and CP-102 (table): single region [5] and merged region [1, 4, 5].
 3. **Skip** allowed (Located and Explained = 0) — proposed yes, so a stuck student can still fix and submit.

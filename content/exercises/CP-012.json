@@ -126,9 +126,9 @@
     "hint_vi": "Lỗi chỉ lộ ra khi nhiều luồng chạy cùng lúc.",
     "hint_en": "It only shows up when several threads run at the same time.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

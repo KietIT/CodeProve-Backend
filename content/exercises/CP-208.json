@@ -217,9 +217,9 @@
     "hint_vi": "Có hơn một lỗ hổng, đều do tin tưởng dữ liệu người dùng tải lên.",
     "hint_en": "There is more than one hole, all from trusting what the user uploads.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

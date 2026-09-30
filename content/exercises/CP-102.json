@@ -144,9 +144,9 @@
     "hint_vi": "Kết quả vẫn đúng, nhưng bộ nhớ tăng mãi theo thời gian.",
     "hint_en": "The results are right, but memory keeps growing over time.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

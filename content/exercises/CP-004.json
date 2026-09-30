@@ -105,9 +105,9 @@
     "hint_vi": "Lỗi nằm ở biên của một vòng lặp (off-by-one).",
     "hint_en": "It is a loop-boundary (off-by-one) bug.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {

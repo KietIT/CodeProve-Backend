@@ -101,9 +101,9 @@
     "hint_vi": "Lỗi bảo mật nằm ở cách dựng câu truy vấn.",
     "hint_en": "A security bug in how the query is built.",
     "review": {
-      "status": "draft",
+      "status": "approved",
       "author": "claude",
-      "reviewer": null
+      "reviewer": "Kiệt, Phát, Trung"
     }
   },
   "review": {
