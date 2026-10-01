@@ -66,7 +66,7 @@ async def test_mentor_injects_error_once(client, db_session, auth_headers):
     aid = await _seed_attempt(client, db_session, auth_headers, trap=True)
     r1 = await client.post(
         f"/api/attempts/{aid}/mentor",
-        json={"message": "how do I find the target with a hash map?"},
+        json={"message": "how do I find the target with a hash map? show me the code"},  # asks for code
         headers=auth_headers,
     )
     assert "injected_error" not in r1.json()

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
+from app.features.exercises.starters import student_starter
 from app.features.learner.brief import learner_brief
 from app.features.learner.profile import profile
 from app.features.mentor import guard, language
@@ -121,7 +122,10 @@ async def mentor_reply(
         await db.execute(select(Exercise).where(Exercise.id == attempt.exercise_id))
     ).scalar_one()
     keywords = match_keywords(message, list(ex.domain_keywords or []))
-    inject = bool(ex.verification_trap) and not await _already_injected(db, attempt.id)
+    # The verification trap plants a bug in a code fragment, so it is only used when the student asks for
+    # code (fix 2026-10-01: injected into the first reply whatever was asked, it put code under "hello").
+    inject = (bool(ex.verification_trap) and asks_for_code(message)
+              and not await _already_injected(db, attempt.id))
 
     context = build_exercise_context(ex)
     learner = await learner_context(db, attempt.user_id)
@@ -142,16 +146,22 @@ async def mentor_reply(
 
     overlap_hit = False  # the draft gave away the solution piece by piece (fix 2026-10-01)
     function_hit = False  # the draft held a whole function or class (fix 2026-10-01)
+    too_long_hit = False  # the draft went over the code-line caps (fix 2026-10-01)
+    shown_before = await guard.code_shown_before(db, attempt.id)
+    own_code = f"{code or ''}\n{student_starter(ex.starter_code or '', ex.kind or 'implement')}"
 
     async def problems(text: str) -> tuple[bool, bool]:
         nonlocal overlap_hit
         nonlocal function_hit
         # Checked first: they need no sandbox run. A whole function or class is withheld whatever it is
         # named or however wrong (planted bugs, renamed copies); pieces are caught by the overlap.
+        nonlocal too_long_hit
         function = guard.implements_function(text)
-        leaks = not function and await guard.leaks_solution(db, ex, attempt.id, text)
+        too_long = not function and guard.too_much_code(text, shown_before, own_code)
+        leaks = not (function or too_long) and await guard.leaks_solution(db, ex, attempt.id, text)
         function_hit, overlap_hit = function_hit or function, overlap_hit or leaks
-        solves = function or leaks or await guard.solves_exercise(db, ex.id, text)
+        too_long_hit = too_long_hit or too_long
+        solves = function or too_long or leaks or await guard.solves_exercise(db, ex.id, text)
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
@@ -164,7 +174,8 @@ async def mentor_reply(
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
-        retry_rule = guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit or function_hit else guard.RETRY_INSTRUCTION
+        retry_rule = (guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit or function_hit or too_long_hit
+                      else guard.RETRY_INSTRUCTION)
         stricter = "\n\n".join(part for part in (
             instruction, retry_rule if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
@@ -202,6 +213,7 @@ async def mentor_reply(
             "withheldSolution": withheld,
             "withheldOverlap": overlap_hit,  # withheld for revealing the solution in pieces (fix 2026-10-01)
             "withheldFunction": function_hit,  # withheld for a whole function or class (fix 2026-10-01)
+            "withheldCodeLength": too_long_hit,  # withheld for going over the code-line caps (fix 2026-10-01)
             "withheldBugLocation": revealed,
         },
     )

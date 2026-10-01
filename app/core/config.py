@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     ciel_per_day: int = 100
     ciel_per_minute: int = 10
     hypothesis_per_attempt: int = 10
+    # Hard caps on code Ciel may show (fix 2026-10-01), counting only lines that are not already in the
+    # student's own code or the served starter: per reply, and distinct lines over the whole attempt.
+    ciel_max_code_lines_per_reply: int = 3
+    ciel_max_code_lines_per_attempt: int = 8
     quota_timezone: str = "Asia/Ho_Chi_Minh"  # the "day" of ciel_per_day
     # USD per million tokens for the cost report (P3.6). Copy them from OpenAI's pricing page for
     # openai_model; 0 = not set, and the report then shows tokens without a cost.

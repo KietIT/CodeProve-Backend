@@ -109,7 +109,7 @@ async def test_a_withheld_trap_reply_does_not_use_up_the_trap(client, db_session
     aid = await _attempt(client, db_session, auth_headers, trap=True)
     ciel(SOLUTION, GUIDANCE, WRONG)
     await _ask(client, aid, auth_headers)
-    await _ask(client, aid, auth_headers, "and now?")
+    await _ask(client, aid, auth_headers, "and now? give me the code")  # the trap needs a code request
     ai, _ = await _logged(db_session, aid)
     # The first (trap) reply was never shown, so the trap is served again on the next reply.
     assert [e.payload["injectedError"] for e in ai] == [False, True]

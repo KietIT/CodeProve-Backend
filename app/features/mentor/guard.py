@@ -157,3 +157,33 @@ def implements_function(text: str) -> bool:
             if body >= MIN_BODY_LINES:
                 return True
     return False
+
+
+def _new_code_lines(text: str, own: set[str]) -> list[str]:
+    """Statement lines of the reply's code blocks that the student does not already have."""
+    lines = []
+    for block in code_blocks(text):
+        for line in block.splitlines():
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and stripped not in own:
+                lines.append(stripped)
+    return lines
+
+
+def too_much_code(text: str, earlier_replies: list[str], own_code: str) -> bool:
+    """A hard cap that does not depend on how the code is written (fix 2026-10-01, CP-001: a 5-line loop
+    with renamed variables passed every similarity check). More than the per-reply cap of new code
+    lines, or more than the per-attempt cap of distinct new lines (identifiers renamed, so renaming
+    does not reset it), is withheld. Lines from the student's own code or the starter never count."""
+    settings = get_settings()
+    own = {line.strip() for line in own_code.splitlines() if line.strip()}
+    reply = _new_code_lines(text, own)
+    if len(reply) > settings.ciel_max_code_lines_per_reply:
+        return True
+    shown = {" ".join(overlap.tokens(line)) for r in [*earlier_replies, text] for line in _new_code_lines(r, own)}
+    return len(shown) > settings.ciel_max_code_lines_per_attempt
+
+
+async def code_shown_before(db: AsyncSession, attempt_id: int) -> list[str]:
+    return [r or "" for r in (await db.execute(
+        select(PromptLog.response).where(PromptLog.attempt_id == attempt_id))).scalars().all()]
