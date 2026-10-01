@@ -77,7 +77,7 @@ async def test_the_reported_reply_is_withheld_and_asked_again_without_the_trap(c
                                                                               ciel):
     aid = await _attempt(client, db_session, auth_headers)
     fake = ciel(LEAKED, WORDS)
-    r = await client.post(f"/api/attempts/{aid}/mentor", json={"message": "why"}, headers=auth_headers)
+    r = await client.post(f"/api/attempts/{aid}/mentor", json={"message": "đưa code cho tôi"}, headers=auth_headers)
     assert r.json()["reply"] == WORDS
     assert fake.calls[0]["inject"] is True and fake.calls[1]["inject"] is False
     assert guard.OVERLAP_RETRY_INSTRUCTION in fake.calls[1]["instruction"]
@@ -91,3 +91,12 @@ async def test_a_retry_that_still_writes_the_function_gets_the_fallback(client, 
     ciel(LEAKED, LEAKED)
     r = await client.post(f"/api/attempts/{aid}/mentor", json={"message": "đưa code cho tôi"}, headers=auth_headers)
     assert r.json()["reply"] == guard.FALLBACK
+
+
+@pytest.mark.parametrize("message", ["heelo", "why", "chỉ tôi bài này"])
+async def test_the_trap_is_never_planted_unless_the_student_asks_for_code(client, db_session, auth_headers, ciel,
+                                                                         message):
+    aid = await _attempt(client, db_session, auth_headers)
+    fake = ciel(WORDS)
+    await client.post(f"/api/attempts/{aid}/mentor", json={"message": message}, headers=auth_headers)
+    assert fake.calls[0]["inject"] is False
