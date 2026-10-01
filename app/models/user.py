@@ -13,6 +13,10 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="user", server_default="user")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Avatar stored as a data URL (base64). Text so it can hold a small image;
     # nullable because most users fall back to their initials.
     avatar: Mapped[str | None] = mapped_column(Text, nullable=True)

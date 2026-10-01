@@ -20,6 +20,8 @@ _GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 
 async def create_user(db: AsyncSession, data: SignupIn) -> User:
+    if data.email.endswith("@codeprove.production"):
+        raise ValueError("email_taken")
     existing = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if existing is not None:
         raise ValueError("email_taken")
@@ -50,7 +52,7 @@ async def update_user(db: AsyncSession, user: User, data: UpdateMeIn) -> User:
 
 async def authenticate(db: AsyncSession, data: LoginIn) -> User | None:
     user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
-    if user is None or not verify_password(data.password, user.password_hash):
+    if user is None or user.role != "user" or not user.is_active or not verify_password(data.password, user.password_hash):
         return None
     return user
 
@@ -129,8 +131,12 @@ async def authenticate_google(db: AsyncSession, code: str) -> User:
         raise RuntimeError("Google email is not verified")
 
     email = normalize_email(str(profile.get("email", "")))
+    if email.endswith("@codeprove.production"):
+        raise ValueError("This account cannot use Google sign-in")
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if user is not None:
+        if user.role != "user" or not user.is_active:
+            raise ValueError("This account cannot use Google sign-in")
         return user
 
     full_name = str(profile.get("name") or email.split("@", 1)[0]).strip()

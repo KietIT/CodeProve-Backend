@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     # default so the endpoint is a no-op (always 403) until an operator sets
     # it - there is no user-role/admin system in this codebase to hook into.
     admin_api_key: str = ""
+    # Use "none" with HTTPS when frontend and API are on different sites.
+    admin_cookie_samesite: Literal["lax", "none"] = "lax"
     # Which scoring engine writes new reports. v2 (rubric levels, P1.4) replaces
     # v1 only after it beats v1 on the golden set (see the P1.4 plan, Task 7).
     scoring_engine: Literal["v1", "v2"] = "v1"
