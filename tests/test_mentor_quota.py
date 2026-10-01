@@ -138,7 +138,7 @@ async def test_limits_are_per_student(client, db_session, auth_headers, ciel, li
     assert (await _ask(client, aid, auth_headers)).status_code == 200
     assert (await _ask(client, aid, auth_headers)).status_code == 429
     r = await client.post("/api/auth/signup", json={"full_name": "Binh Tran", "email": "binh@example.com",
-                                                       "password": "password123"})
+                                                       "password": "password123", "accept_privacy": True})
     assert r.status_code == 200, r.text
     other = {"Authorization": f"Bearer {r.json()['access_token']}"}
     other_aid = await _attempt(client, db_session, other)

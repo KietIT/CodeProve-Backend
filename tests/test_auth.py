@@ -9,7 +9,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_signup_then_me(client):
-    r = await client.post("/api/auth/signup", json={"full_name": "Jane Doe", "email": "jane@test.io", "password": "password123"})
+    r = await client.post("/api/auth/signup", json={"full_name": "Jane Doe", "email": "jane@test.io", "password": "password123", "accept_privacy": True})
     assert r.status_code == 200
     token = r.json()["access_token"]
     assert r.json()["user"]["email"] == "jane@test.io"
@@ -22,7 +22,7 @@ async def test_signup_then_me(client):
 async def test_signup_accepts_local_email_domain(client):
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Local User", "email": "test001@codeprove.local", "password": "password123"},
+        json={"full_name": "Local User", "email": "test001@codeprove.local", "password": "password123", "accept_privacy": True},
     )
     assert r.status_code == 200
     assert r.json()["user"]["email"] == "test001@codeprove.local"
@@ -31,7 +31,7 @@ async def test_signup_accepts_local_email_domain(client):
 async def test_auth_normalizes_email(client):
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Case User", "email": "  CaseUser@CodeProve.Local  ", "password": "password123"},
+        json={"full_name": "Case User", "email": "  CaseUser@CodeProve.Local  ", "password": "password123", "accept_privacy": True},
     )
     assert r.status_code == 200
     assert r.json()["user"]["email"] == "caseuser@codeprove.local"
@@ -46,7 +46,7 @@ async def test_auth_normalizes_email(client):
 async def test_update_me_changes_full_name(client):
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Old Name", "email": "patch@test.io", "password": "password123"},
+        json={"full_name": "Old Name", "email": "patch@test.io", "password": "password123", "accept_privacy": True},
     )
     token = r.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
@@ -68,7 +68,7 @@ async def test_update_me_requires_auth(client):
 async def test_update_me_rejects_short_name(client):
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Valid Name", "email": "short@test.io", "password": "password123"},
+        json={"full_name": "Valid Name", "email": "short@test.io", "password": "password123", "accept_privacy": True},
     )
     token = r.json()["access_token"]
     bad = await client.patch(
@@ -78,7 +78,7 @@ async def test_update_me_rejects_short_name(client):
 
 
 async def test_login_wrong_password(client):
-    await client.post("/api/auth/signup", json={"full_name": "Bob", "email": "bob@test.io", "password": "password123"})
+    await client.post("/api/auth/signup", json={"full_name": "Bob", "email": "bob@test.io", "password": "password123", "accept_privacy": True})
     r = await client.post("/api/auth/login", json={"email": "bob@test.io", "password": "nope"})
     assert r.status_code == 401
 
@@ -91,12 +91,12 @@ async def test_me_requires_auth(client):
 async def test_duplicate_email_conflict(client):
     first = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Amy", "email": "amy@test.io", "password": "password123"},
+        json={"full_name": "Amy", "email": "amy@test.io", "password": "password123", "accept_privacy": True},
     )
     assert first.status_code == 200
     second = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Amy Two", "email": "amy@test.io", "password": "password456"},
+        json={"full_name": "Amy Two", "email": "amy@test.io", "password": "password456", "accept_privacy": True},
     )
     assert second.status_code == 409
 
@@ -120,7 +120,7 @@ async def test_create_user_race_raises_email_taken(db_session, monkeypatch):
     from app.features.auth import service
 
     _commit_rival_after_existence_check(db_session, monkeypatch, "race@test.io")
-    data = SignupIn(full_name="Racer", email="race@test.io", password="password123")
+    data = SignupIn(full_name="Racer", email="race@test.io", password="password123", accept_privacy=True)
     with pytest.raises(ValueError, match="email_taken"):
         await service.create_user(db_session, data)
 
@@ -133,7 +133,7 @@ async def test_concurrent_duplicate_signup_returns_409(client, db_session, monke
     _commit_rival_after_existence_check(db_session, monkeypatch, "race2@test.io")
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Racer", "email": "race2@test.io", "password": "password123"},
+        json={"full_name": "Racer", "email": "race2@test.io", "password": "password123", "accept_privacy": True},
     )
     assert r.status_code == 409
     assert r.json()["detail"] == "Email already registered"
