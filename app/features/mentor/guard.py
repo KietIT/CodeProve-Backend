@@ -46,7 +46,7 @@ LOCATE_INSTRUCTION = (
     "or expression is wrong, do not quote or rewrite the buggy code, do not give line numbers, and do not "
     "describe the fix. Only help them find it themselves: suggest tracing the code with a small input (the "
     "Visualizer shows every step), comparing the actual result with the expected one, and ask guiding "
-    "questions about what each part of the code should do."
+    "questions about what each part of the code should do. This rule overrides any HINT STYLE above."
 )
 LOCATE_RETRY_INSTRUCTION = (
     "IMPORTANT: your previous draft pointed at the buggy line, so it was not shown. Answer again with "

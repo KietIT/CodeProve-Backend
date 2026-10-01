@@ -100,7 +100,13 @@ async def test_profile_reads_skills_and_the_last_five_v2_reports(db_session):
     assert p.scored_attempts == 7 and p.window == 5
     assert [(s.key, s.rating, s.attempts) for s in p.skills] == [("hash-map", 1040.0, 3), ("graph", 980.0, 2)]
     assert p.axes["understanding"] == 2 and p.axes["testing"] == 1.0 and p.axes["debugging"] is None
-    assert p.recurring == [RecurringIssue(code="no_student_tests", count=5), RecurringIssue(code="invalid_tests", count=2)]
+    assert [(i.code, i.count) for i in p.recurring] == [("no_student_tests", 5), ("invalid_tests", 2)]
+    assert p.recurring[0].practice == TEMPLATES["no_student_tests"]["vi"]["practice"]
+    en = await profile(db_session, u.id, "en")
+    assert en.recurring[0].practice == TEMPLATES["no_student_tests"]["en"]["practice"]
+    # History: the last 7 reports oldest first (all fit in HISTORY), v1 report without levels.
+    assert [h.levels is None for h in p.history] == [False, True, False, False, False, False, False]
+    assert p.history[0].levels["testing"] == 3 and p.history[-1].code == "CP-001"
 
 
 async def test_profile_of_a_new_student_is_empty(db_session):
@@ -122,7 +128,7 @@ async def test_learner_api_needs_auth_and_returns_only_my_data(client, db_sessio
     assert (await client.get("/api/learner/me")).status_code == 401
     me = (await client.get("/api/learner/me", headers=auth_headers)).json()
     assert me == {"scored_attempts": 0, "skills": [], "axes": NO_AXES, "recurring": [], "window": 0,
-                  "brief": "Chưa có bài nào được chấm."}
+                  "history": [], "brief": "Chưa có bài nào được chấm."}
 
     from sqlalchemy import select
     my_id = (await db_session.execute(select(User.id).where(User.email == "testuser@example.com"))).scalar_one()
@@ -136,3 +142,19 @@ async def test_learner_api_needs_auth_and_returns_only_my_data(client, db_sessio
                              "attempts": 2}]
     assert me["brief"] == "No scored exercise yet."  # the brief follows scored reports, none yet
     assert (await client.get("/api/learner/me?locale=fr", headers=auth_headers)).status_code == 422
+
+
+async def test_history_keeps_the_last_ten_reports_oldest_first(db_session):
+    from app.features.learner.profile import HISTORY
+
+    u = User(full_name="An", email="an@student.vn", password_hash="x")
+    ex = Exercise(code="CP-002", title="Reverse", difficulty="Easy", category="c", level="fresher",
+                  language="python", summary="s", starter_code="", hint="h", domain_keywords=[])
+    db_session.add_all([u, ex]); await db_session.flush()
+    for i in range(12):
+        await _report(db_session, u, ex, i, {**NO_AXES, "understanding": i % 4}, overall=float(i * 5))
+    await db_session.commit()
+    history = (await profile(db_session, u.id)).history
+    assert len(history) == HISTORY == 10
+    assert [h.overall for h in history] == [float(i * 5) for i in range(2, 12)]
+    assert history[0].title == "Reverse" and history[0].date < history[-1].date

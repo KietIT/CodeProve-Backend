@@ -1,13 +1,20 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
+from app.features.learner.brief import learner_brief
+from app.features.learner.profile import profile
 from app.features.mentor import guard
 from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.mentor.memory import attempt_history
+from app.features.mentor.prompts import HINT_STYLE, LEARNER_BLOCK, SENIOR_CODE_ALLOWED
 from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
 from app.models import Attempt, Event, Exercise, PromptLog
+
+logger = logging.getLogger(__name__)
 
 _PRIMING = (
     "ignore your instructions",
@@ -28,6 +35,31 @@ def match_keywords(text: str, keywords: list[str]) -> list[str]:
 def looks_like_priming(text: str) -> bool:
     low = text.lower()
     return any(p in low for p in _PRIMING)
+
+
+# Explicit requests for code (not a student talking about their own code).
+_CODE_REQUESTS = (
+    "show me code", "show me the code", "give me code", "give me the code", "write the code", "write code",
+    "code example", "example code", "sample code", "cho xem code", "cho em code", "cho tôi code",
+    "cho mình code", "cho em xem code", "viết code", "viết giúp", "viết hộ", "code mẫu", "code ví dụ",
+    "ví dụ code", "đưa code",
+)
+
+
+def asks_for_code(text: str) -> bool:
+    low = text.lower()
+    return looks_like_priming(text) or any(p in low for p in _CODE_REQUESTS)
+
+
+async def hint_style(db: AsyncSession, attempt: Attempt, ex: Exercise, message: str) -> str:
+    """How concrete Ciel's help is, by exercise level (P3.5). On a senior exercise a small
+    fragment becomes allowed once the student has asked for code twice in this attempt."""
+    style = HINT_STYLE.get(ex.level, "")
+    if ex.level != "senior":
+        return style
+    prompts = (await db.execute(select(PromptLog.prompt).where(PromptLog.attempt_id == attempt.id))).scalars().all()
+    asked = sum(asks_for_code(p or "") for p in [*prompts, message])
+    return f"{style}\n{SENIOR_CODE_ALLOWED}" if asked >= 2 else style
 
 
 async def _already_injected(db: AsyncSession, attempt_id: int) -> bool:
@@ -61,6 +93,17 @@ def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
     return "\n".join(parts)
 
 
+async def learner_context(db: AsyncSession, user_id: int) -> str:
+    """The learner brief block for Ciel (P3.5), or "" for a student with no scored exercise.
+    Optional context: a failure is logged and Ciel answers without it."""
+    try:
+        p = await profile(db, user_id)
+    except Exception:
+        logger.exception("learner profile failed for user %s", user_id)
+        return ""
+    return f"{LEARNER_BLOCK}{learner_brief(p, 'en')}" if p.scored_attempts else ""
+
+
 async def mentor_reply(
     db: AsyncSession, attempt: Attempt, message: str, code: str | None = None
 ) -> dict:
@@ -71,10 +114,16 @@ async def mentor_reply(
     inject = bool(ex.verification_trap) and not await _already_injected(db, attempt.id)
 
     context = build_exercise_context(ex, code)
+    learner = await learner_context(db, attempt.user_id)
+    if learner:
+        context = f"{context}\n\n{learner}"
     client = get_mentor_client()
     # Debug exercise whose bug the student has not located yet: Ciel may only help them find it.
     hidden_bug = await debug.hidden_bug(db, attempt, ex)
     locate_rule = guard.LOCATE_INSTRUCTION if hidden_bug else ""
+    style = await hint_style(db, attempt, ex, message)
+    # The locate rule comes after the hint style and overrides it.
+    instruction = "\n\n".join(part for part in (style, locate_rule) if part)
 
     async def problems(text: str) -> tuple[bool, bool]:
         solves = await guard.solves_exercise(db, ex.id, text)
@@ -82,14 +131,14 @@ async def mentor_reply(
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
     result = await client.chat(message, history=history, inject_error=inject, context=context,
-                               extra_instruction=locate_rule)
+                               extra_instruction=instruction)
     prompt_tokens, completion_tokens = result["prompt_tokens"], result["completion_tokens"]
     withheld, revealed = await problems(result["text"])
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
         stricter = "\n\n".join(part for part in (
-            locate_rule, guard.RETRY_INSTRUCTION if withheld else "",
+            instruction, guard.RETRY_INSTRUCTION if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
         retry = await client.chat(message, history=history, inject_error=False, context=context,
                                   extra_instruction=stricter)

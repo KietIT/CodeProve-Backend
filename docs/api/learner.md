@@ -1,10 +1,10 @@
 # Learner API (P3.3)
 
-What the system knows about the signed-in student. The P3.5 progress page and Ciel will use it. There is no UI for it yet.
+What the system knows about the signed-in student. Ciel uses the brief (P3.5), and the progress page uses the rest (see "Progress page" below).
 
 ## `GET /api/learner/me?locale=vi|en`
 
-Requires auth and returns only the caller's own data. `locale` picks the language of `brief` (default `vi`). Any other value gets a 422.
+Requires auth and returns only the caller's own data. `locale` picks the language of `brief` and of `recurring[].practice` (default `vi`). Any other value gets a 422.
 
 ```json
 {
@@ -15,8 +15,15 @@ Requires auth and returns only the caller's own data. `locale` picks the languag
   ],
   "axes": {"understanding": 2.4, "hypothesis": 1.8, "prompting": 2.0,
            "verification": 1.2, "testing": 0.6, "debugging": null},
-  "recurring": [{"code": "no_student_tests", "count": 4}],
+  "recurring": [{"code": "no_student_tests", "count": 4,
+                 "practice": "viết ít nhất 3 test thuộc các loại khác nhau trước khi Submit"}],
   "window": 5,
+  "history": [
+    {"date": "2026-09-28T10:12:00Z", "code": "CP-001", "title": "Two-Sum Variations", "overall": 64.5,
+     "levels": {"understanding": 2, "hypothesis": 2, "prompting": 1, "verification": 1, "testing": 0, "debugging": null}},
+    {"date": "2026-09-30T08:40:00Z", "code": "CP-004", "title": "Fix the Off-By-One Loop", "overall": 71.0,
+     "levels": null}
+  ],
   "brief": "Học viên đã có 8 bài được chấm.\nKỹ năng mạnh: ..."
 }
 ```
@@ -27,8 +34,26 @@ Requires auth and returns only the caller's own data. `locale` picks the languag
 | `skills` | Elo rating per skill, highest first. Every skill starts at 1000; ≥ 1050 reads "good" and < 950 "needs practice". `attempts` counts the scored attempts that practised the skill. **Show a skill as rated only when `attempts ≥ 2`.** Below that, the brief does not name it. Labels come in both languages. |
 | `axes` | Mean level (0–3) of each axis over the last `window` v2 reports. `null` means the axis never applied in that window (e.g. debugging with no bug to fix). |
 | `recurring` | Risk finding codes seen in at least 2 of those reports, most frequent first. Codes are the same as in `feedback.diagnosis` (see [feedback.md](feedback.md)). |
+| `recurring[].practice` | The team-reviewed `practice` phrase of that code's feedback template, in `locale`: lower case, starts with a verb. |
 | `window` | Number of v2 reports used for `axes` and `recurring` (0–5). |
+| `history` | The last 10 scored reports, oldest first: submit time, exercise, overall score (0–100), and axis levels (0–3, `null` per axis when not applicable). `levels` is `null` for old v1 reports: skip them in axis trends but keep them in the score trend. |
 | `brief` | Up to 5 lines of plain text, `\n`-separated. Deterministic, with no code, chat text, names or emails. A student with no scored attempt gets one neutral line. |
+
+## Progress page
+
+The P3.5 page ("Tiến độ" / "Progress") shows these sections, built from this endpoint and the dashboard's `recommended`:
+
+- **Skills.** One bar per skill, from `rating`, with a word, never the raw number:
+  - ≥ 1050: "tốt" / "good";
+  - < 950: "cần luyện" / "needs practice";
+  - otherwise "trung bình" / "average".
+  - Skills with `attempts < 2` are listed separately as "chưa đủ dữ liệu" / "not enough data yet", without a bar.
+- **Axis trends.** One line per axis over `history[].levels` (0–3). Reports with `levels: null` and axes that are `null` are gaps, not zeros. An overall score line over `history[].overall` is also fine.
+- **Recurring issues.** "<practice> (count/window)" for each `recurring` item, e.g. "viết ít nhất 3 test thuộc các loại khác nhau trước khi Submit (4/5 bài)". Hide the section when the list is empty.
+- **Next exercises.** The dashboard's `recommended`, same as the Dashboard card.
+- **Empty state.** When `scored_attempts` is 0, show one line inviting the student to finish a first exercise, plus the next exercises.
+
+Do not show `brief` (it is written for Ciel), Elo numbers, or the predicted success chance.
 
 ## How the ratings move
 
