@@ -56,6 +56,35 @@ to the backend origin. The current login throttle is process-local, so deploy a 
 rate limiter before running multiple backend workers. MFA for the super admin is
 planned for a later phase.
 
+### Admin exercise workflow
+
+Apply the latest migration (`alembic upgrade head`) before using these endpoints.
+Every route below requires a current admin session and a changed temporary password;
+write routes also require the configured frontend `Origin`. The frontend uses the
+same-origin admin gateway. New exercises remain invisible to learners until publish.
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/admin/exercises` | Search and paginate published exercises and drafts. |
+| `GET /api/admin/exercises/{code}` | Read the current draft, or a snapshot of a published exercise. Includes private tests and reference code for admins. |
+| `POST /api/admin/exercises/drafts` | Create a new exercise draft (no learner exercise row yet). |
+| `POST /api/admin/exercises/{code}/draft` | Start editing an existing published exercise. |
+| `PUT /api/admin/exercises/drafts/{code}` | Save changed fields using `expected_revision` to prevent stale writes. |
+| `POST /api/admin/exercises/drafts/{code}/validate` | Run the existing content validator and return errors without changing state. |
+| `POST /api/admin/exercises/drafts/{code}/submit` | Validate, then send a draft for review. |
+| `POST /api/admin/exercises/drafts/{code}/approve` | Approve as a different admin from the last editor. |
+| `POST /api/admin/exercises/drafts/{code}/reject` | Return a submitted draft to editing, as a different admin. |
+| `POST /api/admin/exercises/drafts/{code}/publish` | Revalidate and atomically update the learner exercise and tests. |
+| `GET /api/admin/audit` | Super admin only; includes authoring actions and `target_exercise_code`. Supports `actor_id`, `action`, and `exercise_code` filters. |
+
+Each workflow action records its actor, exercise code, revision, and for edits the
+names of changed fields. Audit entries never contain solutions or hidden test data.
+Publishing changes an exercise's `content_source` to `admin`; the legacy file sync
+skips it thereafter to avoid overwriting an admin-published version. Do not edit
+that exercise via `content/exercises/*.json` after transferring it to admin review.
+The exercise editor persists drafts in the database. The file-based sync remains
+available for exercises that have not entered the admin workflow.
+
 ### Code sandbox security
 
 User code (`/api/attempts/{id}/run`, `/api/practice/trace`) runs in a child

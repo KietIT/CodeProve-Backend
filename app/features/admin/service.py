@@ -59,8 +59,10 @@ async def revoke_sessions(db: AsyncSession, user_id: int) -> None:
     ).values(revoked_at=now_utc()))
 
 
-def log(db: AsyncSession, action: str, actor: int | None, target: int | None, detail: str | None = None) -> None:
-    db.add(AdminAuditLog(actor_user_id=actor, target_user_id=target, action=action, detail=detail))
+def log(db: AsyncSession, action: str, actor: int | None, target: int | None,
+        detail: str | None = None, exercise_code: str | None = None) -> None:
+    db.add(AdminAuditLog(actor_user_id=actor, target_user_id=target, action=action,
+                         detail=detail, target_exercise_code=exercise_code))
 
 
 def temporary_password() -> str:

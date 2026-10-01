@@ -24,6 +24,7 @@ class AdminAuditLog(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     actor_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     target_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    target_exercise_code: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     action: Mapped[str] = mapped_column(String(64), index=True)
     detail: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

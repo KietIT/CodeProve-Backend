@@ -41,4 +41,6 @@ class Exercise(Base):
     # P3.3: Elo difficulty (None = not rated yet, learner.elo uses the level default). Derived data.
     difficulty_elo: Mapped[float | None] = mapped_column(Float, nullable=True)
     verification_trap: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Admin-published content is owned by the DB workflow, not the legacy file sync.
+    content_source: Mapped[str] = mapped_column(String(16), default="file", server_default="file")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

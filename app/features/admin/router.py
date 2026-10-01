@@ -225,17 +225,21 @@ async def reset_password(admin_id: int, request: Request, response: Response,
 
 
 @router.get("/audit")
-async def audit(_: Principal = Depends(super_admin), db: AsyncSession = Depends(get_db),
-                actor_id: int | None = None, action: str | None = None,
+async def audit(response: Response, _: Principal = Depends(super_admin), db: AsyncSession = Depends(get_db),
+                actor_id: int | None = None, action: str | None = None, exercise_code: str | None = None,
                 limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict:
+    response.headers["Cache-Control"] = "no-store"
     query = select(AdminAuditLog)
     if actor_id is not None:
         query = query.where(AdminAuditLog.actor_user_id == actor_id)
     if action:
         query = query.where(AdminAuditLog.action == action)
+    if exercise_code:
+        query = query.where(AdminAuditLog.target_exercise_code == exercise_code.upper())
     total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
     entries = (await db.execute(query.order_by(AdminAuditLog.id.desc()).offset(offset).limit(limit))).scalars().all()
     return {"total": total, "items": [{
         "id": entry.id, "actor_user_id": entry.actor_user_id, "target_user_id": entry.target_user_id,
         "action": entry.action, "detail": entry.detail, "created_at": entry.created_at,
+        "target_exercise_code": entry.target_exercise_code,
     } for entry in entries]}

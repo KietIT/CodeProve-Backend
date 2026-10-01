@@ -5,6 +5,7 @@ from app.models.daily_attempt import DailyAttempt
 from app.models.daily_challenge import DailyChallenge
 from app.models.event import Event
 from app.models.exercise import Exercise
+from app.models.exercise_draft import ExerciseDraft
 from app.models.exercise_mutant import ExerciseMutant
 from app.models.fluency_report import FluencyReport
 from app.models.learner_skill import LearnerSkill
@@ -16,5 +17,5 @@ from app.models.verification_answer import VerificationAnswer
 
 __all__ = [
     "AdminAuditLog", "AdminSession", "Attempt", "CodeSnapshot", "DailyAttempt", "DailyChallenge", "Event", "Exercise", "ExerciseMutant",
-    "FluencyReport", "LearnerSkill", "LlmCall", "PromptLog", "TestCase", "User", "VerificationAnswer",
+    "ExerciseDraft", "FluencyReport", "LearnerSkill", "LlmCall", "PromptLog", "TestCase", "User", "VerificationAnswer",
 ]
