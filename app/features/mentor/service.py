@@ -7,7 +7,7 @@ from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
 from app.features.learner.brief import learner_brief
 from app.features.learner.profile import profile
-from app.features.mentor import guard
+from app.features.mentor import guard, language
 from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.mentor.memory import attempt_history
 from app.features.mentor.prompts import HINT_STYLE, LEARNER_BLOCK, SENIOR_CODE_ALLOWED
@@ -132,8 +132,13 @@ async def mentor_reply(
     hidden_bug = await debug.hidden_bug(db, attempt, ex)
     locate_rule = guard.LOCATE_INSTRUCTION if hidden_bug else ""
     style = await hint_style(db, attempt, ex, message)
-    # The locate rule comes after the hint style and overrides it.
-    instruction = "\n\n".join(part for part in (style, locate_rule) if part)
+    earlier = (await db.execute(select(PromptLog.prompt).where(PromptLog.attempt_id == attempt.id)
+                                .order_by(PromptLog.id))).scalars().all()
+    reply_in = language.reply_language(message, [p or "" for p in earlier])
+    # This turn's rules, after the history: the reply language first; the locate rule comes after the
+    # hint style and overrides it.
+    instruction = "\n\n".join(part for part in (language.RULES.get(reply_in or "", ""), style, locate_rule)
+                              if part)
 
     async def problems(text: str) -> tuple[bool, bool]:
         solves = await guard.solves_exercise(db, ex.id, text)
