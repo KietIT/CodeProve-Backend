@@ -114,8 +114,12 @@ async def _main(apply: bool, details: bool, engine: str, keys_path: Path | None,
     if backfill:
         from app.features.mentor.client import get_mentor_client
         client = get_mentor_client()
+    from app.features.mentor.usage import llm_scope
+
     async with async_session_maker() as db:
-        changes = await rescore_all(db, apply, engine, set(keys.values()) if keys else None, client)
+        # Backfilled judge calls are logged with the run (stored only by --apply, which commits).
+        with llm_scope(db):
+            changes = await rescore_all(db, apply, engine, set(keys.values()) if keys else None, client)
     for c in changes:
         print(f"attempt {c['attempt_id']:>6}  {c['exercise']:<8}  {c['old']:6.2f} -> {c['new']:6.2f}")
         if details:

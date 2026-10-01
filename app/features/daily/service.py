@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.daily.content import DailyGenerationError, generate_challenge
 from app.features.daily.streak import compute_streak
+from app.features.mentor.usage import llm_scope
 from app.models import DailyAttempt, DailyChallenge
 
 VN_TZ = ZoneInfo("Asia/Ho_Chi_Minh")
@@ -23,7 +24,8 @@ async def get_or_create_challenge(db: AsyncSession, challenge_date: date) -> Dai
     if existing is not None:
         return existing
     try:
-        return await generate_challenge(db, challenge_date)
+        with llm_scope(db):  # shared content: no user
+            return await generate_challenge(db, challenge_date)
     except IntegrityError:
         # Two simultaneous first-visitors-of-the-day both tried to generate;
         # the loser just reads back what the winner committed.

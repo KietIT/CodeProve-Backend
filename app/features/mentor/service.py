@@ -71,9 +71,11 @@ async def _already_injected(db: AsyncSession, attempt_id: int) -> bool:
     return any(r.payload.get("injectedError") for r in rows)
 
 
-def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
+def build_exercise_context(ex: Exercise) -> str:
     """Compose the per-attempt context block injected into Ciel's system prompt
-    so it can answer questions about *this* exercise instead of asking which one."""
+    so it can answer questions about *this* exercise instead of asking which one.
+    The student's code is not part of it: it changes every turn, so it goes with
+    the question (with_code) to keep this prefix cacheable (P3.6)."""
     parts = [
         "CURRENT EXERCISE CONTEXT - the student is working on the exercise below.",
         "When they say \"this exercise\" / \"bài này\" / \"bài tập này\", they mean THIS one;",
@@ -88,9 +90,14 @@ def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
         parts.append(f"- Description: {ex.description}")
     if ex.learning_objective:
         parts.append(f"- Learning objective: {ex.learning_objective}")
-    if student_code and student_code.strip():
-        parts.append(f"\nStudent's current code:\n```{ex.language}\n{student_code.strip()}\n```")
     return "\n".join(parts)
+
+
+def with_code(message: str, code: str | None, language: str) -> str:
+    """This turn's user message: the question, then the code currently in the editor."""
+    if not code or not code.strip():
+        return message
+    return f"{message}\n\nMy current code:\n```{language}\n{code.strip()}\n```"
 
 
 async def learner_context(db: AsyncSession, user_id: int) -> str:
@@ -113,7 +120,7 @@ async def mentor_reply(
     keywords = match_keywords(message, list(ex.domain_keywords or []))
     inject = bool(ex.verification_trap) and not await _already_injected(db, attempt.id)
 
-    context = build_exercise_context(ex, code)
+    context = build_exercise_context(ex)
     learner = await learner_context(db, attempt.user_id)
     if learner:
         context = f"{context}\n\n{learner}"
@@ -130,9 +137,11 @@ async def mentor_reply(
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
-    result = await client.chat(message, history=history, inject_error=inject, context=context,
+    question = with_code(message, code, ex.language)
+    result = await client.chat(question, history=history, inject_error=inject, context=context,
                                extra_instruction=instruction)
     prompt_tokens, completion_tokens = result["prompt_tokens"], result["completion_tokens"]
+    cached_tokens = result.get("cached_tokens", 0)
     withheld, revealed = await problems(result["text"])
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
@@ -140,9 +149,10 @@ async def mentor_reply(
         stricter = "\n\n".join(part for part in (
             instruction, guard.RETRY_INSTRUCTION if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
-        retry = await client.chat(message, history=history, inject_error=False, context=context,
+        retry = await client.chat(question, history=history, inject_error=False, context=context,
                                   extra_instruction=stricter)
         prompt_tokens += retry["prompt_tokens"]
+        cached_tokens += retry.get("cached_tokens", 0)
         completion_tokens += retry["completion_tokens"]
         still_solves, still_reveals = await problems(retry["text"])
         text = guard.BUG_FALLBACK if still_reveals else guard.FALLBACK if still_solves else retry["text"]
@@ -158,6 +168,7 @@ async def mentor_reply(
             "messageLength": len(message),
             "keywordsMatched": keywords,
             "promptTokens": prompt_tokens,
+            "cachedTokens": cached_tokens,  # P3.6: prompt tokens served from OpenAI's cache
         },
         flags=flags,
     )
