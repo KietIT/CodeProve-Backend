@@ -97,11 +97,13 @@ async def test_once_located_correctly_ciel_may_talk_about_the_bug(client, db_ses
     await client.post(f"/api/attempts/{aid}/debug/locate", headers=auth_headers, json={"lines": [3], "reason": "x"})
     fake = ciel(QUOTES_BUG)
     assert await _ask(client, aid, auth_headers) == QUOTES_BUG
-    assert fake.calls == [""] and (await _replies(db_session, aid))[0]["withheldBugLocation"] is False
+    # One call, without the locate rule (the fresher hint style is still there, P3.5).
+    assert len(fake.calls) == 1 and LOCATE_INSTRUCTION not in fake.calls[0]
+    assert (await _replies(db_session, aid))[0]["withheldBugLocation"] is False
 
 
 async def test_implement_exercises_are_not_affected(client, db_session, auth_headers, ciel):
     aid = await _attempt(client, db_session, auth_headers, kind="implement")
     fake = ciel(QUOTES_BUG)
     assert await _ask(client, aid, auth_headers) == QUOTES_BUG
-    assert fake.calls == [""]
+    assert len(fake.calls) == 1 and LOCATE_INSTRUCTION not in fake.calls[0]
