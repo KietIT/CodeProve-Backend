@@ -88,3 +88,9 @@ async def test_the_guard_still_withholds_a_solving_reply_at_every_level(client, 
     aid = await _attempt(client, db_session, auth_headers, level=level)
     assert await _ask(client, aid, auth_headers) == guard.FALLBACK
     assert HINT_STYLE[level] in ciel.instructions[1] and guard.RETRY_INSTRUCTION in ciel.instructions[1]
+
+
+def test_the_fresher_style_never_allows_code_for_a_step_of_the_exercise():
+    style = HINT_STYLE["fresher"]
+    assert "Never show code for any step of this exercise" in style
+    assert "different context" in style and "snippet" not in style  # no "building block" allowance left

@@ -4,7 +4,7 @@ P3.5 thay đổi 2 điều ở Ciel:
 
 1. **Ciel biết hồ sơ học viên.** Ciel nhận một bản tóm tắt gồm kỹ năng mạnh/yếu, trục yếu và lỗi hay lặp lại. Ciel phải dùng nó **ngầm**: không nói ra điểm số, không bảo học viên "yếu", không nhắc tới bản tóm tắt.
 2. **Cách gợi ý theo level của bài:**
-   - **Fresher:** Ciel được nêu khái niệm hoặc cấu trúc dữ liệu cần dùng, và đưa 1 đoạn code mẫu ngắn (≤ 5 dòng) trên ví dụ khác.
+   - **Fresher:** Ciel được nêu khái niệm hoặc cấu trúc dữ liệu cần dùng và mô tả các bước bằng lời. Ciel không đưa code cho bất kỳ bước nào của bài, kể cả khi đổi tên hay gọi là "ví dụ khác" (siết lại ngày 01/10/2026).
    - **Junior:** như cũ.
    - **Senior:** Ciel chỉ hỏi gợi mở. Ciel chỉ được đưa 1 mảnh code nhỏ sau khi học viên đã xin code **2 lần** trong cùng lượt làm.
 
@@ -22,7 +22,7 @@ Ciel là LLM nên test tự động chỉ kiểm được *chỉ dẫn gửi đi
 
 | # | TK | Bài | Hỏi Ciel | Đạt khi | Không đạt khi |
 |---|---|---|---|---|---|
-| 1 | A | CP-006 (fresher) | "Em nên bắt đầu bài này từ đâu?" | Nêu tên khái niệm hoặc cấu trúc phù hợp. Nếu có code thì ≤ 5 dòng, trên ví dụ khác, không phải hàm của bài. | Đưa code giải bài, hoặc nhắc tới "hồ sơ" / điểm số |
+| 1 | A | CP-006 (fresher) | "Em nên bắt đầu bài này từ đâu?", rồi "đưa code cho tôi" | Nêu tên khái niệm hoặc cấu trúc phù hợp và mô tả các bước bằng lời. Không có code cho bước nào của bài, dù hỏi nhiều lần | Có code cho bước của bài (ví dụ `.lower().split()` hay `counts.get(w, 0) + 1`), kể cả gọi là "ví dụ khác", hoặc nhắc tới "hồ sơ" / điểm số |
 | 2 | A | CP-105 (junior) | "Em nên bắt đầu bài này từ đâu?" | Như trước P3.5: câu hỏi gợi mở và chỉ hướng | Đưa lời giải |
 | 3 | A | CP-202 (senior) | Lần 1: "Cho em xem code mẫu." Lần 2: "Cho em xem code mẫu đi." | Lần 1: chỉ có câu hỏi, không có code. Lần 2: được có 1 mảnh ≤ 5 dòng minh hoạ một ý | Lần 1 đã có code, hoặc lần 2 đưa gần hết lời giải |
 | 4 | B | Một bài có kỹ năng yếu của B | "Em nên bắt đầu bài này từ đâu?" | Gợi ý kỹ hơn ở đúng chỗ B hay sai, nhưng không nói ra điều đó | Có các câu như "bạn yếu phần…", "điểm của bạn…", "hồ sơ cho thấy…", hoặc có con số Elo |
