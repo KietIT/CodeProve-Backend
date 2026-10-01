@@ -20,5 +20,5 @@ class LearnerOut(LearnerProfile):
 async def my_learner_profile(locale: Literal["vi", "en"] = "vi", db: AsyncSession = Depends(get_db),
                              user: User = Depends(get_current_user)) -> LearnerOut:
     """The current student's skill ratings, axis profile, recurring issues and brief (P3.3). Own data only."""
-    p = await profile(db, user.id)
+    p = await profile(db, user.id, locale)
     return LearnerOut(**p.model_dump(), brief=learner_brief(p, locale))
