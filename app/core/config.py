@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # Which scoring engine writes new reports. v2 (rubric levels, P1.4) replaces
     # v1 only after it beats v1 on the golden set (see the P1.4 plan, Task 7).
     scoring_engine: Literal["v1", "v2"] = "v1"
+    # LLM cost caps per student (P3.6). One student message counts once, guard retries included.
+    ciel_per_attempt: int = 30
+    ciel_per_day: int = 100
+    ciel_per_minute: int = 10
+    hypothesis_per_attempt: int = 10
+    quota_timezone: str = "Asia/Ho_Chi_Minh"  # the "day" of ciel_per_day
 
     @field_validator("cors_origins", mode="before")
     @classmethod

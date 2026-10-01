@@ -10,6 +10,7 @@ from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.features.attempts import debug, scoring_service, service, submit_tests
 from app.features.exercises.starters import is_untouched, student_starter
+from app.features.mentor.quota import ciel_left
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
 from app.features.student_tests import service as student_tests
@@ -39,7 +40,8 @@ async def get_state(attempt_id: int, locale: str = "en", db: AsyncSession = Depe
     return AttemptState(id=attempt.id, exercise_code=ex.code, status=attempt.status,
                         score=attempt.score, latest_code=await service.latest_code(db, attempt.id),
                         debug=await debug.state(db, attempt, ex, locale),
-                        tests=await student_tests.state(db, attempt, ex))
+                        tests=await student_tests.state(db, attempt, ex),
+                        ciel=await ciel_left(db, user.id, attempt.id))
 
 
 async def _attempt_and_exercise(db: AsyncSession, attempt_id: int, user: User):

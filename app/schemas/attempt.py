@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.mentor import CielQuota
+
 MAX_REASON_CHARS = 500  # the one-sentence "why" of the debug locate step
 
 
@@ -31,6 +33,7 @@ class AttemptState(BaseModel):
     latest_code: str | None
     debug: DebugState | None = None
     tests: "TestsState | None" = None
+    ciel: CielQuota | None = None  # P3.6
 
 
 class StudentTestIn(BaseModel):
