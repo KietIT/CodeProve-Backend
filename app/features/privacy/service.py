@@ -11,7 +11,9 @@ from fastapi import HTTPException, status
 
 from app.models import User
 
-POLICY_VERSION = "2026-10"
+# 2026-10 was the draft shown in production before the team filled and approved the text (2026-10-01);
+# 2026-10-2 is the approved policy, so everyone who accepted the draft is asked again.
+POLICY_VERSION = "2026-10-2"
 CONSENT_REQUIRED = {
     "code": "privacy_consent_required",
     "message_vi": "Bạn cần đồng ý với Chính sách quyền riêng tư trước khi dùng các tính năng AI.",

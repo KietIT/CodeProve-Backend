@@ -1,4 +1,6 @@
 """P3.7: consent before the AI features, and the AI-personalisation switch."""
+from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy import select
 
@@ -43,7 +45,7 @@ async def test_signup_records_consent(client):
     r = await client.post("/api/auth/signup", json={**SIGNUP, "accept_privacy": True})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.get("/api/me/privacy", headers=headers)).json() == {
-        "consented": True, "version": "2026-10", "current_version": "2026-10", "ai_personalization": True}
+        "consented": True, "version": "2026-10-2", "current_version": "2026-10-2", "ai_personalization": True}
 
 
 async def _google_style_user(db_session) -> dict:
@@ -79,9 +81,9 @@ async def test_ai_features_wait_for_consent_the_rest_works(client, db_session, c
 
 async def test_consent_must_be_for_the_current_version(client, db_session, ciel):
     headers = await _google_style_user(db_session)
-    old = await client.post("/api/me/privacy/consent", json={"version": "2025-01"}, headers=headers)
-    assert old.status_code == 409 and old.json()["detail"]["current_version"] == "2026-10"
-    ok = await client.post("/api/me/privacy/consent", json={"version": "2026-10"}, headers=headers)
+    draft = await client.post("/api/me/privacy/consent", json={"version": "2026-10"}, headers=headers)  # the draft
+    assert draft.status_code == 409 and draft.json()["detail"]["current_version"] == "2026-10-2"
+    ok = await client.post("/api/me/privacy/consent", json={"version": "2026-10-2"}, headers=headers)
     assert ok.status_code == 200 and ok.json()["consented"] is True
     await _exercise(db_session)
     aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=headers)).json()["attempt_id"]
@@ -118,3 +120,14 @@ async def test_turning_personalisation_off_drops_only_the_brief(client, db_sessi
     await client.patch("/api/me/privacy", json={"ai_personalization": True}, headers=auth_headers)
     await client.post(f"/api/attempts/{aid}/mentor", json={"message": "and now?"}, headers=auth_headers)
     assert "LEARNER PROFILE" in ciel.calls[1]["context"]
+
+
+async def test_accepting_the_draft_is_not_consent_to_the_approved_policy(client, db_session, ciel):
+    user = User(full_name="Early User", email="early@test.io", password_hash=hash_password("x" * 12),
+                privacy_version="2026-10",  # accepted the draft shown before 2026-10-01
+                privacy_consent_at=datetime(2026, 9, 30, tzinfo=timezone.utc))
+    db_session.add(user)
+    await db_session.commit()
+    headers = {"Authorization": f"Bearer {create_access_token(str(user.id))}"}
+    state = (await client.get("/api/me/privacy", headers=headers)).json()
+    assert state["consented"] is False and state["version"] == "2026-10" and state["current_version"] == "2026-10-2"
