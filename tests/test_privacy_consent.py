@@ -115,7 +115,7 @@ async def test_turning_personalisation_off_drops_only_the_brief(client, db_sessi
     aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=auth_headers)).json()["attempt_id"]
     await client.post(f"/api/attempts/{aid}/mentor", json={"message": "hint?"}, headers=auth_headers)
     assert "LEARNER PROFILE" not in ciel.calls[0]["context"]
-    assert ciel.calls[0]["instruction"] == HINT_STYLE["fresher"]  # the level's hint style stays
+    assert HINT_STYLE["fresher"] in ciel.calls[0]["instruction"]  # the level's hint style stays
 
     await client.patch("/api/me/privacy", json={"ai_personalization": True}, headers=auth_headers)
     await client.post(f"/api/attempts/{aid}/mentor", json={"message": "and now?"}, headers=auth_headers)

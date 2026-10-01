@@ -18,8 +18,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.features.exercises.starters import student_starter
+from app.features.mentor import overlap
 from app.features.sandbox.runner import run_tests
-from app.models import TestCase
+from app.models import Exercise, PromptLog, TestCase
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,13 @@ RETRY_INSTRUCTION = (
     "Answer again WITHOUT any code that implements the solution: explain the idea, point to the relevant "
     "concept or the part of the student's code to look at, and ask a guiding question. A one-line snippet "
     "that does not solve the task is allowed."
+)
+OVERLAP_RETRY_INSTRUCTION = (
+    "IMPORTANT: your previous draft gave away a large part of this exercise's solution (a whole function, "
+    "or pieces that, with the code you already showed in this conversation, add up to it), so it was not "
+    "shown. Answer again with NO function definitions and NO code for any step of this exercise (not "
+    "renamed, not with a planted bug, not as an example in another context): explain the idea in words "
+    "and ask a guiding question."
 )
 # Shown when the retry still contains a solution. Both languages: the student's language is not known here.
 FALLBACK = (
@@ -107,3 +116,44 @@ async def solves_exercise(db: AsyncSession, exercise_id: int, text: str) -> bool
         logger.warning("no-solution guard could not run a Ciel reply; showing it", exc_info=True)
         return False
     return result["total"] > 0 and result["passed"] == result["total"]
+
+
+async def leaks_solution(db: AsyncSession, ex: Exercise, attempt_id: int, text: str) -> bool:
+    """True when the code in this reply, added to the code Ciel already showed in the attempt, covers at
+    least overlap.OVERLAP_THRESHOLD of the reference solution's core (fix 2026-10-01: pieces over several
+    replies). Fails open without a reference solution."""
+    if not ex.reference_solution:
+        return False
+    earlier = (await db.execute(select(PromptLog.response).where(PromptLog.attempt_id == attempt_id))).scalars().all()
+    code = [block for reply in [*earlier, text] for block in overlap.snippets(reply or "")]
+    if not overlap.snippets(text or ""):
+        return False  # nothing new in this reply: it cannot be the one that gives the solution away
+    starter = student_starter(ex.starter_code or "", ex.kind or "implement")
+    return overlap.coverage(ex.reference_solution, starter, code) >= overlap.OVERLAP_THRESHOLD
+
+
+_DEFINITION = re.compile(r"^(\s*)(?:async\s+)?(?:def|class)\s+\w+")
+MIN_BODY_LINES = 2  # a definition with this many statements in its body is an implementation
+
+
+def implements_function(text: str) -> bool:
+    """True when a code block in the reply holds a whole function or class (a body of MIN_BODY_LINES or
+    more statements), whatever its name or correctness (fix 2026-10-01, CP-001: a renamed two_sum
+    with one planted bug passed both other guards). Ciel explains in words and fragments instead."""
+    for block in code_blocks(text):
+        lines = block.splitlines()
+        for i, line in enumerate(lines):
+            match = _DEFINITION.match(line)
+            if not match:
+                continue
+            indent, body = len(match.group(1)), 0
+            for following in lines[i + 1:]:
+                stripped = following.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                if len(following) - len(following.lstrip()) <= indent:
+                    break
+                body += 1
+            if body >= MIN_BODY_LINES:
+                return True
+    return False

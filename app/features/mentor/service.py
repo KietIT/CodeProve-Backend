@@ -7,7 +7,7 @@ from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
 from app.features.learner.brief import learner_brief
 from app.features.learner.profile import profile
-from app.features.mentor import guard
+from app.features.mentor import guard, language
 from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.mentor.memory import attempt_history
 from app.features.mentor.prompts import HINT_STYLE, LEARNER_BLOCK, SENIOR_CODE_ALLOWED
@@ -132,11 +132,26 @@ async def mentor_reply(
     hidden_bug = await debug.hidden_bug(db, attempt, ex)
     locate_rule = guard.LOCATE_INSTRUCTION if hidden_bug else ""
     style = await hint_style(db, attempt, ex, message)
-    # The locate rule comes after the hint style and overrides it.
-    instruction = "\n\n".join(part for part in (style, locate_rule) if part)
+    earlier = (await db.execute(select(PromptLog.prompt).where(PromptLog.attempt_id == attempt.id)
+                                .order_by(PromptLog.id))).scalars().all()
+    reply_in = language.reply_language(message, [p or "" for p in earlier])
+    # This turn's rules, after the history: the reply language first; the locate rule comes after the
+    # hint style and overrides it.
+    instruction = "\n\n".join(part for part in (language.RULES.get(reply_in or "", ""), style, locate_rule)
+                              if part)
+
+    overlap_hit = False  # the draft gave away the solution piece by piece (fix 2026-10-01)
+    function_hit = False  # the draft held a whole function or class (fix 2026-10-01)
 
     async def problems(text: str) -> tuple[bool, bool]:
-        solves = await guard.solves_exercise(db, ex.id, text)
+        nonlocal overlap_hit
+        nonlocal function_hit
+        # Checked first: they need no sandbox run. A whole function or class is withheld whatever it is
+        # named or however wrong (planted bugs, renamed copies); pieces are caught by the overlap.
+        function = guard.implements_function(text)
+        leaks = not function and await guard.leaks_solution(db, ex, attempt.id, text)
+        function_hit, overlap_hit = function_hit or function, overlap_hit or leaks
+        solves = function or leaks or await guard.solves_exercise(db, ex.id, text)
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
@@ -149,8 +164,9 @@ async def mentor_reply(
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
+        retry_rule = guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit or function_hit else guard.RETRY_INSTRUCTION
         stricter = "\n\n".join(part for part in (
-            instruction, guard.RETRY_INSTRUCTION if withheld else "",
+            instruction, retry_rule if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
         retry = await client.chat(question, history=history, inject_error=False, context=context,
                                   extra_instruction=stricter)
@@ -184,6 +200,8 @@ async def mentor_reply(
             "aiCode": [{"loc": result["code_loc"]}] if result["code_loc"] else [],
             "injectedError": inject,
             "withheldSolution": withheld,
+            "withheldOverlap": overlap_hit,  # withheld for revealing the solution in pieces (fix 2026-10-01)
+            "withheldFunction": function_hit,  # withheld for a whole function or class (fix 2026-10-01)
             "withheldBugLocation": revealed,
         },
     )

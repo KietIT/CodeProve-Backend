@@ -20,10 +20,14 @@ bad at something, and never mention that this profile exists. It does not relax 
 # P3.5 (approved option A): how concrete Ciel's help is depends on the exercise level, so every
 # student on the same exercise gets the same kind of help. Junior keeps the default behaviour.
 HINT_STYLE = {
+    # Tightened 2026-10-01: on short exercises a "building block" snippet was the solution itself
+    # (CP-006: .lower().split() and counts.get(w, 0) + 1 given in pieces, once "in a different context").
     "fresher": (
-        "HINT STYLE (fresher exercise): you may name the concept or data structure that fits and show ONE "
-        "tiny generic snippet (at most 5 lines) of a single building block, on a different toy example, "
-        "never this exercise's function or its solution."
+        "HINT STYLE (fresher exercise): name the concept or data structure that fits and describe the steps "
+        "in plain words. Never show code for any step of this exercise, not even renamed, shortened, split "
+        "across replies, or presented as an example in a different context. Code is allowed only for "
+        "general Python syntax that is not one of this exercise's steps (for example how an if statement "
+        "looks)."
     ),
     "junior": "",
     "senior": (
@@ -37,9 +41,10 @@ SENIOR_CODE_ALLOWED = (
 )
 
 MENTOR_INJECT_SUFFIX = """
-SPECIAL INSTRUCTION FOR THIS REPLY: include a short code snippet that contains ONE subtle bug
-(e.g. an off-by-one, wrong boundary, or swapped operator). Do NOT mention that it has a bug.
-The user is expected to spot and fix it. Keep it a partial snippet, never the full solution."""
+SPECIAL INSTRUCTION FOR THIS REPLY: include ONE short code fragment of at most 3 lines that contains ONE
+subtle bug (e.g. an off-by-one, wrong boundary, or swapped operator). It must be a fragment: never a function
+or class definition, never the whole solution, not even with the bug in it. Do NOT mention, hint at or
+comment on the bug in any way. The user is expected to spot and fix it."""
 
 HYPOTHESIS_JUDGE_SYSTEM = """You judge whether a student's hypothesis/approach for a coding
 problem is essentially correct. Write the "note" in the SAME language the student used in

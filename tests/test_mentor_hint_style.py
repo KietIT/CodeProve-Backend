@@ -4,6 +4,7 @@ import pytest
 import app.features.mentor.client as client_mod
 import app.features.mentor.service as service_mod
 from app.features.mentor import guard
+from app.features.mentor.language import RULES as LANGUAGE_RULES
 from app.features.mentor.prompts import HINT_STYLE, SENIOR_CODE_ALLOWED
 from app.features.mentor.service import asks_for_code
 from app.models import Exercise
@@ -49,13 +50,15 @@ async def _ask(client, aid, auth_headers, message="where do I start?") -> str:
 async def test_each_level_gets_its_hint_style(client, db_session, auth_headers, ciel, level):
     aid = await _attempt(client, db_session, auth_headers, level=level)
     await _ask(client, aid, auth_headers)
-    assert ciel.instructions[0] == HINT_STYLE[level]  # junior: "" (the default behaviour)
+    # The reply-language rule comes first; junior has no style (the default behaviour).
+    expected = "\n\n".join(part for part in (LANGUAGE_RULES["en"], HINT_STYLE[level]) if part)
+    assert ciel.instructions[0] == expected
 
 
 async def test_the_locate_rule_comes_last_and_overrides_the_style(client, db_session, auth_headers, ciel):
     aid = await _attempt(client, db_session, auth_headers, level="fresher", kind="debug", meta=META)
     await _ask(client, aid, auth_headers)
-    assert ciel.instructions[0] == f"{HINT_STYLE['fresher']}\n\n{guard.LOCATE_INSTRUCTION}"
+    assert ciel.instructions[0] == f"{LANGUAGE_RULES['en']}\n\n{HINT_STYLE['fresher']}\n\n{guard.LOCATE_INSTRUCTION}"
     assert guard.LOCATE_INSTRUCTION.endswith("This rule overrides any HINT STYLE above.")
 
 
@@ -84,4 +87,10 @@ async def test_the_guard_still_withholds_a_solving_reply_at_every_level(client, 
     monkeypatch.setattr(service_mod.guard, "solves_exercise", always_solves)
     aid = await _attempt(client, db_session, auth_headers, level=level)
     assert await _ask(client, aid, auth_headers) == guard.FALLBACK
-    assert ciel.instructions[1].startswith(HINT_STYLE[level]) and guard.RETRY_INSTRUCTION in ciel.instructions[1]
+    assert HINT_STYLE[level] in ciel.instructions[1] and guard.RETRY_INSTRUCTION in ciel.instructions[1]
+
+
+def test_the_fresher_style_never_allows_code_for_a_step_of_the_exercise():
+    style = HINT_STYLE["fresher"]
+    assert "Never show code for any step of this exercise" in style
+    assert "different context" in style and "snippet" not in style  # no "building block" allowance left
