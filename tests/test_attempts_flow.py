@@ -57,7 +57,7 @@ async def test_attempt_ownership_and_missing(client, db_session, auth_headers):
     # A different user must not access someone else's attempt -> 403.
     other = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Other User", "email": "other@test.io", "password": "password123"},
+        json={"full_name": "Other User", "email": "other@test.io", "password": "password123", "accept_privacy": True},
     )
     other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     forbidden = await client.get(f"/api/attempts/{aid}", headers=other_headers)

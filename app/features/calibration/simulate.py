@@ -191,7 +191,9 @@ class Api:
     async def token_for(self, student: dict) -> str:
         try:
             out = await self.call("POST", "/auth/signup", body={
-                "full_name": student["name"], "email": student["email"], "password": student["password"]})
+                "full_name": student["name"], "email": student["email"], "password": student["password"],
+                # Team-run calibration accounts: the operator accepts the policy for them (P3.7).
+                "accept_privacy": True})
         except ApiError as exc:
             if exc.status != 409:
                 raise

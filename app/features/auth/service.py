@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
+from app.features.privacy.service import record_consent
 from app.models import User
 from app.schemas.auth import LoginIn, SignupIn, UpdateMeIn, normalize_email
 
@@ -23,6 +24,7 @@ async def create_user(db: AsyncSession, data: SignupIn) -> User:
     if existing is not None:
         raise ValueError("email_taken")
     user = User(full_name=data.full_name, email=data.email, password_hash=hash_password(data.password))
+    record_consent(user)  # SignupIn only validates with accept_privacy = true
     db.add(user)
     try:
         await db.commit()

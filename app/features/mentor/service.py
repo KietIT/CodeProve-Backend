@@ -12,7 +12,7 @@ from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.mentor.memory import attempt_history
 from app.features.mentor.prompts import HINT_STYLE, LEARNER_BLOCK, SENIOR_CODE_ALLOWED
 from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
-from app.models import Attempt, Event, Exercise, PromptLog
+from app.models import Attempt, Event, Exercise, PromptLog, User
 
 logger = logging.getLogger(__name__)
 
@@ -101,9 +101,12 @@ def with_code(message: str, code: str | None, language: str) -> str:
 
 
 async def learner_context(db: AsyncSession, user_id: int) -> str:
-    """The learner brief block for Ciel (P3.5), or "" for a student with no scored exercise.
-    Optional context: a failure is logged and Ciel answers without it."""
+    """The learner brief block for Ciel (P3.5), or "" for a student with no scored exercise or
+    who turned AI personalisation off (P3.7). Optional: a failure is logged and Ciel answers without it."""
     try:
+        personal = (await db.execute(select(User.ai_personalization).where(User.id == user_id))).scalar_one()
+        if not personal:
+            return ""
         p = await profile(db, user_id)
     except Exception:
         logger.exception("learner profile failed for user %s", user_id)

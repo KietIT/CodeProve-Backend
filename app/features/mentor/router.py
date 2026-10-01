@@ -6,6 +6,7 @@ from app.core.deps import get_current_user
 from app.features.attempts import service as attempts_service
 from app.features.mentor import quota, service
 from app.features.mentor.usage import llm_scope
+from app.features.privacy.service import require_consent
 from app.models import User
 from app.schemas.mentor import HypothesisIn, HypothesisOut, MentorIn, MentorOut
 
@@ -20,6 +21,7 @@ async def mentor(
     user: User = Depends(get_current_user),
 ) -> MentorOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
+    require_consent(user)
     await quota.enforce_ciel(db, user, attempt)
     with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         out = await service.mentor_reply(db, attempt, data.message, data.code)
@@ -34,6 +36,7 @@ async def hypothesis(
     user: User = Depends(get_current_user),
 ) -> HypothesisOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
+    require_consent(user)
     await quota.enforce_hypothesis(db, attempt)
     with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         out = await service.judge_hypothesis(db, attempt, data.text)

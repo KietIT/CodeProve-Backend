@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, String, Text, func, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -17,3 +17,8 @@ class User(Base):
     # nullable because most users fall back to their initials.
     avatar: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # P3.7: when the student accepted which privacy policy version (null = not yet), and whether the
+    # learner brief may go to the AI mentor. AI features need consent to the current version.
+    privacy_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    privacy_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    ai_personalization: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true())

@@ -12,6 +12,7 @@ from app.features.attempts import debug, scoring_service, service, submit_tests
 from app.features.exercises.starters import is_untouched, student_starter
 from app.features.mentor.quota import ciel_left
 from app.features.mentor.usage import llm_scope
+from app.features.privacy.service import require_consent
 from app.features.sandbox.runner import run_tests as sandbox_run
 from app.models import CodeSnapshot, Exercise, FluencyReport, TestCase, User
 from app.features.student_tests import service as student_tests
@@ -162,6 +163,7 @@ async def submit(
     attempt = await service.require_attempt(db, attempt_id, user)
     if attempt.status == "scored":
         raise HTTPException(status_code=409, detail="Attempt already scored")
+    require_consent(user)  # submit asks the LLM for the explain-back questions (P3.7)
     settings = get_settings()
     rate_limit.enforce(f"sandbox:{user.id}", settings.sandbox_rate_limit_per_minute, 60)
     suite = await submit_tests.run_submit_suite(db, attempt)
@@ -187,6 +189,7 @@ async def explain_back(
     attempt = await service.require_attempt(db, attempt_id, user)
     if attempt.status == "scored":
         raise HTTPException(status_code=409, detail="Attempt already scored")
+    require_consent(user)
     with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         payload = await scoring_service.score_with_explanations(
             db, attempt, [a.model_dump() for a in data.answers]

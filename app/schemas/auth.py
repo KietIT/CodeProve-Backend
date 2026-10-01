@@ -12,6 +12,16 @@ class SignupIn(BaseModel):
     full_name: str = Field(min_length=2)
     email: str
     password: str = Field(min_length=8)
+    # P3.7: the signup form's required "I accept the Privacy Policy" checkbox. No default on purpose:
+    # pydantic does not run validators on defaults, so a missing field must fail as missing.
+    accept_privacy: bool
+
+    @field_validator("accept_privacy")
+    @classmethod
+    def must_accept_privacy(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("the privacy policy must be accepted to sign up")
+        return v
 
     @field_validator("email")
     @classmethod
