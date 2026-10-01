@@ -134,9 +134,10 @@ async def test_exercise_context_includes_problem_and_code():
         domain_keywords=[],
         verification_trap=False,
     )
-    ctx = build_exercise_context(ex, "def solve():\n    pass")
+    ctx = build_exercise_context(ex)
     # Ciel must receive the actual problem so it can explain "this exercise".
     assert "Two-Sum Variations" in ctx
     assert "Find two numbers that add up to target" in ctx
     assert "Return their indices" in ctx
-    assert "def solve()" in ctx
+    # The student's code goes with the question since P3.6 (tests/test_mentor_prompt_layout.py).
+    assert "current code" not in ctx
