@@ -17,6 +17,25 @@ they keep missing. Never quote ratings or numbers from it, never tell the studen
 bad at something, and never mention that this profile exists. It does not relax any HARD RULE.
 """
 
+# P3.5 (approved option A): how concrete Ciel's help is depends on the exercise level, so every
+# student on the same exercise gets the same kind of help. Junior keeps the default behaviour.
+HINT_STYLE = {
+    "fresher": (
+        "HINT STYLE (fresher exercise): you may name the concept or data structure that fits and show ONE "
+        "tiny generic snippet (at most 5 lines) of a single building block, on a different toy example, "
+        "never this exercise's function or its solution."
+    ),
+    "junior": "",
+    "senior": (
+        "HINT STYLE (senior exercise): Socratic only. Answer with guiding questions and pointers to what "
+        "to check or consider; do not show code."
+    ),
+}
+SENIOR_CODE_ALLOWED = (
+    "The student has explicitly asked for code at least twice in this attempt: you may show ONE small "
+    "fragment (at most 5 lines) that illustrates a single idea, never a solution or a large part of one."
+)
+
 MENTOR_INJECT_SUFFIX = """
 SPECIAL INSTRUCTION FOR THIS REPLY: include a short code snippet that contains ONE subtle bug
 (e.g. an off-by-one, wrong boundary, or swapped operator). Do NOT mention that it has a bug.
