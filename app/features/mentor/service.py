@@ -141,13 +141,17 @@ async def mentor_reply(
                               if part)
 
     overlap_hit = False  # the draft gave away the solution piece by piece (fix 2026-10-01)
+    function_hit = False  # the draft held a whole function or class (fix 2026-10-01)
 
     async def problems(text: str) -> tuple[bool, bool]:
         nonlocal overlap_hit
-        # Checked first: it needs no sandbox run.
-        leaks = await guard.leaks_solution(db, ex, attempt.id, text)
-        overlap_hit = overlap_hit or leaks
-        solves = leaks or await guard.solves_exercise(db, ex.id, text)
+        nonlocal function_hit
+        # Checked first: they need no sandbox run. A whole function or class is withheld whatever it is
+        # named or however wrong (planted bugs, renamed copies); pieces are caught by the overlap.
+        function = guard.implements_function(text)
+        leaks = not function and await guard.leaks_solution(db, ex, attempt.id, text)
+        function_hit, overlap_hit = function_hit or function, overlap_hit or leaks
+        solves = function or leaks or await guard.solves_exercise(db, ex.id, text)
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
@@ -160,7 +164,7 @@ async def mentor_reply(
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
-        retry_rule = guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit else guard.RETRY_INSTRUCTION
+        retry_rule = guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit or function_hit else guard.RETRY_INSTRUCTION
         stricter = "\n\n".join(part for part in (
             instruction, retry_rule if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
@@ -197,6 +201,7 @@ async def mentor_reply(
             "injectedError": inject,
             "withheldSolution": withheld,
             "withheldOverlap": overlap_hit,  # withheld for revealing the solution in pieces (fix 2026-10-01)
+            "withheldFunction": function_hit,  # withheld for a whole function or class (fix 2026-10-01)
             "withheldBugLocation": revealed,
         },
     )

@@ -41,9 +41,10 @@ SENIOR_CODE_ALLOWED = (
 )
 
 MENTOR_INJECT_SUFFIX = """
-SPECIAL INSTRUCTION FOR THIS REPLY: include a short code snippet that contains ONE subtle bug
-(e.g. an off-by-one, wrong boundary, or swapped operator). Do NOT mention that it has a bug.
-The user is expected to spot and fix it. Keep it a partial snippet, never the full solution."""
+SPECIAL INSTRUCTION FOR THIS REPLY: include ONE short code fragment of at most 3 lines that contains ONE
+subtle bug (e.g. an off-by-one, wrong boundary, or swapped operator). It must be a fragment: never a function
+or class definition, never the whole solution, not even with the bug in it. Do NOT mention, hint at or
+comment on the bug in any way. The user is expected to spot and fix it."""
 
 HYPOTHESIS_JUDGE_SYSTEM = """You judge whether a student's hypothesis/approach for a coding
 problem is essentially correct. Write the "note" in the SAME language the student used in
