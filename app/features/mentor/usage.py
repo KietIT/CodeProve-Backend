@@ -35,18 +35,25 @@ class _Scope:
     db: AsyncSession
     user_id: int | None
     attempt_id: int | None
+    names: tuple[str, ...] = ()  # the student's full name, scrubbed from what is sent (P3.7)
 
 
 _scope: ContextVar[_Scope | None] = ContextVar("llm_scope", default=None)
 
 
 @contextmanager
-def llm_scope(db: AsyncSession, user_id: int | None = None, attempt_id: int | None = None) -> Iterator[None]:
-    token = _scope.set(_Scope(db, user_id, attempt_id))
+def llm_scope(db: AsyncSession, user_id: int | None = None, attempt_id: int | None = None,
+              names: tuple[str, ...] = ()) -> Iterator[None]:
+    token = _scope.set(_Scope(db, user_id, attempt_id, names))
     try:
         yield
     finally:
         _scope.reset(token)
+
+
+def scope_names() -> tuple[str, ...]:
+    scope = _scope.get()
+    return scope.names if scope else ()
 
 
 def judge_kind(system: str) -> str:

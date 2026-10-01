@@ -21,7 +21,7 @@ async def mentor(
 ) -> MentorOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
     await quota.enforce_ciel(db, user, attempt)
-    with llm_scope(db, user.id, attempt.id):
+    with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         out = await service.mentor_reply(db, attempt, data.message, data.code)
     return MentorOut(**out, ciel=await quota.ciel_left(db, user.id, attempt.id))
 
@@ -35,6 +35,6 @@ async def hypothesis(
 ) -> HypothesisOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
     await quota.enforce_hypothesis(db, attempt)
-    with llm_scope(db, user.id, attempt.id):
+    with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         out = await service.judge_hypothesis(db, attempt, data.text)
     return HypothesisOut(**out)

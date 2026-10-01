@@ -16,7 +16,6 @@ import argparse
 import asyncio
 import hashlib
 import json
-import re
 import secrets
 from pathlib import Path
 
@@ -24,10 +23,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
+from app.features.privacy.scrub import scrub
 from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, User, VerificationAnswer
 
-_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_PHONE = re.compile(r"(?<!\d)(?:\+84|0)\d{9,10}(?!\d)")
 _INTEGRITY = {
     "paste_blocked": lambda e: "PASTE_BLOCKED" in e["integrity_flags"] or e["type"] == "BURST_PASTE",
     "tab_hidden": lambda e: e["type"] == "TAB_HIDDEN",
@@ -35,12 +33,6 @@ _INTEGRITY = {
     "fullscreen_exit": lambda e: e["type"] == "FULLSCREEN_EXIT",
     "focus_lost": lambda e: e["type"] == "FOCUS_LOST",
 }
-
-
-def scrub(text: str | None) -> str:
-    if not text:
-        return ""
-    return _PHONE.sub("[số điện thoại]", _EMAIL.sub("[email]", text))
 
 
 def _minutes(ts: int, start: int) -> float:
