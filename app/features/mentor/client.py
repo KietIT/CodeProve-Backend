@@ -6,6 +6,7 @@ from app.core.config import get_settings
 from app.features.mentor import usage as llm_usage
 from app.features.mentor.guard import LOCATE_RETRY_INSTRUCTION, RETRY_INSTRUCTION, code_blocks
 from app.features.mentor.prompts import MENTOR_INJECT_SUFFIX, MENTOR_SYSTEM
+from app.features.privacy.scrub import scrub
 
 
 def chat_messages(user_message: str, history: list[dict], inject_error: bool, context: str = "",
@@ -39,6 +40,12 @@ def _tokens(resp) -> tuple[int, int, int]:
     return usage.prompt_tokens, cached, usage.completion_tokens
 
 
+def _scrubbed(messages: list[dict]) -> list[dict]:
+    """Student-written messages without personal data (P3.7); our system prompts are left alone."""
+    names = llm_usage.scope_names()
+    return [m if m["role"] == "system" else {**m, "content": scrub(m["content"], names)} for m in messages]
+
+
 class MentorClient:
     def __init__(self) -> None:
         settings = get_settings()
@@ -53,9 +60,9 @@ class MentorClient:
         context: str = "",
         extra_instruction: str = "",
     ) -> dict:
-        messages = chat_messages(user_message, history, inject_error, context, extra_instruction)
+        messages = _scrubbed(chat_messages(user_message, history, inject_error, context, extra_instruction))
         resp = await self._client.chat.completions.create(
-            model=self._model, messages=messages, temperature=0.4, max_tokens=400
+            model=self._model, messages=messages, temperature=0.4, max_tokens=400, store=False
         )
         text = resp.choices[0].message.content or ""
         prompt_tokens, cached_tokens, completion_tokens = _tokens(resp)
@@ -73,10 +80,12 @@ class MentorClient:
     async def judge(self, system: str, user: str, max_tokens: int = 300) -> dict:
         resp = await self._client.chat.completions.create(
             model=self._model,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            messages=[{"role": "system", "content": system},
+                      {"role": "user", "content": scrub(user, llm_usage.scope_names())}],
             temperature=0.0,
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
+            store=False,  # P3.7: never kept by OpenAI for evals or distillation
         )
         llm_usage.record(llm_usage.judge_kind(system), self._model, *_tokens(resp))
         try:

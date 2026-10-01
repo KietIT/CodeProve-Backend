@@ -171,7 +171,7 @@ async def submit(
     await service.add_event(db, attempt_id, "SUBMIT", {"locale": "vi" if locale == "vi" else "en"})
     attempt.status = "submitted"
     attempt.submitted_at = datetime.now(timezone.utc)
-    with llm_scope(db, user.id, attempt.id):
+    with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         questions = await scoring_service.generate_questions(db, attempt, locale)
     await db.commit()
     return {"questions": questions, "tests": submit_tests.public_summary(suite)}
@@ -187,7 +187,7 @@ async def explain_back(
     attempt = await service.require_attempt(db, attempt_id, user)
     if attempt.status == "scored":
         raise HTTPException(status_code=409, detail="Attempt already scored")
-    with llm_scope(db, user.id, attempt.id):
+    with llm_scope(db, user.id, attempt.id, (user.full_name,)):
         payload = await scoring_service.score_with_explanations(
             db, attempt, [a.model_dump() for a in data.answers]
         )
