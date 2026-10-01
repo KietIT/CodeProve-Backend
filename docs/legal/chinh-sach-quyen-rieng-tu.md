@@ -1,14 +1,12 @@
 # Chính sách quyền riêng tư — CodeProve
 
-> **Trạng thái: đã điền đủ, chờ Kiệt duyệt.** Bỏ dòng này khi công bố. Văn bản mô tả đúng hệ thống sau P3.7. Khi hệ thống thay đổi, sửa văn bản và tăng `POLICY_VERSION` (xem README.md).
-
 ## Tiếng Việt
 
-**Cập nhật lần cuối:** 01/10/2026 · **Phiên bản:** 2026-10
+**Cập nhật lần cuối:** 01/10/2026 · **Phiên bản:** 2026-10-2
 
 CodeProve là nền tảng luyện và đánh giá kỹ năng lập trình có trợ lý AI (Ciel). Chính sách này giải thích chúng tôi thu thập dữ liệu gì, dùng để làm gì, chia sẻ với ai và bạn có những quyền gì.
 
-**Bên kiểm soát dữ liệu:** Nhóm phát triển CodeProve (dự án sinh viên). Mọi yêu cầu và câu hỏi về quyền riêng tư xin gửi tới **trinhkiet2005@gmail.com**.
+**Bên kiểm soát dữ liệu:** Nhóm phát triển CodeProve. Mọi yêu cầu và câu hỏi về quyền riêng tư xin gửi tới **flux@codeprove.vn**.
 
 ### 1. Dữ liệu chúng tôi thu thập
 
@@ -68,7 +66,7 @@ Bạn có quyền:
 Cách thực hiện:
 - **Tắt Cá nhân hoá AI:** tự làm ở trang Hồ sơ, có hiệu lực ngay.
 - **Sửa họ tên:** tự làm ở trang Hồ sơ.
-- **Xem, nhận bản sao, xoá tài khoản, rút lại đồng ý:** gửi email tới **trinhkiet2005@gmail.com** từ email tài khoản của bạn. Chúng tôi phản hồi trong vòng 72 giờ và hoàn tất yêu cầu trong thời hạn pháp luật quy định. Nếu bạn rút lại đồng ý, các tính năng AI (Ciel, kiểm tra giả thuyết, chấm điểm explain-back) sẽ ngừng hoạt động với tài khoản của bạn; phần luyện code khác vẫn dùng được.
+- **Xem, nhận bản sao, xoá tài khoản, rút lại đồng ý:** gửi email tới **flux@codeprove.vn** từ email tài khoản của bạn. Chúng tôi phản hồi trong vòng 72 giờ và hoàn tất yêu cầu trong thời hạn pháp luật quy định. Nếu bạn rút lại đồng ý, các tính năng AI (Ciel, kiểm tra giả thuyết, chấm điểm explain-back) sẽ ngừng hoạt động với tài khoản của bạn; phần luyện code khác vẫn dùng được.
 
 ### 6. Bảo mật
 
@@ -93,11 +91,11 @@ Khi chính sách thay đổi, chúng tôi cập nhật phiên bản và hỏi l�
 
 ## English
 
-**Last updated:** 1 October 2026 · **Version:** 2026-10
+**Last updated:** 1 October 2026 · **Version:** 2026-10-2
 
 CodeProve is a platform for practising and assessing programming skills with an AI assistant (Ciel). This policy explains what data we collect, why, who we share it with, and your rights.
 
-**Data controller:** the CodeProve team (a student project). Please send privacy requests and questions to **trinhkiet2005@gmail.com**.
+**Data controller:** the CodeProve team. Please send privacy requests and questions to **flux@codeprove.vn**.
 
 ### 1. Data we collect
 
@@ -157,7 +155,7 @@ You have the right:
 How to use them:
 - **Turn off AI personalisation:** on the Profile page, effective immediately.
 - **Edit your name:** on the Profile page.
-- **Access, copy, account deletion, withdrawal of consent:** email **trinhkiet2005@gmail.com** from your account's email address. We reply within 72 hours and complete the request within the time the law requires. If you withdraw consent, the AI features (Ciel, the hypothesis check, explain-back scoring) stop for your account; the rest of the coding practice remains available.
+- **Access, copy, account deletion, withdrawal of consent:** email **flux@codeprove.vn** from your account's email address. We reply within 72 hours and complete the request within the time the law requires. If you withdraw consent, the AI features (Ciel, the hypothesis check, explain-back scoring) stop for your account; the rest of the coding practice remains available.
 
 ### 6. Security
 
