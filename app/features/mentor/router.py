@@ -5,6 +5,7 @@ from app.core.db import get_db
 from app.core.deps import get_current_user
 from app.features.attempts import service as attempts_service
 from app.features.mentor import quota, service
+from app.features.mentor.usage import llm_scope
 from app.models import User
 from app.schemas.mentor import HypothesisIn, HypothesisOut, MentorIn, MentorOut
 
@@ -20,7 +21,8 @@ async def mentor(
 ) -> MentorOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
     await quota.enforce_ciel(db, user, attempt)
-    out = await service.mentor_reply(db, attempt, data.message, data.code)
+    with llm_scope(db, user.id, attempt.id):
+        out = await service.mentor_reply(db, attempt, data.message, data.code)
     return MentorOut(**out, ciel=await quota.ciel_left(db, user.id, attempt.id))
 
 
@@ -33,5 +35,6 @@ async def hypothesis(
 ) -> HypothesisOut:
     attempt = await attempts_service.require_attempt(db, attempt_id, user)
     await quota.enforce_hypothesis(db, attempt)
-    out = await service.judge_hypothesis(db, attempt, data.text)
+    with llm_scope(db, user.id, attempt.id):
+        out = await service.judge_hypothesis(db, attempt, data.text)
     return HypothesisOut(**out)
