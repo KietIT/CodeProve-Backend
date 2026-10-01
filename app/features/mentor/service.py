@@ -140,8 +140,14 @@ async def mentor_reply(
     instruction = "\n\n".join(part for part in (language.RULES.get(reply_in or "", ""), style, locate_rule)
                               if part)
 
+    overlap_hit = False  # the draft gave away the solution piece by piece (fix 2026-10-01)
+
     async def problems(text: str) -> tuple[bool, bool]:
-        solves = await guard.solves_exercise(db, ex.id, text)
+        nonlocal overlap_hit
+        # Checked first: it needs no sandbox run.
+        leaks = await guard.leaks_solution(db, ex, attempt.id, text)
+        overlap_hit = overlap_hit or leaks
+        solves = leaks or await guard.solves_exercise(db, ex.id, text)
         return solves, bool(hidden_bug) and guard.reveals_bug(text, *hidden_bug)
 
     history = await attempt_history(db, attempt.id)  # P3.1: the conversation of this attempt
@@ -154,8 +160,9 @@ async def mentor_reply(
     if withheld or revealed:
         # Never shown, so the trap (if any) was not served either: ask again without it.
         inject = False
+        retry_rule = guard.OVERLAP_RETRY_INSTRUCTION if overlap_hit else guard.RETRY_INSTRUCTION
         stricter = "\n\n".join(part for part in (
-            instruction, guard.RETRY_INSTRUCTION if withheld else "",
+            instruction, retry_rule if withheld else "",
             guard.LOCATE_RETRY_INSTRUCTION if revealed else "") if part)
         retry = await client.chat(question, history=history, inject_error=False, context=context,
                                   extra_instruction=stricter)
@@ -189,6 +196,7 @@ async def mentor_reply(
             "aiCode": [{"loc": result["code_loc"]}] if result["code_loc"] else [],
             "injectedError": inject,
             "withheldSolution": withheld,
+            "withheldOverlap": overlap_hit,  # withheld for revealing the solution in pieces (fix 2026-10-01)
             "withheldBugLocation": revealed,
         },
     )
