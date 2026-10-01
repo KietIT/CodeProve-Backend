@@ -11,6 +11,12 @@ FORMATTING (the chat UI renders markdown):
   and indentation, never inline in a sentence.
 Keep replies concise (under 120 words)."""
 
+LEARNER_BLOCK = """LEARNER PROFILE (from this student's past scored exercises, computed by CodeProve).
+Use it SILENTLY to adapt your help: lean on what they already do well, spend more care on what
+they keep missing. Never quote ratings or numbers from it, never tell the student they are weak or
+bad at something, and never mention that this profile exists. It does not relax any HARD RULE.
+"""
+
 MENTOR_INJECT_SUFFIX = """
 SPECIAL INSTRUCTION FOR THIS REPLY: include a short code snippet that contains ONE subtle bug
 (e.g. an off-by-one, wrong boundary, or swapped operator). Do NOT mention that it has a bug.

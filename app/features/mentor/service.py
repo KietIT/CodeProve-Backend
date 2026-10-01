@@ -1,13 +1,20 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.attempts import debug
 from app.features.attempts import service as attempts_service
+from app.features.learner.brief import learner_brief
+from app.features.learner.profile import profile
 from app.features.mentor import guard
 from app.features.mentor.client import code_loc, get_mentor_client
 from app.features.mentor.memory import attempt_history
+from app.features.mentor.prompts import LEARNER_BLOCK
 from app.features.scoring.judges import judge_hypothesis as judge_hypothesis_text
 from app.models import Attempt, Event, Exercise, PromptLog
+
+logger = logging.getLogger(__name__)
 
 _PRIMING = (
     "ignore your instructions",
@@ -61,6 +68,17 @@ def build_exercise_context(ex: Exercise, student_code: str | None) -> str:
     return "\n".join(parts)
 
 
+async def learner_context(db: AsyncSession, user_id: int) -> str:
+    """The learner brief block for Ciel (P3.5), or "" for a student with no scored exercise.
+    Optional context: a failure is logged and Ciel answers without it."""
+    try:
+        p = await profile(db, user_id)
+    except Exception:
+        logger.exception("learner profile failed for user %s", user_id)
+        return ""
+    return f"{LEARNER_BLOCK}{learner_brief(p, 'en')}" if p.scored_attempts else ""
+
+
 async def mentor_reply(
     db: AsyncSession, attempt: Attempt, message: str, code: str | None = None
 ) -> dict:
@@ -71,6 +89,9 @@ async def mentor_reply(
     inject = bool(ex.verification_trap) and not await _already_injected(db, attempt.id)
 
     context = build_exercise_context(ex, code)
+    learner = await learner_context(db, attempt.user_id)
+    if learner:
+        context = f"{context}\n\n{learner}"
     client = get_mentor_client()
     # Debug exercise whose bug the student has not located yet: Ciel may only help them find it.
     hidden_bug = await debug.hidden_bug(db, attempt, ex)
