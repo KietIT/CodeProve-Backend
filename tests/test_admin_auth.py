@@ -51,6 +51,7 @@ async def test_reserved_login_ids_and_public_login_cannot_be_admin(client, db_se
 
 async def test_first_login_can_only_change_password_and_old_session_is_revoked(client, db_session):
     await add_admin(db_session, "kiet@codeprove.production")
+    assert (await client.get("/api/admin/audit/me")).status_code == 401
     signed_in = await login(client, "kiet@codeprove.production")
     assert signed_in.status_code == 200, signed_in.text
     assert signed_in.json()["must_change_password"] is True
@@ -59,6 +60,7 @@ async def test_first_login_can_only_change_password_and_old_session_is_revoked(c
     old_cookie = client.cookies.get(COOKIE)
     assert old_cookie
     assert (await client.get("/api/admin/admins")).status_code == 403
+    assert (await client.get("/api/admin/audit/me")).status_code == 403
     assert (await client.post("/api/auth/admin/change-password", headers=ORIGIN, json={
         "current_password": "bad", "new_password": "A sufficiently long new password",
     })).status_code == 400
@@ -113,6 +115,12 @@ async def test_super_admin_manages_regular_admins_and_audit_has_no_secret(client
     audit = await client.get("/api/admin/audit")
     assert audit.status_code == 200
     assert {"admin_created", "login_failed"}.issubset({row["action"] for row in audit.json()["items"]})
+    personal = await client.get("/api/admin/audit/me")
+    assert personal.status_code == 200
+    assert {row["id"] for row in personal.json()["items"]}.issubset(
+        {row["id"] for row in audit.json()["items"]}
+    )
+    assert all(row["actor_user_id"] == signed_in.json()["id"] for row in personal.json()["items"])
     assert password not in audit.text
 
     # Super admins cannot disable or reset themselves through staff management.
@@ -137,13 +145,36 @@ async def test_super_admin_manages_regular_admins_and_audit_has_no_secret(client
 
 
 async def test_regular_admin_cannot_manage_other_admins(client, db_session):
-    await add_admin(db_session, "phat@codeprove.production", first_login=False)
+    staff = await add_admin(db_session, "phat@codeprove.production", first_login=False)
     assert (await login(client, "phat@codeprove.production")).status_code == 200
     assert (await client.get("/api/admin/admins")).status_code == 403
     assert (await client.get("/api/admin/audit")).status_code == 403
+    own = await client.get("/api/admin/audit/me")
+    assert own.status_code == 200
+    assert own.json()["total"] == 1
+    assert {row["actor_user_id"] for row in own.json()["items"]} == {staff.id}
     assert (await client.post("/api/admin/admins", headers=ORIGIN, json={
         "full_name": "Minh", "email": "minh@codeprove.production",
     })).status_code == 403
+
+
+async def test_personal_audit_uses_session_actor_even_with_an_actor_filter(client, db_session):
+    first = await add_admin(db_session, "kiet@codeprove.production", first_login=False)
+    second = await add_admin(db_session, "phat@codeprove.production", first_login=False)
+    assert (await login(client, first.email)).status_code == 200
+    first_cookie = client.cookies.get(COOKIE)
+    assert (await login(client, second.email)).status_code == 200
+
+    own = await client.get(f"/api/admin/audit/me?actor_id={first.id}")
+    assert own.status_code == 200
+    assert own.json()["total"] == 1
+    assert {row["actor_user_id"] for row in own.json()["items"]} == {second.id}
+    assert (await client.get("/api/admin/audit")).status_code == 403
+
+    client.cookies.set(COOKIE, first_cookie)
+    first_history = await client.get("/api/admin/audit/me")
+    assert first_history.status_code == 200
+    assert {row["actor_user_id"] for row in first_history.json()["items"]} == {first.id}
 
 
 async def test_super_admin_must_change_first_and_reset_revokes_staff_session(client, db_session):

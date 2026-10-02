@@ -224,11 +224,8 @@ async def reset_password(admin_id: int, request: Request, response: Response,
     return TempPasswordOut(admin=AdminOut.model_validate(target), temporary_password=password)
 
 
-@router.get("/audit")
-async def audit(response: Response, _: Principal = Depends(super_admin), db: AsyncSession = Depends(get_db),
-                actor_id: int | None = None, action: str | None = None, exercise_code: str | None = None,
-                limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict:
-    response.headers["Cache-Control"] = "no-store"
+async def audit_page(db: AsyncSession, *, actor_id: int | None, action: str | None,
+                     exercise_code: str | None, limit: int, offset: int) -> dict:
     query = select(AdminAuditLog)
     if actor_id is not None:
         query = query.where(AdminAuditLog.actor_user_id == actor_id)
@@ -243,3 +240,23 @@ async def audit(response: Response, _: Principal = Depends(super_admin), db: Asy
         "action": entry.action, "detail": entry.detail, "created_at": entry.created_at,
         "target_exercise_code": entry.target_exercise_code,
     } for entry in entries]}
+
+
+@router.get("/audit/me")
+async def my_audit(response: Response, principal: Principal = Depends(ready_admin),
+                   db: AsyncSession = Depends(get_db), action: str | None = None,
+                   exercise_code: str | None = None,
+                   limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict:
+    """Read actions attributed to the signed-in admin; actor ID comes only from the session."""
+    response.headers["Cache-Control"] = "no-store"
+    return await audit_page(db, actor_id=principal.user.id, action=action,
+                            exercise_code=exercise_code, limit=limit, offset=offset)
+
+
+@router.get("/audit")
+async def audit(response: Response, _: Principal = Depends(super_admin), db: AsyncSession = Depends(get_db),
+                actor_id: int | None = None, action: str | None = None, exercise_code: str | None = None,
+                limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict:
+    response.headers["Cache-Control"] = "no-store"
+    return await audit_page(db, actor_id=actor_id, action=action,
+                            exercise_code=exercise_code, limit=limit, offset=offset)

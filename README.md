@@ -76,6 +76,7 @@ same-origin admin gateway. New exercises remain invisible to learners until publ
 | `POST /api/admin/exercises/drafts/{code}/reject` | Return a submitted draft to editing, as a different admin. |
 | `POST /api/admin/exercises/drafts/{code}/publish` | Revalidate and atomically update the learner exercise and tests. |
 | `GET /api/admin/audit` | Super admin only; includes authoring actions and `target_exercise_code`. Supports `actor_id`, `action`, and `exercise_code` filters. |
+| `GET /api/admin/audit/me` | Current admin's actions from the same audit table. The actor is fixed by the session; supports `action` and `exercise_code` filters. |
 
 Each workflow action records its actor, exercise code, revision, and for edits the
 names of changed fields. Audit entries never contain solutions or hidden test data.
