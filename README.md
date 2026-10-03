@@ -43,6 +43,10 @@ After applying migrations, run `python -m scripts.bootstrap_admins` from the bac
 with the same database configuration. It creates Trung as `super_admin` and Kiet,
 Phat, Minh as `admin`; existing matching accounts are left untouched. The command
 prints a different random temporary password **once** for each new account.
+On EC2 with Docker Compose, run `docker compose exec backend python -m scripts.bootstrap_admins`
+against the production database after the backend container is up. Deploying code or
+running migrations alone does not create these accounts. Rerunning bootstrap does not
+reset existing passwords.
 Deliver each credential privately. Do not paste passwords into Git, `.env`, or logs.
 The email-shaped IDs are internal login IDs and require no mailbox. On first login,
 each admin must set a new password. If a regular admin forgets it, the super admin
@@ -77,6 +81,9 @@ same-origin admin gateway. New exercises remain invisible to learners until publ
 | `POST /api/admin/exercises/drafts/{code}/publish` | Revalidate and atomically update the learner exercise and tests. |
 | `GET /api/admin/audit` | Super admin only; includes authoring actions and `target_exercise_code`. Supports `actor_id`, `action`, and `exercise_code` filters. |
 | `GET /api/admin/audit/me` | Current admin's actions from the same audit table. The actor is fixed by the session; supports `action` and `exercise_code` filters. |
+| `GET /api/admin/users` | Search learner name, email or numeric ID; filter `account_status=active|inactive`; paginate with `limit` and `offset`. Returns account status and attempt totals, completed attempts, scored-attempt average and last attempt time. |
+| `GET /api/admin/users/{user_id}` | Read the same real account and attempt summary for one learner; staff IDs return 404. |
+| `GET /api/admin/overview` | Real learner account totals, enabled accounts, attempt count, and four newest learners. Excludes staff accounts and includes no subscription data. |
 
 Each workflow action records its actor, exercise code, revision, and for edits the
 names of changed fields. Audit entries never contain solutions or hidden test data.
