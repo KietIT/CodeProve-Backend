@@ -33,9 +33,9 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token", headers=_UNAUTH_HEADERS
         )
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
-    if user is None:
+    if user is None or not user.is_active or user.role != "user":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found", headers=_UNAUTH_HEADERS
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Account unavailable", headers=_UNAUTH_HEADERS
         )
     return user
 
@@ -56,4 +56,5 @@ async def get_current_user_optional(
         user_id = int(sub)
     except (TypeError, ValueError):
         return None
-    return (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    return user if user is not None and user.is_active and user.role == "user" else None

@@ -8,7 +8,7 @@ services:
       # Override .env: inside the compose network the DB is reachable via the
       # "db" service hostname, not localhost.
       # Credentials come from .env (compose interpolates ${...} from it).
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-codeprove}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-codeprove}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-codeprove}:${POSTGRES_PASSWORD_URLENCODED:-${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}}@db:5432/${POSTGRES_DB:-codeprove}
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       # Loopback only: the public entry point is the Cloudflare tunnel, which

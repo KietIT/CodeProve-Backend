@@ -5,8 +5,9 @@
     python -m app.features.content.sync --apply      # write
 
 Only files approved by a reviewer other than the author, and that pass the
-sandbox validator, are written. A written exercise has its test cases and
-mutants replaced by the file's (the file is the source of truth).
+sandbox validator, are written. For file-managed exercises, a written exercise
+has its test cases and mutants replaced by the file's. Admin-managed exercises
+are skipped because their approved database draft is the source of truth.
 """
 import argparse
 import asyncio
@@ -80,11 +81,15 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
         if ex is None:
             results.append({"code": content.code, "status": "skipped", "reason": "exercise not in the database"})
             continue
+        if ex.content_source == "admin":
+            results.append({"code": content.code, "status": "skipped", "reason": "managed by admin review workflow"})
+            continue
         if not content.is_approved:
             results.append({"code": content.code, "status": "skipped",
                             "reason": "not approved by a reviewer other than the author"})
             continue
-        errors = await validate_content(content, ex.kind, content.starter_for(ex.starter_code))
+        validated_kind, validated_starter = ex.kind, ex.starter_code
+        errors = await validate_content(content, validated_kind, content.starter_for(validated_starter))
         if errors:
             results.append({"code": content.code, "status": "invalid", "errors": errors})
             continue
@@ -99,7 +104,20 @@ async def sync_content(db: AsyncSession, files: list[Path], apply: bool) -> list
                         "skill_tags": content.skills.tags if content.skills else [],
                         "skills_reviewer": content.skills.review.reviewer if content.skills else None})
         if apply:
-            await _write(db, ex, content)
+            # A publish may take ownership while the sandbox validator runs.
+            # Recheck under a row lock before writing so file sync cannot overwrite it.
+            locked = (await db.execute(select(Exercise).where(Exercise.code == content.code)
+                                       .with_for_update().execution_options(populate_existing=True))).scalar_one_or_none()
+            if locked is None or locked.content_source == "admin":
+                results[-1] = {"code": content.code, "status": "skipped",
+                               "reason": "managed by admin review workflow" if locked else "exercise not in the database"}
+                continue
+            if locked.kind != validated_kind or locked.starter_code != validated_starter:
+                errors = await validate_content(content, locked.kind, content.starter_for(locked.starter_code))
+                if errors:
+                    results[-1] = {"code": content.code, "status": "invalid", "errors": errors}
+                    continue
+            await _write(db, locked, content)
     if apply:
         await db.commit()
     return results
