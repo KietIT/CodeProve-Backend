@@ -79,11 +79,14 @@ same-origin admin gateway. New exercises remain invisible to learners until publ
 | `POST /api/admin/exercises/drafts/{code}/approve` | Approve as a different admin from the last editor. |
 | `POST /api/admin/exercises/drafts/{code}/reject` | Return a submitted draft to editing, as a different admin. |
 | `POST /api/admin/exercises/drafts/{code}/publish` | Revalidate and atomically update the learner exercise and tests. |
-| `GET /api/admin/audit` | Super admin only; includes authoring actions and `target_exercise_code`. Supports `actor_id`, `action`, and `exercise_code` filters. |
+| `GET /api/admin/audit` | Super admin only; includes authoring actions and `target_exercise_code`. Supports `actor_id`, `action`, `exercise_code`, and `target_user_id` filters. |
 | `GET /api/admin/audit/me` | Current admin's actions from the same audit table. The actor is fixed by the session; supports `action` and `exercise_code` filters. |
-| `GET /api/admin/users` | Search learner name, email or numeric ID; filter `account_status=active|inactive`; paginate with `limit` and `offset`. Returns account status and attempt totals, completed attempts, scored-attempt average and last attempt time. |
+| `GET /api/admin/users` | Search learner name, email or numeric ID; filter `account_status=active|inactive`; paginate with `limit` and `offset`. Returns account status, the plan running now (`tier`), and attempt totals, completed attempts, scored-attempt average and last attempt time. |
 | `GET /api/admin/users/{user_id}` | Read the same real account and attempt summary for one learner; staff IDs return 404. |
-| `GET /api/admin/overview` | Real learner account totals, enabled accounts, attempt count, and four newest learners. Excludes staff accounts and includes no subscription data. |
+| `GET /api/admin/users/{user_id}/billing` | The learner's running plan, expiry, days left and last 50 orders. |
+| `POST /api/admin/users/{user_id}/subscription` | Give a plan without payment: `{tier: plus\|pro, days: 1-366, reason}`. Replaces the running plan, makes no order, and is audited as `subscription_granted`. |
+| `POST /api/admin/users/{user_id}/subscription/revoke` | End the running plan now: `{reason}`; 409 when the learner is already on free. Audited as `subscription_revoked`. |
+| `GET /api/admin/overview` | Real learner account totals, enabled accounts, attempt count, four newest learners, learners per running plan (`plan_counts`), and paid orders and revenue in VND (all time and this calendar month). Excludes staff accounts; plans given by hand are not revenue. |
 
 Each workflow action records its actor, exercise code, revision, and for edits the
 names of changed fields. Audit entries never contain solutions or hidden test data.

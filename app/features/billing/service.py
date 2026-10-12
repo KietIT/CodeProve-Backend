@@ -134,6 +134,36 @@ async def cancel_order(db: AsyncSession, user: User, order_id: int) -> Order:
     return order
 
 
+async def grant_subscription(db: AsyncSession, user_id: int, tier: str, days: int) -> Subscription:
+    """Give a plan without payment: `tier` for `days` from now, replacing whatever plan was running.
+
+    The caller commits (and records who did it).
+    """
+    expires = datetime.now(timezone.utc) + timedelta(days=days)
+    sub = (await db.execute(select(Subscription).where(Subscription.user_id == user_id)
+                            .with_for_update())).scalar_one_or_none()
+    if sub is None:
+        sub = Subscription(user_id=user_id, tier=tier, expires_at=expires)
+        db.add(sub)
+    else:
+        sub.tier, sub.expires_at = tier, expires
+    return sub
+
+
+async def revoke_subscription(db: AsyncSession, user_id: int) -> str | None:
+    """End the running plan now. Returns the tier that was ended, or None when there was nothing to end.
+
+    The caller commits.
+    """
+    now = datetime.now(timezone.utc)
+    sub = (await db.execute(select(Subscription).where(Subscription.user_id == user_id)
+                            .with_for_update())).scalar_one_or_none()
+    if sub is None or _utc(sub.expires_at) <= now:
+        return None
+    sub.expires_at = now
+    return sub.tier
+
+
 def _apply_paid_order(sub: Subscription | None, user_id: int, tier: str, days: int, now: datetime):
     """The subscription after a paid order: same tier still running -> extended, otherwise starts now."""
     if sub is None:

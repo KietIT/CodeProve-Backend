@@ -51,7 +51,10 @@ higher plan would lift the limit, so the UI can show an upgrade offer. The "mont
 current limits under `entitlements`. `detailed_analysis` and `learning_path` flags exist there but are **not
 enforced yet**.
 
-Giving a plan without payment (testing, or after support decides): `python -m scripts.grant_plan <email> plus|pro [days]`.
+Giving or ending a plan without payment (goodwill, or after support decides): an admin does it on the learner's
+page in the admin area (`POST /api/admin/users/{id}/subscription`, `.../subscription/revoke`), which writes the
+audit log. `python -m scripts.grant_plan <email> plus|pro|free [days]` does the same from a terminal, unaudited.
+A plan given this way replaces the running one and creates no order, so it is not counted as revenue.
 
 ## Setup
 

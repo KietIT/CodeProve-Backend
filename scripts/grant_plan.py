@@ -3,16 +3,17 @@
     python -m scripts.grant_plan <email> plus|pro [days]     # default 30 days, starts now
     python -m scripts.grant_plan <email> free                # ends the plan now
 
-Replaces whatever plan the account had. Prefer the admin tools once they exist; this is the operator's escape hatch.
+Replaces whatever plan the account had. Prefer the admin page (learner detail > Plan), which also writes the
+audit log; this is the operator's escape hatch.
 """
 import asyncio
 import sys
-from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
 from app.core.db import async_session_maker
-from app.models import Subscription, User
+from app.features.billing import service
+from app.models import User
 
 
 async def main(email: str, tier: str, days: int) -> int:
@@ -21,19 +22,13 @@ async def main(email: str, tier: str, days: int) -> int:
         if user is None:
             print(f"No learner with email {email}")
             return 1
-        sub = (await db.execute(select(Subscription).where(Subscription.user_id == user.id))).scalar_one_or_none()
-        now = datetime.now(timezone.utc)
         if tier == "free":
-            if sub is not None:
-                sub.expires_at = now
+            await service.revoke_subscription(db, user.id)
             await db.commit()
             print(f"{email}: back to free")
             return 0
-        expires = now + timedelta(days=days)
-        if sub is None:
-            db.add(Subscription(user_id=user.id, tier=tier, expires_at=expires))
-        else:
-            sub.tier, sub.expires_at = tier, expires
+        sub = await service.grant_subscription(db, user.id, tier, days)
+        expires = sub.expires_at
         await db.commit()
         print(f"{email}: {tier} until {expires:%Y-%m-%d %H:%M} UTC")
         return 0
