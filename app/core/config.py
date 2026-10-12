@@ -34,7 +34,12 @@ class Settings(BaseSettings):
     scoring_engine: Literal["v1", "v2"] = "v1"
     # LLM cost caps per student (P3.6). One student message counts once, guard retries included.
     ciel_per_attempt: int = 30
-    ciel_per_day: int = 100
+    # Ciel messages per day by plan: ciel_per_day is the Free limit.
+    ciel_per_day: int = 20
+    ciel_per_day_plus: int = 100
+    ciel_per_day_pro: int = 200
+    # Submitted attempts per calendar month on the Free plan (paid plans are unlimited).
+    free_submits_per_month: int = 10
     ciel_per_minute: int = 10
     hypothesis_per_attempt: int = 10
     # Hard caps on code Ciel may show (fix 2026-10-01), counting only lines that are not already in the
@@ -47,6 +52,18 @@ class Settings(BaseSettings):
     openai_price_input_per_m: float = 0.0
     openai_price_cached_per_m: float = 0.0
     openai_price_output_per_m: float = 0.0
+    # SePay (payments by bank transfer). Empty key or account = payments disabled: checkout answers 503 and
+    # the webhook rejects everything. The key is the one typed into SePay's webhook form ("API Key").
+    sepay_api_key: str = ""
+    sepay_bank_account: str = ""  # the account linked in SePay that receives the money
+    sepay_bank_name: str = ""  # short name as VietQR knows it, e.g. TPBank
+    sepay_account_name: str = ""  # holder name shown to the student
+    # Transfer content is this prefix + the order id. Must match the payment-code prefix set in SePay.
+    sepay_code_prefix: str = "CP"
+    sepay_qr_url: str = "https://qr.sepay.vn/img"
+    # An order not paid within this many minutes is shown as expired (a late transfer is still honoured).
+    payment_window_minutes: int = 15
+    checkout_per_minute: int = 5
 
     @field_validator("cors_origins", mode="before")
     @classmethod

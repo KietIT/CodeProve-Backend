@@ -56,7 +56,10 @@ def create_app() -> FastAPI:
     from app.features.privacy.router import router as privacy_router
     app.include_router(privacy_router)
 
+    from app.features.billing.router import router as billing_router
+    app.include_router(billing_router)
+
     return app
 
 
-app = create_app()
+app =create_app()
