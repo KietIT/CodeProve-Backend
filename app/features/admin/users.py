@@ -1,5 +1,5 @@
 """Read-only learner directory for authenticated administrators."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.features.admin.router import Principal, ready_admin
-from app.models import Attempt, User
+from app.models import Attempt, Subscription, User
 
 router = APIRouter(prefix="/api/admin/users", tags=["admin users"])
 
@@ -24,6 +24,7 @@ class LearnerOut(BaseModel):
     attempts: int
     completed: int
     average_score: float | None
+    tier: str  # the plan running right now: free | plus | pro
 
 
 class LearnerPage(BaseModel):
@@ -48,9 +49,22 @@ async def attempt_stats(db: AsyncSession, user_ids: list[int]) -> dict[int, tupl
     return {user_id: (count, completed, average, last) for user_id, count, completed, average, last in rows}
 
 
-def learner_out(user: User, stats: dict[int, tuple[int, int, float | None, datetime | None]]) -> LearnerOut:
+async def running_tiers(db: AsyncSession, user_ids: list[int]) -> dict[int, str]:
+    """The paid tier of each of these users that has one running now (others are free)."""
+    if not user_ids:
+        return {}
+    rows = (await db.execute(
+        select(Subscription.user_id, Subscription.tier)
+        .where(Subscription.user_id.in_(user_ids), Subscription.expires_at > datetime.now(timezone.utc))
+    )).all()
+    return dict(rows)
+
+
+def learner_out(user: User, stats: dict[int, tuple[int, int, float | None, datetime | None]],
+                tiers: dict[int, str]) -> LearnerOut:
     attempts, completed, average, last = stats.get(user.id, (0, 0, None, None))
     return LearnerOut(
+        tier=tiers.get(user.id, "free"),
         id=user.id, full_name=user.full_name, email=user.email, is_active=user.is_active,
         created_at=user.created_at, last_attempt_at=last, attempts=attempts,
         completed=completed, average_score=round(float(average), 1) if average is not None else None,
@@ -82,8 +96,10 @@ async def list_users(
     people = (await db.execute(
         select(User).where(*filters).order_by(User.created_at.desc(), User.id.desc()).limit(limit).offset(offset)
     )).scalars().all()
-    stats = await attempt_stats(db, [person.id for person in people])
-    return LearnerPage(items=[learner_out(person, stats) for person in people], total=total, limit=limit, offset=offset)
+    ids = [person.id for person in people]
+    stats, tiers = await attempt_stats(db, ids), await running_tiers(db, ids)
+    return LearnerPage(items=[learner_out(person, stats, tiers) for person in people],
+                       total=total, limit=limit, offset=offset)
 
 
 @router.get("/{user_id}", response_model=LearnerOut)
@@ -97,4 +113,4 @@ async def get_user(
     user = (await db.execute(select(User).where(User.id == user_id, User.role == "user"))).scalar_one_or_none()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return learner_out(user, await attempt_stats(db, [user.id]))
+    return learner_out(user, await attempt_stats(db, [user.id]), await running_tiers(db, [user.id]))

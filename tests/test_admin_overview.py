@@ -50,7 +50,8 @@ async def test_overview_authorization_and_real_counts(client, db_session):
     assert [user["id"] for user in body["recent_users"]] == [user.id for user in reversed(learners[1:])]
     assert all(user["id"] != staff.id for user in body["recent_users"])
     assert "password_hash" not in response.text
-    assert "plan" not in response.text
+    assert body["plan_counts"] == {"free": 5, "plus": 0, "pro": 0}
+    assert body["revenue_total"] == 0
 
 
 async def test_overview_empty_database_returns_zero_counts(client, db_session):
@@ -63,4 +64,8 @@ async def test_overview_empty_database_returns_zero_counts(client, db_session):
     assert signed_in.status_code == 200
     response = await client.get("/api/admin/overview")
     assert response.status_code == 200
-    assert response.json() == {"users_total": 0, "users_active": 0, "attempts_total": 0, "recent_users": []}
+    assert response.json() == {
+        "users_total": 0, "users_active": 0, "attempts_total": 0, "recent_users": [],
+        "plan_counts": {"free": 0, "plus": 0, "pro": 0}, "orders_paid_total": 0, "orders_paid_this_month": 0,
+        "revenue_total": 0, "revenue_this_month": 0,
+    }
