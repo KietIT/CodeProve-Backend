@@ -3,7 +3,8 @@
 Counted from the database (prompt_logs, HYPOTHESIS events), so they survive
 restarts and hold with several workers; the per-minute burst cap uses the
 in-memory limiter. One student message is one prompt_logs row, whatever the
-guard retried.
+guard retried. The daily Ciel cap and the monthly submit cap depend on the
+student's plan (billing.entitlements).
 """
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -14,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
 from app.core.config import get_settings
+from app.features.billing import entitlements as plans
+from app.features.billing import service as billing
 from app.models import Attempt, Event, PromptLog, User
 from app.schemas.mentor import CielQuota
 
@@ -24,16 +27,21 @@ MESSAGES = {
                          "You have used all {n} Ciel messages for today. Please come back tomorrow."),
     "hypothesis_limit": ("Bạn đã kiểm tra giả thuyết {n} lần trong lượt làm bài này.",
                          "You have checked your hypothesis {n} times in this attempt."),
+    "monthly_submit_limit": ("Gói Free cho nộp tối đa {n} bài mỗi tháng. Nâng cấp để nộp không giới hạn.",
+                             "The Free plan allows {n} submissions per month. Upgrade for unlimited submissions."),
     "rate_limited": ("Bạn gửi hơi nhanh. Hãy đợi một chút rồi thử lại.",
                      "You are sending too fast. Please wait a moment and try again."),
 }
 
 
-def _limit_error(code: str, n: int, retry_after: int | None = None) -> HTTPException:
+def _limit_error(code: str, n: int, retry_after: int | None = None, tier: str | None = None) -> HTTPException:
     vi, en = MESSAGES[code]
+    detail = {"code": code, "message_vi": vi.format(n=n), "message_en": en.format(n=n)}
+    if tier is not None:
+        detail.update(tier=tier, upgrade=tier != "pro")  # the UI shows an upgrade offer when true
     return HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        detail={"code": code, "message_vi": vi.format(n=n), "message_en": en.format(n=n)},
+        detail=detail,
         headers={"Retry-After": str(retry_after)} if retry_after else None,
     )
 
@@ -45,23 +53,32 @@ def day_start_utc(now: datetime | None = None) -> datetime:
     return local.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
 
 
+def month_start_utc(now: datetime | None = None) -> datetime:
+    """Midnight of the 1st of this month in the quota time zone, as UTC."""
+    tz = ZoneInfo(get_settings().quota_timezone)
+    local = (now or datetime.now(timezone.utc)).astimezone(tz)
+    return local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+
+
 async def ciel_left(db: AsyncSession, user_id: int, attempt_id: int) -> CielQuota:
     s = get_settings()
+    day_limit = plans.for_tier(await billing.current_tier(db, user_id), s).ciel_per_day
     in_attempt = (await db.execute(
         select(func.count()).select_from(PromptLog).where(PromptLog.attempt_id == attempt_id))).scalar_one()
     today = (await db.execute(
         select(func.count()).select_from(PromptLog).join(Attempt, Attempt.id == PromptLog.attempt_id)
         .where(Attempt.user_id == user_id, PromptLog.created_at >= day_start_utc()))).scalar_one()
-    return CielQuota(attempt_left=max(s.ciel_per_attempt - in_attempt, 0), day_left=max(s.ciel_per_day - today, 0))
+    return CielQuota(attempt_left=max(s.ciel_per_attempt - in_attempt, 0), day_left=max(day_limit - today, 0))
 
 
 async def enforce_ciel(db: AsyncSession, user: User, attempt: Attempt) -> None:
     s = get_settings()
+    tier = await billing.current_tier(db, user.id)
     left = await ciel_left(db, user.id, attempt.id)
     if left.attempt_left == 0:
         raise _limit_error("ciel_attempt_limit", s.ciel_per_attempt)
     if left.day_left == 0:
-        raise _limit_error("ciel_daily_limit", s.ciel_per_day)
+        raise _limit_error("ciel_daily_limit", plans.for_tier(tier, s).ciel_per_day, tier=tier)
     # Last, so a refused message does not use up the burst allowance.
     retry_after = rate_limit.hit(f"ciel:{user.id}", s.ciel_per_minute, 60)
     if retry_after > 0:
@@ -74,3 +91,21 @@ async def enforce_hypothesis(db: AsyncSession, attempt: Attempt) -> None:
         Event.attempt_id == attempt.id, Event.type == "HYPOTHESIS"))).scalar_one()
     if used >= n:
         raise _limit_error("hypothesis_limit", n)
+
+
+async def enforce_monthly_submits(db: AsyncSession, user: User, attempt: Attempt) -> None:
+    """Free students may submit a limited number of attempts per calendar month; paid plans are unlimited.
+
+    An attempt that was already submitted this month (re-sent while its explain-back is pending) is not
+    counted twice.
+    """
+    s = get_settings()
+    tier = await billing.current_tier(db, user.id)
+    limit = plans.for_tier(tier, s).monthly_submits
+    if limit is None:
+        return
+    used = (await db.execute(select(func.count()).select_from(Attempt).where(
+        Attempt.user_id == user.id, Attempt.id != attempt.id, Attempt.submitted_at.is_not(None),
+        Attempt.submitted_at >= month_start_utc()))).scalar_one()
+    if used >= limit:
+        raise _limit_error("monthly_submit_limit", limit, tier=tier)

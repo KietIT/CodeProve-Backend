@@ -31,7 +31,7 @@ async def test_directory_requires_ready_admin_and_excludes_staff(client, db_sess
     assert listing.json()["total"] == 1
     assert listing.json()["items"][0]["id"] == learner.id
     assert "password_hash" not in listing.text
-    assert "plan" not in listing.text
+    assert listing.json()["items"][0]["tier"] == "free"
     assert (await client.get(f"/api/admin/users/{staff.id}")).status_code == 404
 
 

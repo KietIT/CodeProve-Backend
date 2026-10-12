@@ -1,4 +1,5 @@
 from app.models.attempt import Attempt
+from app.models.billing import Order, PaymentEvent, Subscription
 from app.models.admin import AdminAuditLog, AdminSession
 from app.models.code_snapshot import CodeSnapshot
 from app.models.daily_attempt import DailyAttempt
@@ -17,5 +18,6 @@ from app.models.verification_answer import VerificationAnswer
 
 __all__ = [
     "AdminAuditLog", "AdminSession", "Attempt", "CodeSnapshot", "DailyAttempt", "DailyChallenge", "Event", "Exercise", "ExerciseMutant",
-    "ExerciseDraft", "FluencyReport", "LearnerSkill", "LlmCall", "PromptLog", "TestCase", "User", "VerificationAnswer",
+    "ExerciseDraft", "FluencyReport", "LearnerSkill", "LlmCall", "Order", "PaymentEvent", "PromptLog", "Subscription",
+    "TestCase", "User", "VerificationAnswer",
 ]

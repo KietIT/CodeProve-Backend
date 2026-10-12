@@ -5,7 +5,10 @@ Ciel and the hypothesis check call an LLM, so each student has caps. All numbers
 | Setting | Default | Applies to |
 |---|---|---|
 | `CIEL_PER_ATTEMPT` | 30 | Ciel messages in one attempt |
-| `CIEL_PER_DAY` | 100 | Ciel messages per student per day (`QUOTA_TIMEZONE`, default Asia/Ho_Chi_Minh) |
+| `CIEL_PER_DAY` | 20 | Ciel messages per day on the **Free** plan (`QUOTA_TIMEZONE`, default Asia/Ho_Chi_Minh) |
+| `CIEL_PER_DAY_PLUS` | 100 | Same, Plus plan |
+| `CIEL_PER_DAY_PRO` | 200 | Same, Pro plan |
+| `FREE_SUBMITS_PER_MONTH` | 10 | Submissions per calendar month on Free (Plus and Pro: unlimited). See `docs/api/billing.md` |
 | `CIEL_PER_MINUTE` | 10 | Ciel messages per student per minute (in-memory burst limit) |
 | `HYPOTHESIS_PER_ATTEMPT` | 10 | Hypothesis checks in one attempt |
 

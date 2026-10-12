@@ -225,8 +225,11 @@ async def reset_password(admin_id: int, request: Request, response: Response,
 
 
 async def audit_page(db: AsyncSession, *, actor_id: int | None, action: str | None,
-                     exercise_code: str | None, limit: int, offset: int) -> dict:
+                     exercise_code: str | None, limit: int, offset: int,
+                     target_user_id: int | None = None) -> dict:
     query = select(AdminAuditLog)
+    if target_user_id is not None:
+        query = query.where(AdminAuditLog.target_user_id == target_user_id)
     if actor_id is not None:
         query = query.where(AdminAuditLog.actor_user_id == actor_id)
     if action:
@@ -256,7 +259,8 @@ async def my_audit(response: Response, principal: Principal = Depends(ready_admi
 @router.get("/audit")
 async def audit(response: Response, _: Principal = Depends(super_admin), db: AsyncSession = Depends(get_db),
                 actor_id: int | None = None, action: str | None = None, exercise_code: str | None = None,
+                target_user_id: int | None = None,
                 limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0)) -> dict:
     response.headers["Cache-Control"] = "no-store"
-    return await audit_page(db, actor_id=actor_id, action=action,
+    return await audit_page(db, actor_id=actor_id, action=action, target_user_id=target_user_id,
                             exercise_code=exercise_code, limit=limit, offset=offset)
