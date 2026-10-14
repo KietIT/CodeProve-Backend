@@ -48,17 +48,23 @@ services:
   # opening any inbound port or owning a domain. The tunnel dials OUT to
   # Cloudflare, so EC2 Security Group needs no rule for 8000.
   #
-  # Default = QUICK tunnel: prints a free https://<random>.trycloudflare.com URL
-  # in `docker compose logs tunnel`. The URL is ephemeral (changes if the tunnel
-  # restarts) - fine for demo/testing.
+  # NAMED tunnel: the public URL (https://api.code-prove.io.vn) is set on the
+  # tunnel in the Cloudflare Zero Trust dashboard (public hostname ->
+  # http://backend:8000) and stays the same across restarts. The frontend
+  # (Vercel) and SePay's webhook both point at it, so it must not change.
+  # TUNNEL_TOKEN in .env is that tunnel's token; without it this container
+  # exits and nothing is reachable from outside.
   #
-  # For a STABLE URL: create a Named Tunnel in the Cloudflare Zero Trust
-  # dashboard, put TUNNEL_TOKEN in .env, and swap the command for:
-  #   command: tunnel --no-autoupdate run
+  # For a throwaway URL instead (local testing), swap the command for:
+  #   command: tunnel --no-autoupdate --url http://backend:8000
+  # and read the https://<random>.trycloudflare.com URL from
+  # `docker compose logs tunnel`. It changes on every restart.
   tunnel:
     image: cloudflare/cloudflared:latest
     container_name: codeprove_tunnel
-    command: tunnel --no-autoupdate --url http://backend:8000
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
     depends_on:
       - backend
     restart: always

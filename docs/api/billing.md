@@ -62,8 +62,9 @@ A plan given this way replaces the running one and creates no order, so it is no
 2. `.env`: `SEPAY_BANK_ACCOUNT`, `SEPAY_BANK_NAME` (short name, e.g. `TPBank`), `SEPAY_ACCOUNT_NAME`, and
    `SEPAY_API_KEY` = a long random string you make up. Never commit them.
 3. `alembic upgrade head`.
-4. Expose the backend over HTTPS (production domain, or `cloudflared tunnel --url http://localhost:8000` for
-   local testing). In SePay add a webhook: event "money in", that bank account, URL
+4. Expose the backend over HTTPS (production: `https://api.code-prove.io.vn`, the named tunnel in
+   `docker-compose.yml`; local testing: `cloudflared tunnel --url http://localhost:8000`, whose URL changes on
+   every restart and must then be updated in SePay). In SePay add a webhook: event "money in", that bank account, URL
    `https://<host>/api/billing/webhook`, authentication **API Key** with the same value as `SEPAY_API_KEY`.
 5. In SePay's company settings set the payment-code prefix to `CP` (same as `SEPAY_CODE_PREFIX`) so SePay
    detects the code. Without it the backend still finds the code in the transfer content.
