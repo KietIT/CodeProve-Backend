@@ -35,10 +35,14 @@ def _validate_frontend_origin(url: str | None) -> str | None:
     return origin if origin in _allowed_frontend_origins() else None
 
 
-def _frontend_callback_url(base: str, token: str | None = None, error: str | None = None) -> str:
+def _frontend_callback_url(base: str, token: str | None = None, error: str | None = None,
+                           new_user: bool = False) -> str:
     params = []
     if token:
         params.append(("token", token))
+    if new_user:
+        # The frontend reports a GA4 sign_up (method google) only for accounts created by this sign-in.
+        params.append(("new_user", "1"))
     if error:
         params.append(("error", error))
     query = urlencode(params)
@@ -90,10 +94,10 @@ async def google_callback(
     if not code or payload is None:
         return RedirectResponse(_frontend_callback_url(base, error="Invalid Google sign-in response"))
     try:
-        user = await service.authenticate_google(db, code)
+        user, created = await service.authenticate_google(db, code)
     except (RuntimeError, ValueError) as exc:
         return RedirectResponse(_frontend_callback_url(base, error=str(exc)))
-    return RedirectResponse(_frontend_callback_url(base, token=create_access_token(str(user.id))))
+    return RedirectResponse(_frontend_callback_url(base, token=create_access_token(str(user.id)), new_user=created))
 
 
 @router.get("/me", response_model=UserOut)

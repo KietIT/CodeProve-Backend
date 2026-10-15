@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # An order not paid within this many minutes is shown as expired (a late transfer is still honoured).
     payment_window_minutes: int = 15
     checkout_per_minute: int = 5
+    # Google Analytics 4: the server reports paid orders as `purchase` (analytics/ga4.py). Both empty = off.
+    # Measurement ID "G-..." of the web stream; API secret from GA4 Admin > Data streams > the web stream >
+    # Measurement Protocol API secrets. Never commit the secret.
+    ga_measurement_id: str = ""
+    ga_api_secret: str = ""
 
     @field_validator("cors_origins", mode="before")
     @classmethod

@@ -2,7 +2,7 @@
 
 ## Tiếng Việt
 
-**Cập nhật lần cuối:** 01/10/2026 · **Phiên bản:** 2026-10-2
+**Cập nhật lần cuối:** 15/10/2026 · **Phiên bản:** 2026-10-3
 
 CodeProve là nền tảng luyện và đánh giá kỹ năng lập trình có trợ lý AI (Ciel). Chính sách này giải thích chúng tôi thu thập dữ liệu gì, dùng để làm gì, chia sẻ với ai và bạn có những quyền gì.
 
@@ -18,8 +18,10 @@ CodeProve là nền tảng luyện và đánh giá kỹ năng lập trình có t
 | Trò chuyện với Ciel | Câu hỏi bạn gửi và câu trả lời bạn đã thấy | Trong lúc bạn dùng Ciel |
 | Kết quả | Điểm theo 6 trục, báo cáo và nhận xét, điểm kỹ năng (Elo) theo từng kỹ năng, lịch sử bài đã làm, Daily Bug Hunt | Hệ thống tính từ quá trình làm bài |
 | Kỹ thuật | Số token mỗi lần gọi AI (không có nội dung), thời gian; token đăng nhập lưu trong trình duyệt của bạn | Hệ thống tự ghi |
+| Thanh toán | Gói bạn mua, số tiền, thời điểm thanh toán; thông báo giao dịch chuyển khoản (nội dung chuyển khoản, số tiền, mã giao dịch, và tên hoặc số tài khoản người chuyển nếu ngân hàng ghi kèm) | Khi bạn mua gói Plus/Pro; SePay gửi khi tiền về tài khoản của chúng tôi |
+| Sử dụng trang web | Trang đã xem, trang hoặc liên kết dẫn bạn tới (ví dụ bài đăng TikTok, Facebook), loại thiết bị và trình duyệt, khu vực ước tính (thành phố, quốc gia) suy ra từ địa chỉ IP, sự kiện đăng ký và mua gói (mã đơn, gói, số tiền). Gắn với một mã ngẫu nhiên lưu trong cookie, không gắn với tên hay email | Google Analytics ghi khi bạn dùng trang web |
 
-Chúng tôi không thu thập số CMND/CCCD, thông tin thanh toán, vị trí hay danh bạ.
+Chúng tôi không thu thập số CMND/CCCD, số thẻ ngân hàng, vị trí chính xác hay danh bạ.
 
 ### 2. Mục đích sử dụng
 
@@ -31,8 +33,10 @@ Chúng tôi không thu thập số CMND/CCCD, thông tin thanh toán, vị trí 
   - nếu bạn bật **Cá nhân hoá AI**, Ciel nhận một bản tóm tắt ngắn về kỹ năng mạnh/yếu của bạn (không có tên, email, code hay nội dung trò chuyện).
 - Cải thiện chất lượng chấm điểm. Thành viên nhóm chấm lại một số phiên làm bài dưới dạng ẩn danh hoá: thay tài khoản bằng mã ngẫu nhiên, xoá email và số điện thoại khỏi nội dung.
 - Kiểm soát chi phí và chống lạm dụng (giới hạn số tin nhắn với Ciel).
+- Xử lý thanh toán gói Plus/Pro và đối soát giao dịch.
+- Đo lượng truy cập. CodeProve sử dụng Google Analytics để đo lượng truy cập và cải thiện sản phẩm. Dữ liệu được thu thập ẩn danh: chúng tôi xem số liệu tổng hợp (bao nhiêu lượt truy cập, đăng ký, mua gói đến từ kênh nào), không xem từng người.
 
-Chúng tôi **không bán** dữ liệu của bạn và **không dùng** nó để quảng cáo.
+Chúng tôi **không bán** dữ liệu của bạn và **không dùng** nó để quảng cáo. Các tính năng quảng cáo của Google Analytics (Google signals, quảng cáo cá nhân hoá) được tắt.
 
 ### 3. Bên thứ ba xử lý dữ liệu
 
@@ -43,8 +47,10 @@ Chúng tôi **không bán** dữ liệu của bạn và **không dùng** nó đ�
 | **Cloudflare** | Đường truyền từ internet tới máy chủ | Lưu lượng truy cập (đã mã hoá HTTPS) |
 | **Vercel** (Hoa Kỳ) | Phục vụ giao diện web | Lưu lượng truy cập |
 | **Google** | Đăng nhập bằng Google (nếu bạn chọn) | Google xác thực bạn và gửi lại tên, email |
+| **Google Analytics** (Google, Hoa Kỳ) | Đo lượng truy cập | Dữ liệu "Sử dụng trang web" ở mục 1 |
+| **SePay** (Việt Nam) | Báo cho chúng tôi khi khoản chuyển khoản mua gói về tài khoản | Thông báo giao dịch của tài khoản nhận tiền của chúng tôi |
 
-**Chuyển dữ liệu ra nước ngoài:** dữ liệu của bạn được lưu trên máy chủ AWS tại Úc và được OpenAI xử lý tại Hoa Kỳ. Lưu lượng truy cập đi qua hạ tầng của Cloudflare và Vercel. Khi đồng ý với chính sách này, bạn đồng ý việc chuyển dữ liệu đó cho các mục đích ở mục 2.
+**Chuyển dữ liệu ra nước ngoài:** dữ liệu của bạn được lưu trên máy chủ AWS tại Úc và được OpenAI xử lý tại Hoa Kỳ. Dữ liệu sử dụng trang web được Google Analytics xử lý tại Hoa Kỳ. Lưu lượng truy cập đi qua hạ tầng của Cloudflare và Vercel. Khi đồng ý với chính sách này, bạn đồng ý việc chuyển dữ liệu đó cho các mục đích ở mục 2.
 
 ### 4. Thời gian lưu trữ
 
@@ -52,6 +58,8 @@ Chúng tôi **không bán** dữ liệu của bạn và **không dùng** nó đ�
 - **Khi bạn yêu cầu xoá tài khoản:** chúng tôi xoá dữ liệu gắn với tài khoản trong vòng 30 ngày. Bản sao lưu cơ sở dữ liệu tự hết hạn sau 30 ngày, nên dữ liệu đã xoá biến mất khỏi bản sao lưu chậm nhất 30 ngày sau đó.
 - **Dữ liệu đã ẩn danh hoá** dùng để hiệu chỉnh chấm điểm (không còn email, số điện thoại hay mã tài khoản thật) có thể được giữ lâu hơn.
 - **Log token của các lần gọi AI** chỉ là con số, không có nội dung, dùng cho báo cáo chi phí.
+- **Đơn hàng và giao dịch thanh toán:** lưu theo thời hạn pháp luật về kế toán yêu cầu, kể cả khi tài khoản đã bị xoá.
+- **Dữ liệu Google Analytics:** Google tự xoá sau 14 tháng.
 
 ### 5. Quyền của bạn
 
@@ -66,6 +74,7 @@ Bạn có quyền:
 Cách thực hiện:
 - **Tắt Cá nhân hoá AI:** tự làm ở trang Hồ sơ, có hiệu lực ngay.
 - **Sửa họ tên:** tự làm ở trang Hồ sơ.
+- **Từ chối Google Analytics:** chặn cookie của trang, dùng trình chặn quảng cáo, hoặc cài [tiện ích chặn Google Analytics](https://tools.google.com/dlpage/gaoptout). Trang web vẫn hoạt động bình thường.
 - **Xem, nhận bản sao, xoá tài khoản, rút lại đồng ý:** gửi email tới **flux@codeprove.vn** từ email tài khoản của bạn. Chúng tôi phản hồi trong vòng 72 giờ và hoàn tất yêu cầu trong thời hạn pháp luật quy định. Nếu bạn rút lại đồng ý, các tính năng AI (Ciel, kiểm tra giả thuyết, chấm điểm explain-back) sẽ ngừng hoạt động với tài khoản của bạn; phần luyện code khác vẫn dùng được.
 
 ### 6. Bảo mật
@@ -91,7 +100,7 @@ Khi chính sách thay đổi, chúng tôi cập nhật phiên bản và hỏi l�
 
 ## English
 
-**Last updated:** 1 October 2026 · **Version:** 2026-10-2
+**Last updated:** 15 October 2026 · **Version:** 2026-10-3
 
 CodeProve is a platform for practising and assessing programming skills with an AI assistant (Ciel). This policy explains what data we collect, why, who we share it with, and your rights.
 
@@ -107,8 +116,10 @@ CodeProve is a platform for practising and assessing programming skills with an 
 | Ciel chat | The questions you send and the replies you saw | While you use Ciel |
 | Results | Scores on 6 axes, reports and feedback, per-skill ratings (Elo), exercise history, Daily Bug Hunt | Computed from your work |
 | Technical | Token counts of each AI call (no content), timestamps; the sign-in token stored in your browser | Logged automatically |
+| Payments | The plan you buy, the amount, when it was paid; the bank transfer notice (transfer content, amount, transaction id, and the sender's name or account number if the bank includes them) | When you buy Plus/Pro; SePay sends it when the money reaches our account |
+| Website usage | Pages viewed, the page or link that brought you (e.g. a TikTok or Facebook post), device and browser type, approximate area (city, country) derived from your IP address, sign-up and purchase events (order code, plan, amount). Tied to a random id kept in a cookie, not to your name or email | Google Analytics records it while you use the website |
 
-We do not collect ID numbers, payment data, location or contacts.
+We do not collect ID numbers, card numbers, precise location or contacts.
 
 ### 2. Why we use it
 
@@ -120,8 +131,10 @@ We do not collect ID numbers, payment data, location or contacts.
   - if **AI personalisation** is on, Ciel receives a short summary of your strong and weak skills (no name, email, code or chat).
 - To improve scoring. Team members re-rate some sessions in pseudonymised form: accounts are replaced by random keys, and emails and phone numbers are removed from the text.
 - Cost control and abuse prevention (limits on Ciel messages).
+- To process Plus/Pro payments and reconcile transactions.
+- Traffic measurement. CodeProve uses Google Analytics to measure traffic and improve the product. The data is collected anonymously: we look at aggregate numbers (how many visits, sign-ups and purchases came from each channel), not at individuals.
 
-We do **not sell** your data and do **not use** it for advertising.
+We do **not sell** your data and do **not use** it for advertising. Google Analytics' advertising features (Google signals, ad personalisation) are turned off.
 
 ### 3. Processors
 
@@ -132,8 +145,10 @@ We do **not sell** your data and do **not use** it for advertising.
 | **Cloudflare** | Network path from the internet to our server | Traffic (HTTPS-encrypted) |
 | **Vercel** (USA) | Serves the web app | Traffic |
 | **Google** | Google sign-in (if you choose it) | Google authenticates you and returns your name and email |
+| **Google Analytics** (Google, USA) | Traffic measurement | The "Website usage" data in section 1 |
+| **SePay** (Vietnam) | Tells us when a plan payment reaches our bank account | Transaction notices of our receiving account |
 
-**Transfers abroad:** your data is stored on AWS servers in Australia and processed by OpenAI in the USA. Traffic passes through Cloudflare's and Vercel's infrastructure. By accepting this policy you agree to these transfers for the purposes in section 2.
+**Transfers abroad:** your data is stored on AWS servers in Australia and processed by OpenAI in the USA. Website usage data is processed by Google Analytics in the USA. Traffic passes through Cloudflare's and Vercel's infrastructure. By accepting this policy you agree to these transfers for the purposes in section 2.
 
 ### 4. Retention
 
@@ -141,6 +156,8 @@ We do **not sell** your data and do **not use** it for advertising.
 - **On an account deletion request:** we delete the data linked to your account within 30 days. Database backups expire after 30 days, so deleted data leaves the backups at most 30 days later.
 - **Pseudonymised data** used to calibrate scoring (no email, phone number or real account id) may be kept longer.
 - **Token logs of AI calls** are numbers only, with no content, and are used for cost reports.
+- **Orders and payment transactions:** kept for as long as accounting law requires, even after the account is deleted.
+- **Google Analytics data:** deleted by Google after 14 months.
 
 ### 5. Your rights
 
@@ -155,6 +172,7 @@ You have the right:
 How to use them:
 - **Turn off AI personalisation:** on the Profile page, effective immediately.
 - **Edit your name:** on the Profile page.
+- **Opt out of Google Analytics:** block the site's cookies, use an ad blocker, or install the [Google Analytics opt-out add-on](https://tools.google.com/dlpage/gaoptout). The website keeps working.
 - **Access, copy, account deletion, withdrawal of consent:** email **flux@codeprove.vn** from your account's email address. We reply within 72 hours and complete the request within the time the law requires. If you withdraw consent, the AI features (Ciel, the hypothesis check, explain-back scoring) stop for your account; the rest of the coding practice remains available.
 
 ### 6. Security
