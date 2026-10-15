@@ -33,6 +33,9 @@ class Order(Base):
     status: Mapped[str] = mapped_column(String(16), default="pending", server_default="pending", index=True)
     # SePay's id of the bank transaction that paid this order.
     provider_txn_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # The buyer's GA4 ids from checkout; the paid webhook reports the purchase under them (analytics.ga4).
+    ga_client_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ga_session_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

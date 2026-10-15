@@ -45,7 +45,7 @@ async def test_signup_records_consent(client):
     r = await client.post("/api/auth/signup", json={**SIGNUP, "accept_privacy": True})
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
     assert (await client.get("/api/me/privacy", headers=headers)).json() == {
-        "consented": True, "version": "2026-10-2", "current_version": "2026-10-2", "ai_personalization": True}
+        "consented": True, "version": "2026-10-3", "current_version": "2026-10-3", "ai_personalization": True}
 
 
 async def _google_style_user(db_session) -> dict:
@@ -82,8 +82,8 @@ async def test_ai_features_wait_for_consent_the_rest_works(client, db_session, c
 async def test_consent_must_be_for_the_current_version(client, db_session, ciel):
     headers = await _google_style_user(db_session)
     draft = await client.post("/api/me/privacy/consent", json={"version": "2026-10"}, headers=headers)  # the draft
-    assert draft.status_code == 409 and draft.json()["detail"]["current_version"] == "2026-10-2"
-    ok = await client.post("/api/me/privacy/consent", json={"version": "2026-10-2"}, headers=headers)
+    assert draft.status_code == 409 and draft.json()["detail"]["current_version"] == "2026-10-3"
+    ok = await client.post("/api/me/privacy/consent", json={"version": "2026-10-3"}, headers=headers)
     assert ok.status_code == 200 and ok.json()["consented"] is True
     await _exercise(db_session)
     aid = (await client.post("/api/attempts", json={"exercise_code": "CP-001"}, headers=headers)).json()["attempt_id"]
@@ -130,4 +130,4 @@ async def test_accepting_the_draft_is_not_consent_to_the_approved_policy(client,
     await db_session.commit()
     headers = {"Authorization": f"Bearer {create_access_token(str(user.id))}"}
     state = (await client.get("/api/me/privacy", headers=headers)).json()
-    assert state["consented"] is False and state["version"] == "2026-10" and state["current_version"] == "2026-10-2"
+    assert state["consented"] is False and state["version"] == "2026-10" and state["current_version"] == "2026-10-3"
