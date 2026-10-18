@@ -13,7 +13,8 @@ from app.models import User
 
 # 2026-10 was the draft shown in production before the team filled and approved the text (2026-10-01);
 # 2026-10-2 is the approved policy, so everyone who accepted the draft is asked again.
-POLICY_VERSION = "2026-10-2"
+# 2026-10-3 (2026-10-15) adds Google Analytics and SePay payments.
+POLICY_VERSION = "2026-10-3"
 CONSENT_REQUIRED = {
     "code": "privacy_consent_required",
     "message_vi": "Bạn cần đồng ý với Chính sách quyền riêng tư trước khi dùng các tính năng AI.",

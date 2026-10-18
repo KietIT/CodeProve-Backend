@@ -96,7 +96,8 @@ def google_auth_url(state: str) -> str:
     return f"{_GOOGLE_AUTH_URL}?{params}"
 
 
-async def authenticate_google(db: AsyncSession, code: str) -> User:
+async def authenticate_google(db: AsyncSession, code: str) -> tuple[User, bool]:
+    """Sign in with Google; the flag is True when this call created the account (analytics sign_up)."""
     settings = get_settings()
     if not settings.google_client_id or not settings.google_client_secret:
         raise RuntimeError("Google sign-in is not configured")
@@ -137,7 +138,7 @@ async def authenticate_google(db: AsyncSession, code: str) -> User:
     if user is not None:
         if user.role != "user" or not user.is_active:
             raise ValueError("This account cannot use Google sign-in")
-        return user
+        return user, False
 
     full_name = str(profile.get("name") or email.split("@", 1)[0]).strip()
     user = User(
@@ -148,4 +149,4 @@ async def authenticate_google(db: AsyncSession, code: str) -> User:
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return user
+    return user, True

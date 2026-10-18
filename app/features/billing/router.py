@@ -1,15 +1,16 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.deps import get_current_user
-from app.features.billing import service
+from app.features.analytics import ga4
+from app.features.billing import sepay_client, service
 from app.features.billing.plans import PLANS
-from app.models import User
+from app.models import Order, User
 from app.schemas.billing import BillingMeOut, CheckoutIn, OrderOut, PaymentOut, PlanOut
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,7 @@ async def me(db: AsyncSession = Depends(get_db), user: User = Depends(get_curren
 async def checkout(data: CheckoutIn, db: AsyncSession = Depends(get_db),
                    user: User = Depends(get_current_user)) -> PaymentOut:
     rate_limit.enforce(f"checkout:{user.id}", get_settings().checkout_per_minute, 60)
-    order = await service.create_checkout(db, user, data.plan_code)
+    order = await service.create_checkout(db, user, data.plan_code, data.ga_client_id, data.ga_session_id)
     return PaymentOut(**service.payment_info(order))
 
 
@@ -49,7 +50,7 @@ async def cancel(order_id: int, db: AsyncSession = Depends(get_db),
 
 
 @router.post("/webhook")
-async def webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+async def webhook(request: Request, background: BackgroundTasks, db: AsyncSession = Depends(get_db)) -> dict:
     """Called by SePay, not by the browser. Trusted only when it carries our API key."""
     try:
         body = await request.json()
@@ -61,4 +62,8 @@ async def webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
     if outcome == "invalid_signature":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
     logger.info("SePay webhook: %s", outcome)
+    if outcome == "activated" and ga4.configured():
+        order = await db.get(Order, sepay_client.order_id_from(body))
+        if order is not None:  # reported after SePay has its answer; a GA failure is only logged
+            background.add_task(ga4.send_purchase, ga4.purchase_payload(order))
     return {"success": True}

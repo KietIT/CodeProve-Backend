@@ -88,8 +88,11 @@ async def get_order(db: AsyncSession, user: User, order_id: int) -> Order:
     return order
 
 
-async def create_checkout(db: AsyncSession, user: User, plan_code: str) -> Order:
-    """A pending order to pay by bank transfer. The plan starts only when the webhook confirms the money."""
+async def create_checkout(db: AsyncSession, user: User, plan_code: str, ga_client_id: str | None = None,
+                          ga_session_id: int | None = None) -> Order:
+    """A pending order to pay by bank transfer. The plan starts only when the webhook confirms the money.
+
+    The GA4 ids (optional) let the paid webhook report the purchase to the visit that brought the buyer."""
     plan = PLANS.get(plan_code)
     if plan is None:
         raise _error(status.HTTP_404_NOT_FOUND, "unknown_plan", "Gói không tồn tại.", "Unknown plan.")
@@ -110,10 +113,13 @@ async def create_checkout(db: AsyncSession, user: User, plan_code: str) -> Order
         Order.user_id == user.id, Order.status == "pending", Order.plan_code == plan.code)
         .order_by(Order.id.desc()))).scalars().first()
     if reusable is not None:
+        if ga_client_id:  # the latest visit is the one that should get the credit
+            reusable.ga_client_id, reusable.ga_session_id = ga_client_id, ga_session_id
         await db.commit()
         return reusable
 
-    order = Order(user_id=user.id, plan_code=plan.code, amount=plan.amount, status="pending")
+    order = Order(user_id=user.id, plan_code=plan.code, amount=plan.amount, status="pending",
+                  ga_client_id=ga_client_id, ga_session_id=ga_session_id)
     db.add(order)
     await db.commit()
     await db.refresh(order)

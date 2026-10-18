@@ -11,7 +11,7 @@ our webhook when the money arrives. There is no hosted payment page: the fronten
 |---|---|---|
 | `GET /api/billing/plans` | none | The four plans: `plus_monthly`, `plus_yearly`, `pro_monthly`, `pro_yearly`. |
 | `GET /api/billing/me` | learner | `tier`, `expires_at`, `days_left`, `entitlements`, last 50 `orders`. |
-| `POST /api/billing/checkout` | learner | Body `{"plan_code"}` -> payment details (below). Show them on `/billing/pay?order={id}`. |
+| `POST /api/billing/checkout` | learner | Body `{"plan_code", "ga_client_id"?, "ga_session_id"?}` -> payment details (below). Show them on `/billing/pay?order={id}`. |
 | `GET /api/billing/orders/{id}/payment` | learner | The same payment details for an existing order (page reload). |
 | `POST /api/billing/orders/{id}/cancel` | learner | Cancel an order that is still `pending`. |
 | `POST /api/billing/webhook` | SePay API key | Only this call activates a plan. |
@@ -26,6 +26,14 @@ an order is `pending` returns that order.
 
 The payment page must **poll `GET /api/billing/me`** until the order is `paid`; nothing in the browser proves a
 payment.
+
+**Analytics.** The frontend does **not** send the GA4 `purchase` event: the backend sends it when the webhook
+activates the order (Measurement Protocol, `app/features/analytics/ga4.py`), so it is counted even if the buyer
+closed the page. For GA to credit the right channel, checkout should carry the browser's GA ids from
+`gtag('get', NEXT_PUBLIC_GA_ID, 'client_id' | 'session_id', cb)`. Both are optional; a malformed value is dropped,
+never rejected. The purchase uses `transaction_id` = the payment code (`CP<order id>`), `value` = amount,
+`currency` = `VND` and one item (`item_id` = plan code, `item_name` = `Plus`/`Pro`, `item_variant` = period).
+Only `paid` orders are reported (not `paid_unapplied`). Setup and the rest of GA4: `docs/analytics/ga4.md`.
 
 Order statuses: `pending`, `paid`, `cancelled`, `expired` (unpaid after `PAYMENT_WINDOW_MINUTES`),
 `paid_unapplied` (paid while a different tier was running: support resolves it), `refunded`. A transfer that
