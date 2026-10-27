@@ -16,6 +16,13 @@ our webhook when the money arrives. There is no hosted payment page: the fronten
 | `POST /api/billing/orders/{id}/cancel` | learner | Cancel an order that is still `pending`. |
 | `POST /api/billing/webhook` | SePay API key | Only this call activates a plan. |
 
+Admin only (ready admin session; the frontend reaches them through `/api/admin-gateway`):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/admin/payments?limit&offset&search` | Incoming transfers from `payment_events` (signed, `transferType = "in"`), newest first, with time, amount, bank, transfer content and the learner of the matched order (`null` when no order matched). `search` matches learner name or email. |
+| `GET /api/admin/payments/summary?days=30` | Last 1-365 days in `quota_timezone`: `revenue`, `paid_orders`, `average_order`, `transfers_received`, `needs_attention`, and chart series `by_day` (every day, empty ones included), `by_plan`, `by_status`. Revenue counts `paid` and `paid_unapplied` orders of learners; plans given by hand make no order and are not counted. |
+
 Payment details: `{order_id, status, plan_code, amount, payment_code, bank_name, account_number, account_name,
 qr_url, expires_at}`. `qr_url` is a VietQR image with the account, amount and content filled in.
 
