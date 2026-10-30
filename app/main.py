@@ -33,6 +33,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_overview_router)
     from app.features.admin.billing import router as admin_billing_router
     app.include_router(admin_billing_router)
+    from app.features.admin.payments import router as admin_payments_router
+    app.include_router(admin_payments_router)
 
     from app.features.exercises.router import router as exercises_router
     app.include_router(exercises_router)
