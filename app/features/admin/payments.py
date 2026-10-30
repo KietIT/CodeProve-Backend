@@ -15,8 +15,10 @@ from app.models import Order, PaymentEvent, User
 
 router = APIRouter(prefix="/api/admin/payments", tags=["admin payments"])
 
-# A transfer counts once SePay's call was signed correctly and the money came in (not out).
-_incoming = (PaymentEvent.signature_valid.is_(True), PaymentEvent.raw["transferType"].as_string() == "in")
+# The account also receives money unrelated to CodeProve. A transfer counts only when SePay's call was signed
+# correctly, the money came in, and its content carries the code of one of our orders (joined as an order below).
+_incoming = (PaymentEvent.signature_valid.is_(True), PaymentEvent.raw["transferType"].as_string() == "in",
+             PaymentEvent.order_id.is_not(None))
 
 
 class PaymentOut(BaseModel):
@@ -26,13 +28,17 @@ class PaymentOut(BaseModel):
     bank: str | None
     transfer_content: str | None
     provider_txn_id: int | None
-    # Who paid, when the transfer carried one of our order codes. Both are None for a transfer we cannot match.
-    order_id: int | None
-    order_status: str | None
-    plan_code: str | None
-    user_id: int | None
-    user_name: str | None
-    user_email: str | None
+    # From SePay's webhook: the receiving account, the bank's own reference and the bank's time ("YYYY-MM-DD
+    # HH:MM:SS", Vietnam time). The payer's own account number is not sent; the content often names the payer.
+    account_number: str | None
+    reference_code: str | None
+    transaction_date: str | None
+    order_id: int
+    order_status: str
+    plan_code: str
+    user_id: int
+    user_name: str
+    user_email: str
 
 
 class PaymentPage(BaseModel):
@@ -65,8 +71,6 @@ class PaymentSummary(BaseModel):
     paid_orders: int
     average_order: int
     transfers_received: int
-    # Money in that needs a person: paid while another plan ran, or a transfer matching no order / amount.
-    needs_attention: int
     by_day: list[DayPoint]
     by_plan: list[PlanSlice]
     by_status: list[StatusSlice]
@@ -89,12 +93,12 @@ async def payments(
     _principal: Principal = Depends(ready_admin),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentPage:
-    """Incoming transfers, newest first, each with the learner it paid for (if any)."""
+    """Incoming transfers that paid a CodeProve order, newest first, each with the learner it was for."""
     response.headers["Cache-Control"] = "no-store"
     query = (
         select(PaymentEvent, Order, User)
-        .outerjoin(Order, Order.id == PaymentEvent.order_id)
-        .outerjoin(User, User.id == Order.user_id)
+        .join(Order, Order.id == PaymentEvent.order_id)
+        .join(User, User.id == Order.user_id)
         .where(*_incoming)
     )
     term = (search or "").strip()
@@ -109,10 +113,11 @@ async def payments(
         PaymentOut(
             id=event.id, received_at=event.received_at, amount=_int(event.raw.get("transferAmount")),
             bank=_text(event.raw.get("gateway")), transfer_content=_text(event.raw.get("content")),
-            provider_txn_id=event.provider_txn_id, order_id=event.order_id,
-            order_status=order.status if order else None, plan_code=order.plan_code if order else None,
-            user_id=user.id if user else None, user_name=user.full_name if user else None,
-            user_email=user.email if user else None,
+            provider_txn_id=event.provider_txn_id, account_number=_text(event.raw.get("accountNumber")),
+            reference_code=_text(event.raw.get("referenceCode")),
+            transaction_date=_text(event.raw.get("transactionDate")), order_id=order.id,
+            order_status=order.status, plan_code=order.plan_code,
+            user_id=user.id, user_name=user.full_name, user_email=user.email,
         )
         for event, order, user in rows
     ]
@@ -153,11 +158,9 @@ async def summary(
         for day in (first_day + timedelta(days=n) for n in range(days))
     ]
     revenue = sum(amount for _plan, amount, _paid, _status in orders)
-    transfers = await db.scalar(select(func.count(PaymentEvent.id)).where(*_incoming, PaymentEvent.received_at >= since)) or 0
-    # Incoming transfers that did not become a paid order: unmatched, wrong amount, or a repeat payment.
-    unprocessed = await db.scalar(select(func.count(PaymentEvent.id)).where(
-        *_incoming, PaymentEvent.received_at >= since, PaymentEvent.processed.is_(False))) or 0
-    attention = unprocessed + sum(1 for _p, _a, _t, status in orders if status == "paid_unapplied")
+    transfers = await db.scalar(
+        select(func.count(PaymentEvent.id)).join(Order, Order.id == PaymentEvent.order_id)
+        .where(*_incoming, PaymentEvent.received_at >= since)) or 0
     # Every order opened in the period by where it ended up (paid, still pending, expired...), for the donut chart.
     statuses = dict((await db.execute(
         select(Order.status, func.count(Order.id))
@@ -168,7 +171,7 @@ async def summary(
     return PaymentSummary(
         days=days, revenue=revenue, paid_orders=len(orders),
         average_order=revenue // len(orders) if orders else 0,
-        transfers_received=transfers, needs_attention=attention,
+        transfers_received=transfers,
         by_day=by_day,
         by_plan=[PlanSlice(plan_code=code, revenue=values[0], orders=values[1])
                  for code, values in sorted(plans.items(), key=lambda item: -item[1][0])],
