@@ -20,7 +20,7 @@ _GOOGLE_USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
 
 
 async def create_user(db: AsyncSession, data: SignupIn) -> User:
-    if data.email.endswith("@codeprove.production"):
+    if data.email.endswith("@codeprove.production") or data.email == "lecture@codeprove.vn":
         raise ValueError("email_taken")
     existing = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if existing is not None:
@@ -132,7 +132,7 @@ async def authenticate_google(db: AsyncSession, code: str) -> tuple[User, bool]:
         raise RuntimeError("Google email is not verified")
 
     email = normalize_email(str(profile.get("email", "")))
-    if email.endswith("@codeprove.production"):
+    if email.endswith("@codeprove.production") or email == "lecture@codeprove.vn":
         raise ValueError("This account cannot use Google sign-in")
     user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if user is not None:

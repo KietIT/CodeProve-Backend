@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_db
-from app.features.admin.router import Principal, ready_admin
+from app.features.admin.router import Principal, ready_payments
 from app.models import Order, PaymentEvent, User
 
 router = APIRouter(prefix="/api/admin/payments", tags=["admin payments"])
@@ -90,7 +90,7 @@ async def payments(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
     search: str | None = Query(None, max_length=100),
-    _principal: Principal = Depends(ready_admin),
+    _principal: Principal = Depends(ready_payments),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentPage:
     """Incoming transfers that paid a CodeProve order, newest first, each with the learner it was for."""
@@ -128,7 +128,7 @@ async def payments(
 async def summary(
     response: Response,
     days: int = Query(30, ge=1, le=365),
-    _principal: Principal = Depends(ready_admin),
+    _principal: Principal = Depends(ready_payments),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentSummary:
     """Totals over the last `days` calendar days (quota_timezone), with a point for every day, even empty ones."""
