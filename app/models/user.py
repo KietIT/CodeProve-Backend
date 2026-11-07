@@ -13,6 +13,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    # user | admin | super_admin | payment_viewer
     role: Mapped[str] = mapped_column(String(16), nullable=False, default="user", server_default="user")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")

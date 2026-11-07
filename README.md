@@ -60,6 +60,21 @@ to the backend origin. The current login throttle is process-local, so deploy a 
 rate limiter before running multiple backend workers. MFA for the super admin is
 planned for a later phase.
 
+### Lecturer payment-only account
+
+Apply `alembic upgrade head`, then run `python -m scripts.bootstrap_payment_viewer`
+and enter the agreed lecturer password at the hidden prompt. On the deployment
+host: `docker compose exec backend python -m scripts.bootstrap_payment_viewer`.
+The command creates `lecture@codeprove.vn` with role `payment_viewer` and a hashed
+password. It does not require a first-login password change and never resets an
+existing account. `PAYMENT_VIEWER_PASSWORD` can supply the password for automation;
+do not commit or log it.
+
+The lecturer signs in at `/login` or `/admin-login` and lands on `/admin/payments`.
+Only payment history, transaction details, and payment summary charts are shown.
+The backend permits the two payment GET endpoints and denies other admin APIs.
+Authentication, own-password changes, and sign-out use the existing staff session.
+
 ### Admin exercise workflow
 
 Apply the latest migration (`alembic upgrade head`) before using these endpoints.

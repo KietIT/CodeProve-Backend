@@ -18,6 +18,7 @@ from app.schemas.auth import LoginIn, normalize_email
 
 auth_router = APIRouter(prefix="/api/auth/admin", tags=["admin auth"])
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+STAFF_ROLES = ("admin", "super_admin", "payment_viewer")
 
 
 class AdminOut(BaseModel):
@@ -83,7 +84,7 @@ async def current_admin(request: Request, db: AsyncSession = Depends(get_db)) ->
     if session is None or session.revoked_at is not None or service.aware(session.expires_at) <= now:
         raise HTTPException(status_code=401, detail="Admin session expired")
     user = await db.get(User, session.user_id)
-    if user is None or user.role not in ("admin", "super_admin") or not user.is_active:
+    if user is None or user.role not in STAFF_ROLES or not user.is_active:
         raise HTTPException(status_code=401, detail="Admin account unavailable")
     if service.aware(session.last_seen_at) < now - timedelta(seconds=60):
         session.last_seen_at = now
@@ -92,6 +93,13 @@ async def current_admin(request: Request, db: AsyncSession = Depends(get_db)) ->
 
 
 async def ready_admin(principal: Principal = Depends(current_admin)) -> Principal:
+    if principal.user.role not in ("admin", "super_admin"):
+        raise HTTPException(status_code=403, detail="Admin permission required")
+    return await ready_payments(principal)
+
+
+async def ready_payments(principal: Principal = Depends(current_admin)) -> Principal:
+    """Staff with read access to payment history and summaries only."""
     if principal.user.must_change_password:
         raise HTTPException(status_code=403, detail="Change your temporary password first")
     return principal
@@ -110,8 +118,8 @@ async def login(data: LoginIn, request: Request, response: Response, db: AsyncSe
     # The existing limiter is process-local; use a shared store before multi-worker deployment.
     rate_limit.enforce(f"admin-login:{data.email}:{request.client.host if request.client else 'unknown'}", 10, 300)
     user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
-    if user is None or user.role not in ("admin", "super_admin") or not user.is_active or not verify_password(data.password, user.password_hash):
-        if user is not None and user.role in ("admin", "super_admin"):
+    if user is None or user.role not in STAFF_ROLES or not user.is_active or not verify_password(data.password, user.password_hash):
+        if user is not None and user.role in STAFF_ROLES:
             service.log(db, "login_failed", None, user.id)
             await db.commit()
         raise HTTPException(status_code=401, detail="Invalid admin credentials")

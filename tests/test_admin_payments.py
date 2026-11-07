@@ -12,9 +12,9 @@ ORIGIN = {"Origin": "http://localhost:3000"}
 PASSWORD = "temporary-password-2026"
 
 
-async def _people(db_session, client, *, sign_in=True) -> User:
+async def _people(db_session, client, *, sign_in=True, role="admin") -> User:
     staff = User(full_name="Staff", email="staff@codeprove.production", password_hash=hash_password(PASSWORD),
-                 role="admin", must_change_password=False)
+                 role=role, must_change_password=False)
     learner = User(full_name="Linh Tran", email="linh@example.com", password_hash=hash_password("password123"))
     db_session.add_all([staff, learner])
     await db_session.commit()
@@ -34,8 +34,9 @@ def _event(order_id, amount, txn_id, received_at, *, transfer_type="in", valid=T
                         processed=processed, received_at=received_at)
 
 
-async def test_history_lists_only_codeprove_transfers_newest_first(client, db_session):
-    learner = await _people(db_session, client)
+@pytest.mark.parametrize("role", ["admin", "payment_viewer"])
+async def test_history_lists_only_codeprove_transfers_newest_first(client, db_session, role):
+    learner = await _people(db_session, client, role=role)
     now = datetime.now(timezone.utc)
     order = Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid", paid_at=now)
     db_session.add(order)
@@ -68,8 +69,9 @@ async def test_history_lists_only_codeprove_transfers_newest_first(client, db_se
     assert (await client.get("/api/admin/payments", params={"search": "nobody"})).json()["total"] == 0
 
 
-async def test_summary_fills_every_day_and_adds_up_money(client, db_session):
-    learner = await _people(db_session, client)
+@pytest.mark.parametrize("role", ["admin", "payment_viewer"])
+async def test_summary_fills_every_day_and_adds_up_money(client, db_session, role):
+    learner = await _people(db_session, client, role=role)
     now = datetime.now(timezone.utc)
     db_session.add_all([
         Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid", paid_at=now),
