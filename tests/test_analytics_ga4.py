@@ -72,7 +72,7 @@ async def test_reused_pending_order_takes_the_latest_visit(client, db_session, a
 
 async def test_paid_webhook_reports_one_purchase(client, db_session, auth_headers, ga):
     order_id = await _checkout(client, auth_headers, **GA_IDS)
-    body = webhook_body(order_id, 99_000)
+    body = webhook_body(order_id, 49_000)
     assert (await client.post("/api/billing/webhook", json=body, headers=AUTH)).status_code == 200
     assert (await client.post("/api/billing/webhook", json=body, headers=AUTH)).status_code == 200  # resend
 
@@ -82,10 +82,10 @@ async def test_paid_webhook_reports_one_purchase(client, db_session, auth_header
     event = payload["events"][0]
     assert event["name"] == "purchase"
     assert event["params"]["transaction_id"] == f"CP{order_id}"
-    assert event["params"]["value"] == 99_000 and event["params"]["currency"] == "VND"
+    assert event["params"]["value"] == 49_000 and event["params"]["currency"] == "VND"
     assert event["params"]["session_id"] == GA_IDS["ga_session_id"]
     assert event["params"]["items"] == [{"item_id": "plus_monthly", "item_name": "Plus", "item_variant": "monthly",
-                                         "price": 99_000, "quantity": 1}]
+                                         "price": 49_000, "quantity": 1}]
 
 
 async def test_wrong_amount_is_not_reported(client, auth_headers, ga):
@@ -98,14 +98,14 @@ async def test_nothing_is_reported_when_ga_is_off(client, auth_headers, sepay, m
     called = []
     monkeypatch.setattr(ga4, "send_purchase", lambda payload: called.append(payload))
     order_id = await _checkout(client, auth_headers, **GA_IDS)
-    r = await client.post("/api/billing/webhook", json=webhook_body(order_id, 99_000), headers=AUTH)
+    r = await client.post("/api/billing/webhook", json=webhook_body(order_id, 49_000), headers=AUTH)
     assert r.status_code == 200 and called == []
 
 
 # --- payload and sending ----------------------------------------------------------------------
 
 def test_payload_without_browser_ids_still_counts_the_purchase(sepay):  # noqa: F811
-    order = Order(id=7, user_id=42, plan_code="pro_yearly", amount=1_990_000, status="paid",
+    order = Order(id=7, user_id=42, plan_code="pro_yearly", amount=990_000, status="paid",
                   paid_at=datetime(2026, 10, 15, 3, 0, tzinfo=timezone.utc))
     payload = ga4.purchase_payload(order)
     assert payload["client_id"] == "server.42"

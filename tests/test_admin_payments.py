@@ -38,16 +38,16 @@ def _event(order_id, amount, txn_id, received_at, *, transfer_type="in", valid=T
 async def test_history_lists_only_codeprove_transfers_newest_first(client, db_session, role):
     learner = await _people(db_session, client, role=role)
     now = datetime.now(timezone.utc)
-    order = Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid", paid_at=now)
+    order = Order(user_id=learner.id, plan_code="plus_monthly", amount=49_000, status="paid", paid_at=now)
     db_session.add(order)
     await db_session.commit()
     await db_session.refresh(order)
     db_session.add_all([
-        _event(order.id, 99_000, 1, now - timedelta(hours=2)),
+        _event(order.id, 49_000, 1, now - timedelta(hours=2)),
         _event(None, 50_000, 2, now - timedelta(hours=1), processed=False),  # personal money: no order code
         _event(999, 70_000, 5, now - timedelta(hours=1)),  # a code-like text, but no such order
-        _event(order.id, 99_000, 3, now, transfer_type="out"),  # money out: not listed
-        _event(order.id, 99_000, 4, now, valid=False),  # unsigned call: not listed
+        _event(order.id, 49_000, 3, now, transfer_type="out"),  # money out: not listed
+        _event(order.id, 49_000, 4, now, valid=False),  # unsigned call: not listed
     ])
     await db_session.commit()
 
@@ -59,7 +59,7 @@ async def test_history_lists_only_codeprove_transfers_newest_first(client, db_se
     (matched,) = body["items"]
     assert matched["user_name"] == "Linh Tran" and matched["user_email"] == "linh@example.com"
     assert (matched["amount"], matched["bank"], matched["plan_code"], matched["order_status"]) == (
-        99_000, "TPBank", "plus_monthly", "paid")
+        49_000, "TPBank", "plus_monthly", "paid")
     assert (matched["account_number"], matched["reference_code"], matched["transaction_date"]) == (
         "0123456789", "FT1", "2026-10-28 10:15:30")
     assert "CP" in matched["transfer_content"]
@@ -74,12 +74,12 @@ async def test_summary_fills_every_day_and_adds_up_money(client, db_session, rol
     learner = await _people(db_session, client, role=role)
     now = datetime.now(timezone.utc)
     db_session.add_all([
-        Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid", paid_at=now),
-        Order(user_id=learner.id, plan_code="pro_monthly", amount=199_000, status="paid", paid_at=now),
-        Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid",
+        Order(user_id=learner.id, plan_code="plus_monthly", amount=49_000, status="paid", paid_at=now),
+        Order(user_id=learner.id, plan_code="pro_monthly", amount=99_000, status="paid", paid_at=now),
+        Order(user_id=learner.id, plan_code="plus_monthly", amount=49_000, status="paid",
               created_at=now - timedelta(days=90), paid_at=now - timedelta(days=90)),  # outside the window
-        Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="pending"),
-        Order(user_id=learner.id, plan_code="plus_yearly", amount=990_000, status="paid_unapplied", paid_at=now),
+        Order(user_id=learner.id, plan_code="plus_monthly", amount=49_000, status="pending"),
+        Order(user_id=learner.id, plan_code="plus_yearly", amount=490_000, status="paid_unapplied", paid_at=now),
     ])
     db_session.add(_event(None, 50_000, 9, now, processed=False))
     await db_session.commit()
@@ -88,7 +88,7 @@ async def test_summary_fills_every_day_and_adds_up_money(client, db_session, rol
     assert response.status_code == 200, response.text
     body = response.json()
     assert len(body["by_day"]) == 7
-    assert body["revenue"] == 99_000 + 199_000 + 990_000
+    assert body["revenue"] == 49_000 + 99_000 + 490_000
     assert body["paid_orders"] == 3
     assert body["average_order"] == body["revenue"] // 3
     assert sum(day["revenue"] for day in body["by_day"]) == body["revenue"]

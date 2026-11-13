@@ -86,9 +86,9 @@ def test_order_id_is_read_from_the_code_or_the_content(sepay):
 
 
 def test_payment_details_carry_the_account_amount_and_code(sepay):
-    d = sepay_client.payment_details(7, 99_000)
-    assert (d["bank_name"], d["account_number"], d["payment_code"], d["amount"]) == ("TPBank", "0123456789", "CP7", 99_000)
-    assert d["qr_url"] == "https://qr.sepay.vn/img?acc=0123456789&bank=TPBank&amount=99000&des=CP7"
+    d = sepay_client.payment_details(7, 49_000)
+    assert (d["bank_name"], d["account_number"], d["payment_code"], d["amount"]) == ("TPBank", "0123456789", "CP7", 49_000)
+    assert d["qr_url"] == "https://qr.sepay.vn/img?acc=0123456789&bank=TPBank&amount=49000&des=CP7"
 
 
 # --- checkout ----------------------------------------------------------------------------------
@@ -116,10 +116,10 @@ async def test_checkout_creates_pending_order_with_server_price(client, db_sessi
     assert r.status_code == 200
     out = r.json()
     order = await _order(db_session, out["order_id"])
-    assert (order.status, order.amount, order.plan_code) == ("pending", 1_990_000, "pro_yearly")
-    assert (out["amount"], out["payment_code"], out["status"]) == (1_990_000, f"CP{order.id}", "pending")
+    assert (order.status, order.amount, order.plan_code) == ("pending", 990_000, "pro_yearly")
+    assert (out["amount"], out["payment_code"], out["status"]) == (990_000, f"CP{order.id}", "pending")
     assert (out["bank_name"], out["account_number"], out["account_name"]) == ("TPBank", "0123456789", "NGUYEN VAN A")
-    assert f"des=CP{order.id}" in out["qr_url"] and "amount=1990000" in out["qr_url"]
+    assert f"des=CP{order.id}" in out["qr_url"] and "amount=990000" in out["qr_url"]
     assert out["expires_at"]
 
 
@@ -127,7 +127,7 @@ async def test_checkout_ignores_client_supplied_amount(client, db_session, auth_
     r = await client.post("/api/billing/checkout", json={"plan_code": "plus_monthly", "amount": 1},
                           headers=auth_headers)
     assert r.status_code == 200
-    assert (await _order(db_session)).amount == 99_000
+    assert (await _order(db_session)).amount == 49_000
 
 
 async def test_checkout_reuses_the_open_order_for_the_same_plan(client, auth_headers, sepay):

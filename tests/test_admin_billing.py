@@ -48,18 +48,18 @@ async def test_overview_counts_plans_and_paid_orders_of_this_month(client, db_se
     db_session.add_all([
         Subscription(user_id=learner.id, tier="pro", expires_at=now + timedelta(days=10)),
         Subscription(user_id=other.id, tier="plus", expires_at=now - timedelta(days=1)),  # ran out: free again
-        Order(user_id=learner.id, plan_code="pro_monthly", amount=199_000, status="paid", paid_at=now),
-        Order(user_id=other.id, plan_code="plus_monthly", amount=99_000, status="paid",
+        Order(user_id=learner.id, plan_code="pro_monthly", amount=99_000, status="paid", paid_at=now),
+        Order(user_id=other.id, plan_code="plus_monthly", amount=49_000, status="paid",
               paid_at=now - timedelta(days=70)),
-        Order(user_id=other.id, plan_code="plus_monthly", amount=99_000, status="pending"),
-        Order(user_id=other.id, plan_code="plus_monthly", amount=99_000, status="paid_unapplied", paid_at=now),
+        Order(user_id=other.id, plan_code="plus_monthly", amount=49_000, status="pending"),
+        Order(user_id=other.id, plan_code="plus_monthly", amount=49_000, status="paid_unapplied", paid_at=now),
     ])
     await db_session.commit()
 
     body = (await client.get("/api/admin/overview")).json()
     assert body["plan_counts"] == {"free": 1, "plus": 0, "pro": 1}
-    assert (body["orders_paid_total"], body["revenue_total"]) == (2, 298_000)
-    assert (body["orders_paid_this_month"], body["revenue_this_month"]) == (1, 199_000)
+    assert (body["orders_paid_total"], body["revenue_total"]) == (2, 148_000)
+    assert (body["orders_paid_this_month"], body["revenue_this_month"]) == (1, 99_000)
 
 
 async def test_learner_billing_shows_the_plan_and_orders(client, db_session):
@@ -67,7 +67,7 @@ async def test_learner_billing_shows_the_plan_and_orders(client, db_session):
     now = datetime.now(timezone.utc)
     db_session.add_all([
         Subscription(user_id=learner.id, tier="plus", expires_at=now + timedelta(days=30)),
-        Order(user_id=learner.id, plan_code="plus_monthly", amount=99_000, status="paid", paid_at=now,
+        Order(user_id=learner.id, plan_code="plus_monthly", amount=49_000, status="paid", paid_at=now,
               provider_txn_id=92704),
     ])
     await db_session.commit()
@@ -76,7 +76,7 @@ async def test_learner_billing_shows_the_plan_and_orders(client, db_session):
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
     body = r.json()
     assert (body["tier"], body["days_left"]) == ("plus", 30)
-    assert [(o["status"], o["amount"], o["provider_txn_id"]) for o in body["orders"]] == [("paid", 99_000, 92704)]
+    assert [(o["status"], o["amount"], o["provider_txn_id"]) for o in body["orders"]] == [("paid", 49_000, 92704)]
     listing = (await client.get("/api/admin/users")).json()
     assert listing["items"][0]["tier"] == "plus"
 
