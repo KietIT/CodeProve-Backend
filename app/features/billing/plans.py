@@ -16,9 +16,9 @@ class Plan:
 PLANS: dict[str, Plan] = {
     p.code: p
     for p in (
-        Plan("plus_monthly", "plus", "monthly", 99_000, 30),
-        Plan("plus_yearly", "plus", "yearly", 990_000, 365),
-        Plan("pro_monthly", "pro", "monthly", 199_000, 30),
-        Plan("pro_yearly", "pro", "yearly", 1_990_000, 365),
+        Plan("plus_monthly", "plus", "monthly", 49_000, 30),
+        Plan("plus_yearly", "plus", "yearly", 490_000, 365),
+        Plan("pro_monthly", "pro", "monthly", 99_000, 30),
+        Plan("pro_yearly", "pro", "yearly", 990_000, 365),
     )
 }
