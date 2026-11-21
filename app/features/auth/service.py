@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
 from app.features.privacy.service import record_consent
 from app.models import User
-from app.schemas.auth import LoginIn, SignupIn, UpdateMeIn, normalize_email
+from app.schemas.auth import SignupIn, UpdateMeIn, UserLoginIn, normalize_email
 
 _ALGO = "HS256"
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -25,18 +25,26 @@ async def create_user(db: AsyncSession, data: SignupIn) -> User:
     existing = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
     if existing is not None:
         raise ValueError("email_taken")
-    user = User(full_name=data.full_name, email=data.email, password_hash=hash_password(data.password))
+    if await _phone_owner(db, data.phone) is not None:
+        raise ValueError("phone_taken")
+    user = User(full_name=data.full_name, email=data.email, phone=data.phone,
+                password_hash=hash_password(data.password))
     record_consent(user)  # SignupIn only validates with accept_privacy = true
     db.add(user)
     try:
         await db.commit()
     except IntegrityError as exc:
-        # A concurrent signup with the same email committed between our
-        # existence check and this insert; the unique constraint catches it.
+        # A concurrent signup with the same email or phone committed between our
+        # existence checks and this insert; the unique constraints catch it.
         await db.rollback()
-        raise ValueError("email_taken") from exc
+        taken_phone = await _phone_owner(db, data.phone) is not None
+        raise ValueError("phone_taken" if taken_phone else "email_taken") from exc
     await db.refresh(user)
     return user
+
+
+async def _phone_owner(db: AsyncSession, phone: str) -> User | None:
+    return (await db.execute(select(User).where(User.phone == phone))).scalar_one_or_none()
 
 
 async def update_user(db: AsyncSession, user: User, data: UpdateMeIn) -> User:
@@ -45,13 +53,22 @@ async def update_user(db: AsyncSession, user: User, data: UpdateMeIn) -> User:
     if data.avatar is not None:
         # Empty string clears the avatar; any other value is stored as-is.
         user.avatar = data.avatar or None
-    await db.commit()
+    if data.phone is not None and data.phone != user.phone:
+        if await _phone_owner(db, data.phone) is not None:
+            raise ValueError("phone_taken")
+        user.phone = data.phone
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise ValueError("phone_taken") from exc
     await db.refresh(user)
     return user
 
 
-async def authenticate(db: AsyncSession, data: LoginIn) -> User | None:
-    user = (await db.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
+async def authenticate(db: AsyncSession, data: UserLoginIn) -> User | None:
+    column = User.email if data.is_email else User.phone
+    user = (await db.execute(select(User).where(column == data.identifier))).scalar_one_or_none()
     if user is None or user.role != "user" or not user.is_active or not verify_password(data.password, user.password_hash):
         return None
     return user

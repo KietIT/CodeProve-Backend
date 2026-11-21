@@ -171,7 +171,7 @@ async def test_payment_details_of_my_order(client, auth_headers, sepay):
 async def test_payment_details_of_someone_elses_order_are_hidden(client, auth_headers, sepay):
     made = (await _checkout(client, auth_headers)).json()
     other = await client.post("/api/auth/signup", json={
-        "full_name": "Other", "email": "other@example.com", "password": "password123", "accept_privacy": True})
+        "full_name": "Other", "email": "other@example.com", "phone": "0900000301", "password": "password123", "accept_privacy": True})
     headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     assert (await client.get(f"/api/billing/orders/{made['order_id']}/payment", headers=headers)).status_code == 404
 
@@ -319,6 +319,6 @@ async def test_cancel_pending_order(client, db_session, auth_headers, sepay):
 async def test_cannot_cancel_someone_elses_order(client, db_session, auth_headers, sepay):
     order = await _order(db_session, (await _checkout(client, auth_headers)).json()["order_id"])
     other = await client.post("/api/auth/signup", json={
-        "full_name": "Other", "email": "other@example.com", "password": "password123", "accept_privacy": True})
+        "full_name": "Other", "email": "other@example.com", "phone": "0900000301", "password": "password123", "accept_privacy": True})
     headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     assert (await client.post(f"/api/billing/orders/{order.id}/cancel", headers=headers)).status_code == 404

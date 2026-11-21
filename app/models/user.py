@@ -12,6 +12,9 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     full_name: Mapped[str] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    # Vietnamese mobile number in canonical 0xxxxxxxxx form. Required for email signups; null for
+    # accounts created before it existed and for Google sign-ins. Unique so it can be a login ID.
+    phone: Mapped[str | None] = mapped_column(String(16), unique=True, index=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     # user | admin | super_admin | payment_viewer
     role: Mapped[str] = mapped_column(String(16), nullable=False, default="user", server_default="user")

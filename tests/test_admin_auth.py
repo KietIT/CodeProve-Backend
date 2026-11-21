@@ -29,7 +29,7 @@ async def login(client, email: str) -> object:
 
 async def test_reserved_login_ids_and_public_login_cannot_be_admin(client, db_session):
     signup = await client.post("/api/auth/signup", json={
-        "full_name": "Fake Admin", "email": "fake@codeprove.production",
+        "full_name": "Fake Admin", "email": "fake@codeprove.production", "phone": "0900000101",
         "password": "password123", "accept_privacy": True,
     })
     assert signup.status_code == 409
@@ -39,7 +39,7 @@ async def test_reserved_login_ids_and_public_login_cannot_be_admin(client, db_se
     })
     assert public.status_code == 401
     learner = await client.post("/api/auth/signup", json={
-        "full_name": "Student", "email": "student@example.com",
+        "full_name": "Student", "email": "student@example.com", "phone": "0900000102",
         "password": "password123", "accept_privacy": True,
     })
     assert learner.status_code == 200
