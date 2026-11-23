@@ -107,3 +107,12 @@ async def test_seeded_attempts_skip_difficulty_rescore_and_quota(db_session):
     db_session.add(fresh)
     await db_session.commit()
     await enforce_monthly_submits(db_session, users[0], fresh)
+
+
+@pytest.mark.asyncio
+async def test_seed_since_starts_no_earlier_than_that_day(db_session):
+    await _setup(db_session)  # signups 5 and 6 days before NOW
+    since = run._local_day("2026-11-21")
+    plans = await run.seed(db_session, ["a@x.vn", "b@x.vn"], "seed-t", 7, NOW, apply=False, since=since)
+    days = {p.started_at.astimezone(LOCAL_TZ).date().day for planned in plans.values() for p in planned}
+    assert days == {21, 22, 23}

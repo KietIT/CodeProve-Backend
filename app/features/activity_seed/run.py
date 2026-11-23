@@ -5,6 +5,8 @@ Emails come on stdin, one per line, so they never land in the repo or the shell 
     docker exec -i codeprove_backend python -m app.features.activity_seed.run < emails.txt           # dry run
     docker exec -i codeprove_backend python -m app.features.activity_seed.run --apply < emails.txt   # write
 
+Add --since YYYY-MM-DD to start no earlier than that day (Vietnam time), e.g. only the last two weeks.
+
 Every seeded report carries feedback["seed_batch"] (default "seed-<today>"). Rescore, the learner
 difficulty Elo, rater sampling and the Free monthly submit quota all skip seeded attempts.
 Undo a batch (all learners, or only the emails given on stdin):
@@ -18,14 +20,14 @@ import asyncio
 import random
 import sys
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
 from app.features.activity_seed.marker import SEED_KEY, seed_batch_of
-from app.features.activity_seed.plan import ExerciseInfo, Interval, PlannedAttempt, not_applicable, plan_learner
+from app.features.activity_seed.plan import LOCAL_TZ, ExerciseInfo, Interval, PlannedAttempt, not_applicable, plan_learner
 from app.features.attempts.scoring_service import build_feedback
 from app.features.learner.service import rebuild
 from app.features.scoring.features import AxisFeatures
@@ -33,6 +35,12 @@ from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, Us
 
 DEFAULT_SEED = 20261123
 ASSUMED_ATTEMPT = timedelta(minutes=30)  # busy time for an existing attempt that was never submitted
+
+
+def _local_day(value: str) -> datetime:
+    """Midnight of a YYYY-MM-DD day in Vietnam time, as UTC."""
+    day = datetime.strptime(value, "%Y-%m-%d").date()
+    return datetime.combine(day, time(0, 0), tzinfo=LOCAL_TZ).astimezone(timezone.utc)
 
 
 def read_emails(lines: list[str]) -> list[str]:
@@ -78,7 +86,7 @@ def _store(db: AsyncSession, user_id: int, planned: PlannedAttempt) -> Attempt:
 
 
 async def seed(db: AsyncSession, emails: list[str], batch: str, seed_value: int, now: datetime,
-               apply: bool) -> dict[str, list[PlannedAttempt]]:
+               apply: bool, since: datetime | None = None) -> dict[str, list[PlannedAttempt]]:
     users = {u.email: u for u in (await db.execute(
         select(User).where(User.email.in_(emails), User.role == "user"))).scalars()}
     missing = [e for e in emails if e not in users]
@@ -98,7 +106,8 @@ async def seed(db: AsyncSession, emails: list[str], batch: str, seed_value: int,
         user = users[email]
         done, busy = await _history(db, user.id)
         rng = random.Random(f"{seed_value}:{email}")
-        plans[email] = plan_learner(rng, _utc(user.created_at), now, infos, done, busy)
+        start = max(_utc(user.created_at), since) if since else _utc(user.created_at)
+        plans[email] = plan_learner(rng, start, now, infos, done, busy)
     if not apply:
         return plans
 
@@ -163,7 +172,7 @@ async def _main(args: argparse.Namespace) -> int:
         if not emails:
             print("No emails on stdin")
             return 2
-        plans = await seed(db, emails, args.batch, args.seed, datetime.now(timezone.utc), args.apply)
+        plans = await seed(db, emails, args.batch, args.seed, datetime.now(timezone.utc), args.apply, args.since)
     _summary(plans)
     print(f"batch {args.batch!r}: " + ("written, learner model rebuilt" if args.apply else "dry run, use --apply to write"))
     return 0
@@ -175,4 +184,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch", default=f"seed-{datetime.now(timezone.utc):%Y-%m-%d}", help="marker for rollback")
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="RNG seed; same seed = same plan")
     parser.add_argument("--rollback", metavar="BATCH", help="delete the attempts of this batch instead")
+    parser.add_argument("--since", type=_local_day, metavar="YYYY-MM-DD",
+                        help="seed from this day (Vietnam time) or from signup, whichever is later")
     sys.exit(asyncio.run(_main(parser.parse_args())))
