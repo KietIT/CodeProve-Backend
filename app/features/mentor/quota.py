@@ -15,9 +15,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
 from app.core.config import get_settings
+from app.features.activity_seed.marker import is_seeded
 from app.features.billing import entitlements as plans
 from app.features.billing import service as billing
-from app.models import Attempt, Event, PromptLog, User
+from app.models import Attempt, Event, FluencyReport, PromptLog, User
 from app.schemas.mentor import CielQuota
 
 MESSAGES = {
@@ -104,8 +105,11 @@ async def enforce_monthly_submits(db: AsyncSession, user: User, attempt: Attempt
     limit = plans.for_tier(tier, s).monthly_submits
     if limit is None:
         return
-    used = (await db.execute(select(func.count()).select_from(Attempt).where(
-        Attempt.user_id == user.id, Attempt.id != attempt.id, Attempt.submitted_at.is_not(None),
-        Attempt.submitted_at >= month_start_utc()))).scalar_one()
+    submitted = (await db.execute(
+        select(FluencyReport.feedback).select_from(Attempt)
+        .outerjoin(FluencyReport, FluencyReport.attempt_id == Attempt.id)
+        .where(Attempt.user_id == user.id, Attempt.id != attempt.id, Attempt.submitted_at.is_not(None),
+               Attempt.submitted_at >= month_start_utc()))).scalars().all()
+    used = sum(1 for feedback in submitted if not is_seeded(feedback))  # seeded history is not real usage
     if used >= limit:
         raise _limit_error("monthly_submit_limit", limit, tier=tier)
