@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
+from app.features.activity_seed.marker import is_seeded
 from app.features.attempts import debug
 from app.features.student_tests.evaluate import report_block as tests_report
 from app.features.attempts.scoring_service import _events_as_dicts, integrity_from_features, report_columns
@@ -59,6 +60,8 @@ async def rescore_all(db: AsyncSession, apply: bool, engine: str = "v1", attempt
     rows = (await db.execute(query)).all()
     changes: list[dict] = []
     for report, attempt, exercise in rows:
+        if is_seeded(report.feedback):
+            continue  # no events to rescore from
         if engine == "v2":
             if client is not None:
                 await backfill_judges(db, attempt, client)

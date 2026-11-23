@@ -6,13 +6,14 @@ the model can be recomputed after a rescore or a formula change.
 
 Approved rules: every scored attempt moves the student, but an exercise's
 difficulty only moves on each student's first scored attempt of it, and never
-for the simulated calibration accounts.
+for the simulated calibration accounts or seeded attempts (activity_seed).
 """
 from dataclasses import dataclass
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.activity_seed.marker import is_seeded
 from app.features.learner import elo
 from app.models import Attempt, Exercise, FluencyReport, LearnerSkill, User
 
@@ -67,7 +68,7 @@ async def replay(db: AsyncSession) -> RebuildResult:
     """Recompute the whole model from the stored reports, oldest first."""
     exercises = {ex.id: ex for ex in (await db.execute(select(Exercise))).scalars()}
     rows = (await db.execute(
-        select(FluencyReport.overall_score, Attempt.user_id, Attempt.exercise_id, User.email)
+        select(FluencyReport.overall_score, Attempt.user_id, Attempt.exercise_id, User.email, FluencyReport.feedback)
         .join(Attempt, Attempt.id == FluencyReport.attempt_id)
         .join(User, User.id == Attempt.user_id)
         .order_by(func.coalesce(Attempt.submitted_at, FluencyReport.created_at), FluencyReport.id)
@@ -75,7 +76,7 @@ async def replay(db: AsyncSession) -> RebuildResult:
     ratings: dict[tuple[int, str], tuple[float, int]] = {}
     difficulties: dict[int, float] = {}
     seen: set[tuple[int, int]] = set()
-    for overall, user_id, exercise_id, email in rows:
+    for overall, user_id, exercise_id, email, feedback in rows:
         ex = exercises[exercise_id]
         tags = list(ex.skills or [])
         first = (user_id, exercise_id) not in seen
@@ -83,7 +84,8 @@ async def replay(db: AsyncSession) -> RebuildResult:
         if not tags:
             continue
         current = {t: ratings.get((user_id, t), (elo.START_RATING, 0))[0] for t in tags}
-        move = first and not is_sim_account(email)
+        # Seeded history moves the learner but never calibrates the exercise.
+        move = first and not is_sim_account(email) and not is_seeded(feedback)
         new, d = elo.update(current, elo.difficulty(difficulties.get(exercise_id), ex.level), overall, move)
         for tag, rating in new.items():
             ratings[(user_id, tag)] = (rating, ratings.get((user_id, tag), (0.0, 0))[1] + 1)

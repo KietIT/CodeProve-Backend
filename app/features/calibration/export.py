@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker
+from app.features.activity_seed.marker import is_seeded
 from app.features.privacy.scrub import scrub
 from app.models import Attempt, CodeSnapshot, Event, Exercise, FluencyReport, PromptLog, User, VerificationAnswer
 
@@ -114,6 +115,8 @@ async def build_sessions(db: AsyncSession, limit: int = 60, per_user: int = 3, s
             break
         if taken.get(attempt.user_id, 0) >= per_user:
             continue  # keep the set diverse: no single person dominates it
+        if is_seeded(report.feedback):
+            continue  # seeded history has no session to rate
         sid = "S" + hashlib.sha256(f"{salt}:{attempt.id}".encode()).hexdigest()[:8]
         session = await _session(db, sid, attempt, ex)
         if session is None:
