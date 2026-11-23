@@ -10,7 +10,7 @@ from app.core.deps import get_current_user
 from app.core.security import create_access_token
 from app.features.auth import service
 from app.models import User
-from app.schemas.auth import AuthOut, LoginIn, SignupIn, UpdateMeIn, UserOut
+from app.schemas.auth import AuthOut, SignupIn, UpdateMeIn, UserLoginIn, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -35,6 +35,12 @@ def _validate_frontend_origin(url: str | None) -> str | None:
     return origin if origin in _allowed_frontend_origins() else None
 
 
+_CONFLICT_DETAIL = {
+    "email_taken": "Email already registered",
+    "phone_taken": "Phone number already registered",
+}
+
+
 def _frontend_callback_url(base: str, token: str | None = None, error: str | None = None,
                            new_user: bool = False) -> str:
     params = []
@@ -53,16 +59,17 @@ def _frontend_callback_url(base: str, token: str | None = None, error: str | Non
 async def signup(data: SignupIn, db: AsyncSession = Depends(get_db)) -> AuthOut:
     try:
         user = await service.create_user(db, data)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+    except ValueError as exc:
+        detail = _CONFLICT_DETAIL.get(str(exc), _CONFLICT_DETAIL["email_taken"])
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
     return AuthOut(user=UserOut.model_validate(user, from_attributes=True), access_token=create_access_token(str(user.id)))
 
 
 @router.post("/login", response_model=AuthOut)
-async def login(data: LoginIn, db: AsyncSession = Depends(get_db)) -> AuthOut:
+async def login(data: UserLoginIn, db: AsyncSession = Depends(get_db)) -> AuthOut:
     user = await service.authenticate(db, data)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email, phone number or password")
     return AuthOut(user=UserOut.model_validate(user, from_attributes=True), access_token=create_access_token(str(user.id)))
 
 
@@ -111,5 +118,8 @@ async def update_me(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> UserOut:
-    updated = await service.update_user(db, user, data)
+    try:
+        updated = await service.update_user(db, user, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_CONFLICT_DETAIL["phone_taken"]) from exc
     return UserOut.model_validate(updated, from_attributes=True)

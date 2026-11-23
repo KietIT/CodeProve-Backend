@@ -44,7 +44,7 @@ async def auth_headers(client):
     """Return Bearer headers for a freshly created test user."""
     r = await client.post(
         "/api/auth/signup",
-        json={"full_name": "Test User", "email": "testuser@example.com", "password": "password123",
+        json={"full_name": "Test User", "email": "testuser@example.com", "phone": "0900000001", "password": "password123",
               "accept_privacy": True},
     )
     assert r.status_code == 200, r.text

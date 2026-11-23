@@ -38,6 +38,8 @@ from app.seed.exercises_seed import EXERCISES
 logger = logging.getLogger(__name__)
 
 EMAIL = "calib.sim{:02d}@example.com"
+# Synthetic calibration accounts: a fixed, clearly fake 0399 99 00xx range.
+PHONE = "03999900{:02d}"
 _MUTANT_REF = re.compile(r"^mutant:(\d+)$")
 _ENTRY = re.compile(r"^(?:def|class)\s+([A-Za-z_]\w*)", re.MULTILINE)
 _RATE_LIMIT_RETRIES = 4
@@ -191,7 +193,8 @@ class Api:
     async def token_for(self, student: dict) -> str:
         try:
             out = await self.call("POST", "/auth/signup", body={
-                "full_name": student["name"], "email": student["email"], "password": student["password"],
+                "full_name": student["name"], "email": student["email"], "phone": student["phone"],
+                "password": student["password"],
                 # Team-run calibration accounts: the operator accepts the policy for them (P3.7).
                 "accept_privacy": True})
         except ApiError as exc:
@@ -216,8 +219,11 @@ class State:
         if key not in self.data["students"]:
             self.data["students"][key] = {
                 "name": f"Sim {n:02d}", "email": EMAIL.format(n), "password": secrets.token_urlsafe(18)}
+        student = self.data["students"][key]
+        if "phone" not in student:  # also backfills state files written before signup required a phone
+            student["phone"] = PHONE.format(n)
             self.save()
-        return self.data["students"][key]
+        return student
 
     def session(self, script_id: str) -> dict:
         return self.data["sessions"].setdefault(script_id, {"status": "new"})

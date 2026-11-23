@@ -75,7 +75,7 @@ async def test_viewer_cannot_use_learner_auth_and_disable_is_immediate(client, d
 async def test_bootstrap_is_idempotent_and_does_not_promote_learner(client, db_session, monkeypatch):
     # The public signup cannot claim the designated staff ID before provisioning.
     response = await client.post("/api/auth/signup", json={
-        "full_name": "Someone", "email": bootstrap_payment_viewer.EMAIL,
+        "full_name": "Someone", "email": bootstrap_payment_viewer.EMAIL, "phone": "0900000501",
         "password": PASSWORD, "accept_privacy": True,
     })
     assert response.status_code == 409

@@ -11,7 +11,7 @@ from app.core.security import create_access_token, hash_password
 from app.features.mentor.prompts import HINT_STYLE
 from app.models import Attempt, Exercise, FluencyReport, LearnerSkill, User
 
-SIGNUP = {"full_name": "Jane Doe", "email": "jane@test.io", "password": "password123"}
+SIGNUP = {"full_name": "Jane Doe", "email": "jane@test.io", "phone": "0900000601", "password": "password123"}
 
 
 class Recording:
